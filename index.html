@@ -150,42 +150,29 @@
         <!-- === ÁREA DO CERTIFICADO (PREVIEW) === -->
         <div id="certificate-area" class="relative w-[297mm] h-[210mm] bg-white shadow-2xl overflow-hidden text-[#005C3B] flex flex-col mx-auto shrink-0">
             
-            <!-- Fundo Moderno e Profissional (SVG) -->
+            <!-- Fundo Ondulado (SVG Original) -->
             <div class="absolute inset-0 z-0 pointer-events-none">
-                <svg viewBox="0 0 297 210" preserveAspectRatio="none" class="w-full h-full">
-                    <defs>
-                        <linearGradient id="grad-main" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" style="stop-color:#005C3B;stop-opacity:1" />
-                            <stop offset="100%" style="stop-color:#00995D;stop-opacity:1" />
-                        </linearGradient>
-                        <linearGradient id="grad-light" x1="0%" y1="100%" x2="100%" y2="0%">
-                            <stop offset="0%" style="stop-color:#8BC34A;stop-opacity:0.2" />
-                            <stop offset="100%" style="stop-color:#DCEDC8;stop-opacity:0.05" />
-                        </linearGradient>
-                    </defs>
+                <svg viewBox="0 0 1000 600" preserveAspectRatio="none" class="w-full h-full">
+                    <!-- Canto Superior Esquerdo -->
+                    <path d="M0,0 L350,0 C200,0 120,50 80,100 C40,150 0,250 0,350 Z" fill="#D4E157" opacity="0.5"></path>
+                    <path d="M0,0 L300,0 C150,0 80,40 50,80 C20,120 0,200 0,300 Z" fill="#00995D"></path>
 
-                    <rect width="297" height="210" fill="#FAFAFA" />
-                    
-                    <!-- MOLDURA LATERAL ESQUERDA -->
-                    <path d="M0,0 L70,0 Q30,105 70,210 L0,210 Z" fill="url(#grad-light)" />
-                    <path d="M0,0 L45,0 Q10,105 45,210 L0,210 Z" fill="#00995D" opacity="0.9" />
-                    <path d="M0,0 L30,0 Q-5,105 30,210 L0,210 Z" fill="#005C3B" />
+                    <!-- Canto Superior Direito -->
+                    <path d="M1000,0 L650,0 C800,0 880,50 920,100 C960,150 1000,250 1000,350 Z" fill="#D4E157" opacity="0.5"></path>
+                    <path d="M1000,0 L700,0 C850,0 920,40 950,80 C980,120 1000,200 1000,300 Z" fill="#00995D"></path>
 
-                    <!-- MOLDURA LATERAL DIREITA -->
-                    <path d="M297,0 L227,0 Q267,105 227,210 L297,210 Z" fill="url(#grad-light)" />
-                    <path d="M297,0 L252,0 Q287,105 252,210 L297,210 Z" fill="#00995D" opacity="0.9" />
-                    <path d="M297,0 L267,0 Q302,105 267,210 L297,210 Z" fill="#005C3B" />
+                    <!-- Canto Inferior Esquerdo -->
+                    <path d="M0,600 L350,600 C200,600 120,550 80,500 C40,450 0,350 0,250 Z" fill="#D4E157" opacity="0.5"></path>
+                    <path d="M0,600 L300,600 C150,600 80,560 50,520 C20,480 0,400 0,300 Z" fill="#00995D"></path>
 
-                    <!-- Detalhes Geométricos -->
-                    <path d="M0,0 L120,0 L0,120 Z" fill="url(#grad-main)" opacity="0.03" />
-                    <path d="M297,210 L177,210 L297,90 Z" fill="url(#grad-main)" opacity="0.03" />
-                    
-                    <rect x="15" y="15" width="267" height="180" rx="2" fill="none" stroke="#005C3B" stroke-width="0.3" opacity="0.4" />
+                    <!-- Canto Inferior Direito -->
+                    <path d="M1000,600 L650,600 C800,600 880,550 920,500 C960,450 1000,350 1000,250 Z" fill="#D4E157" opacity="0.5"></path>
+                    <path d="M1000,600 L700,600 C850,600 920,560 950,520 C980,480 1000,400 1000,300 Z" fill="#00995D"></path>
                 </svg>
             </div>
 
             <!-- Conteúdo -->
-            <div class="relative z-10 flex flex-col items-center w-full h-full pt-12 pb-8 px-20">
+            <div class="relative z-10 flex flex-col items-center w-full h-full pt-12 pb-8 px-16">
                 
                 <!-- Logo Area -->
                 <div class="mb-2 h-20 flex items-center justify-center" id="logo-container">
@@ -237,7 +224,7 @@
                 </div>
 
                 <!-- Texto do Corpo -->
-                <div class="max-w-4xl text-center text-lg text-gray-800 leading-relaxed mb-auto px-4 mt-12 relative z-20">
+                <div class="max-w-4xl text-center text-lg text-gray-800 leading-relaxed mb-auto px-12 mt-12 relative z-20">
                     <p>
                         Certificamos que a empresa parceira, 
                         <span class="font-bold text-black uppercase"> [ <span id="text-company">NOME DO FORNECEDOR AQUI</span> ] </span>, 
@@ -246,7 +233,7 @@
                 </div>
 
                 <!-- Rodapé Assinaturas -->
-                <div class="w-full flex justify-between items-end px-4 pb-12 mt-8 relative z-20">
+                <div class="w-full flex justify-between items-end px-16 pb-12 mt-8 relative z-20">
                     <div class="text-left w-1/4">
                         <p class="text-lg text-gray-800 font-medium">Tatuí, [ <span id="text-date"></span> ]</p>
                     </div>
