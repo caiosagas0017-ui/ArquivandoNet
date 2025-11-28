@@ -3,835 +3,533 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Controle de Estoque</title>
+    <title>Gerador de Certificado Unimed</title>
     
-    <!-- Tailwind CSS -->
+    <!-- Tailwind CSS (Estilos) -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Fonte Roboto -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
     
-    <!-- Fonte Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Ícones Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; animation: fadeIn 0.3s ease-out; }
+        body { font-family: 'Roboto', sans-serif; }
         
-        /* Sidebar Active State */
-        .nav-item.active { 
-            background-color: #2563eb; 
-            color: white; 
-            box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+        /* Estilos específicos para ocultar elementos na impressão padrão do navegador */
+        @media print {
+            .no-print { display: none !important; }
+            #login-screen { display: none !important; }
+            #app-content { display: flex !important; }
         }
-        
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        /* Animations */
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .fade-in { animation: fadeIn 0.2s ease-out; }
-        
-        /* Progress Bar Animation */
-        .progress-bar-fill { transition: width 1s ease-in-out; }
+        /* Classe utilitária para esconder elementos */
+        .hidden-app { display: none !important; }
     </style>
 </head>
-<body class="flex h-screen text-slate-800 overflow-hidden">
+<body class="bg-gray-100 min-h-screen">
 
-    <!-- === COMPONENTES VISUAIS (MODAL E TOAST) === -->
-    
-    <!-- Toast -->
-    <div id="toast" class="fixed top-6 right-6 z-50 transform transition-all duration-300 translate-x-full opacity-0 pointer-events-none">
-        <div id="toast-content" class="bg-slate-800 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-4 border border-slate-700/50 backdrop-blur-sm">
-            <div id="toast-icon-bg" class="p-2 rounded-full bg-white/10">
-                <i id="toast-icon" data-lucide="check" class="w-5 h-5"></i>
+    <!-- === TELA DE LOGIN (PIN) === -->
+    <div id="login-screen" class="fixed inset-0 bg-[#005C3B] z-50 flex flex-col items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-2xl p-8 w-full max-w-md text-center">
+            <div class="mb-6 flex justify-center text-[#00995D]">
+                <i data-lucide="lock" class="w-12 h-12"></i>
             </div>
-            <div>
-                <h4 id="toast-title" class="font-bold text-sm">Sucesso</h4>
-                <p id="toast-message" class="text-sm text-slate-300">Operação realizada.</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Overlay -->
-    <div id="modal-overlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 transition-opacity">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 fade-in border border-slate-100">
-            <div class="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mb-4">
-                <i data-lucide="alert-triangle" class="w-6 h-6"></i>
-            </div>
-            <h3 class="text-xl font-bold text-slate-900 mb-2">Confirmar Ação</h3>
-            <p id="modal-message" class="text-slate-500 mb-6 text-sm leading-relaxed">Essa ação é permanente e não poderá ser desfeita. Deseja continuar?</p>
-            <div class="flex justify-end gap-3">
-                <button onclick="closeModal()" class="px-5 py-2.5 text-slate-600 hover:bg-slate-50 rounded-lg font-medium text-sm transition-colors border border-transparent hover:border-slate-200">
-                    Cancelar
-                </button>
-                <button id="modal-confirm-btn" class="px-5 py-2.5 bg-red-600 text-white hover:bg-red-700 rounded-lg font-bold text-sm shadow-lg shadow-red-600/20 transition-all hover:scale-105">
-                    Sim, Confirmar
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- === SIDEBAR === -->
-    <aside class="w-72 bg-slate-900 text-white flex-shrink-0 hidden md:flex flex-col border-r border-slate-800">
-        <div class="p-8">
-            <div class="flex items-center gap-3 mb-1">
-                <div class="bg-blue-600 p-2 rounded-lg">
-                    <i data-lucide="package" class="text-white w-6 h-6"></i>
-                </div>
-                <div>
-                    <h1 class="text-lg font-bold tracking-tight">Estoque Pro</h1>
-                    <p class="text-xs text-slate-400 font-medium">Gestão Inteligente</p>
-                </div>
-            </div>
-        </div>
-
-        <nav class="flex-1 px-4 space-y-2">
-            <p class="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Menu Principal</p>
-            <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item active w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-slate-300 hover:bg-slate-800 hover:text-white group">
-                <i data-lucide="layout-dashboard" class="w-5 h-5 group-hover:scale-110 transition-transform"></i> <span class="font-medium text-sm">Dashboard</span>
-            </button>
-            <button onclick="switchTab('inventory')" id="nav-inventory" class="nav-item w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-slate-300 hover:bg-slate-800 hover:text-white group">
-                <i data-lucide="box" class="w-5 h-5 group-hover:scale-110 transition-transform"></i> <span class="font-medium text-sm">Materiais</span>
-            </button>
-            <button onclick="switchTab('categories')" id="nav-categories" class="nav-item w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-slate-300 hover:bg-slate-800 hover:text-white group">
-                <i data-lucide="tags" class="w-5 h-5 group-hover:scale-110 transition-transform"></i> <span class="font-medium text-sm">Categorias</span>
-            </button>
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">Acesso Restrito</h2>
+            <p class="text-gray-500 mb-6">Digite o PIN para acessar o gerador de certificados.</p>
             
-            <p class="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mt-6 mb-2">Operacional</p>
-            <button onclick="switchTab('movement')" id="nav-movement" class="nav-item w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-slate-300 hover:bg-slate-800 hover:text-white group">
-                <i data-lucide="arrow-right-left" class="w-5 h-5 group-hover:scale-110 transition-transform"></i> <span class="font-medium text-sm">Movimentação</span>
-            </button>
-            <button onclick="switchTab('history')" id="nav-history" class="nav-item w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-slate-300 hover:bg-slate-800 hover:text-white group">
-                <i data-lucide="history" class="w-5 h-5 group-hover:scale-110 transition-transform"></i> <span class="font-medium text-sm">Histórico</span>
-            </button>
-        </nav>
-        
-        <div class="p-6">
-            <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
-                <p class="text-xs text-slate-400 mb-2">Status do Sistema</p>
-                <div class="flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                    <span class="text-sm font-medium text-white">Salvo Localmente</span>
-                </div>
-            </div>
-        </div>
-    </aside>
-
-    <!-- Header Mobile -->
-    <div class="md:hidden fixed top-0 w-full bg-slate-900 text-white z-40 px-4 py-3 flex justify-between items-center shadow-xl">
-        <div class="flex items-center gap-2">
-            <i data-lucide="package" class="text-blue-500 w-5 h-5"></i>
-            <h1 class="font-bold text-sm">Estoque Pro</h1>
-        </div>
-        <div class="flex gap-1 bg-slate-800 p-1 rounded-lg">
-           <button onclick="switchTab('dashboard')" class="p-2 hover:bg-slate-700 rounded-md"><i data-lucide="layout-dashboard" class="w-5 h-5"></i></button>
-           <button onclick="switchTab('movement')" class="p-2 hover:bg-slate-700 rounded-md"><i data-lucide="arrow-right-left" class="w-5 h-5"></i></button>
-        </div>
-    </div>
-
-    <!-- Área Principal -->
-    <main class="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-10 mt-14 md:mt-0">
-
-        <!-- DASHBOARD -->
-        <div id="view-dashboard" class="tab-content active max-w-7xl mx-auto space-y-8">
-            
-            <!-- Header Section -->
-            <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2">
-                <div>
-                    <h2 class="text-3xl font-bold text-slate-900 tracking-tight">Dashboard Geral</h2>
-                    <p class="text-slate-500 mt-1">Visão completa dos indicadores de estoque.</p>
-                </div>
+            <div class="space-y-4">
+                <input type="password" id="pin-input" placeholder="PIN" maxlength="4" 
+                    class="w-full text-center text-3xl tracking-[0.5em] font-bold border-2 border-gray-300 rounded-md p-3 focus:border-[#00995D] focus:ring-0 outline-none transition-colors text-gray-700"
+                    onkeypress="handleEnter(event)">
                 
-                <!-- Filtro CALENDÁRIO -->
-                <div class="bg-white p-1.5 pl-4 pr-2 rounded-full shadow-sm border border-slate-200 flex items-center gap-3 transition-all hover:shadow-md hover:border-blue-200">
-                    <div class="flex items-center gap-2 text-slate-500 text-sm font-medium">
-                        <i data-lucide="calendar" class="w-4 h-4 text-blue-500"></i>
-                        <span>Período:</span>
-                    </div>
-                    <input type="month" id="dash-month-filter" onchange="renderDashboard()" class="bg-slate-50 hover:bg-slate-100 text-slate-700 text-sm font-bold py-1.5 px-3 rounded-full outline-none cursor-pointer border-r-8 border-transparent transition-colors">
-                </div>
+                <button onclick="checkPin()" class="w-full bg-[#00995D] hover:bg-[#007f4d] text-white font-bold py-3 px-4 rounded transition-colors shadow-lg">
+                    Entrar
+                </button>
             </div>
+            <p id="error-msg" class="text-red-500 text-sm mt-4 hidden font-medium">PIN Incorreto. Tente novamente.</p>
+        </div>
+        <p class="text-white/50 text-xs mt-8">Unimed Tatuí - Sistema Interno</p>
+    </div>
 
-            <!-- Cards de Resumo -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- Card 1 -->
-                <div class="bg-white p-6 rounded-2xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-slate-100 relative overflow-hidden group">
-                    <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-500">
-                        <i data-lucide="package" class="w-24 h-24 text-blue-600"></i>
-                    </div>
-                    <div class="flex flex-col">
-                        <span class="text-slate-500 font-medium text-sm mb-1">Total em Estoque</span>
-                        <div class="flex items-baseline gap-2">
-                            <h3 id="dash-total-items" class="text-4xl font-bold text-slate-800 tracking-tight">0</h3>
-                            <span class="text-sm font-medium text-slate-400">itens únicos</span>
-                        </div>
-                    </div>
-                    <div class="mt-4 pt-4 border-t border-slate-50 flex items-center gap-2 text-xs font-bold text-blue-600">
-                        <i data-lucide="check-circle" class="w-3 h-3"></i> Inventário Ativo
-                    </div>
-                </div>
+    <!-- === CONTEÚDO DO APLICATIVO (Inicialmente Oculto) === -->
+    <div id="app-content" class="hidden-app flex-col items-center py-8 min-h-screen w-full">
 
-                <!-- Card 2 -->
-                <div class="bg-white p-6 rounded-2xl shadow-[0_2px_10px_-3px_rgba(239,68,68,0.1)] border border-slate-100 relative overflow-hidden group">
-                     <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-500">
-                        <i data-lucide="alert-triangle" class="w-24 h-24 text-red-600"></i>
-                    </div>
-                    <div class="flex flex-col">
-                        <span class="text-slate-500 font-medium text-sm mb-1">Abaixo do Mínimo</span>
-                        <div class="flex items-baseline gap-2">
-                            <h3 id="dash-low-stock" class="text-4xl font-bold text-slate-800 tracking-tight">0</h3>
-                            <span class="text-sm font-medium text-slate-400">itens críticos</span>
-                        </div>
-                    </div>
-                     <div class="mt-4 pt-4 border-t border-slate-50 flex items-center gap-2 text-xs font-bold text-red-500">
-                        <i data-lucide="alert-octagon" class="w-3 h-3"></i> Ação Necessária
-                    </div>
-                </div>
-
-                <!-- Card 3 -->
-                <div class="bg-white p-6 rounded-2xl shadow-[0_2px_10px_-3px_rgba(34,197,94,0.1)] border border-slate-100 relative overflow-hidden group">
-                    <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-500">
-                        <i data-lucide="trending-down" class="w-24 h-24 text-emerald-600"></i>
-                    </div>
-                    <div class="flex flex-col">
-                        <span class="text-slate-500 font-medium text-sm mb-1">Saídas no Período</span>
-                        <div class="flex items-baseline gap-2">
-                            <h3 id="dash-consumption" class="text-4xl font-bold text-slate-800 tracking-tight">0</h3>
-                            <span class="text-sm font-medium text-slate-400">movimentos</span>
-                        </div>
-                    </div>
-                     <div class="mt-4 pt-4 border-t border-slate-50 flex items-center gap-2 text-xs font-bold text-emerald-600">
-                        <i data-lucide="activity" class="w-3 h-3"></i> Fluxo de Saída
-                    </div>
-                </div>
+        <!-- === ÁREA DE CONTROLES (Não aparece na impressão) === -->
+        <div class="w-full max-w-4xl bg-white shadow-md rounded-lg p-6 mb-8 no-print">
+            <div class="flex justify-between items-center mb-4">
+                <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                    <i data-lucide="pen-tool" class="w-6 h-6"></i>
+                    Editar Certificado
+                </h1>
+                <button onclick="logout()" class="text-sm text-red-500 hover:text-red-700 font-medium flex items-center gap-1">
+                    <i data-lucide="log-out" class="w-4 h-4"></i> Sair
+                </button>
             </div>
             
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <!-- Coluna Esquerda: Gráficos de Categoria -->
-                <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                    <div class="flex items-center justify-between mb-6">
-                        <h3 class="font-bold text-slate-800 flex items-center gap-2">
-                            <i data-lucide="bar-chart-3" class="w-5 h-5 text-blue-500"></i>
-                            Volume por Categoria
-                        </h3>
-                        <span class="text-xs bg-slate-100 text-slate-500 px-2 py-1 rounded-md font-medium">Top Consumo</span>
-                    </div>
-                    <div id="category-bars-container" class="space-y-5">
-                        <!-- Preenchido via JS (Barras de Progresso) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Upload de Logo -->
+                <div class="bg-gray-50 p-4 rounded-lg border border-dashed border-gray-300">
+                    <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                        <i data-lucide="image" class="w-4 h-4"></i>
+                        Logo da Unimed
+                    </label>
+                    <div class="flex flex-col gap-2">
+                        <label class="cursor-pointer bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-md shadow-sm text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
+                            <i data-lucide="upload" class="w-4 h-4"></i>
+                            Carregar Logo (PNG, JPG, SVG)
+                            <input type="file" id="input-logo" accept="image/*,.svg" class="hidden">
+                        </label>
+                        <div class="flex justify-between items-center">
+                            <span id="logo-status" class="text-xs text-gray-500">Padrão</span>
+                            <button id="btn-remove-logo" class="hidden text-xs text-red-500 hover:text-red-700 font-bold">Remover</button>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Coluna Direita: Alertas Rápidos -->
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col">
-                    <div class="p-6 border-b border-slate-100 bg-red-50/30 rounded-t-2xl">
-                        <h3 class="font-bold text-slate-800 flex items-center gap-2 text-red-600">
-                            <i data-lucide="bell-ring" class="w-5 h-5"></i>
-                            Alertas de Reposição
-                        </h3>
+                <!-- Upload de Louros/Folhas -->
+                <div class="bg-gray-50 p-4 rounded-lg border border-dashed border-gray-300">
+                    <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                        <i data-lucide="leaf" class="w-4 h-4"></i>
+                        Imagem dos Louros (Fundo)
+                    </label>
+                    <div class="flex flex-col gap-2">
+                        <label class="cursor-pointer bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-md shadow-sm text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
+                            <i data-lucide="upload" class="w-4 h-4"></i>
+                            Carregar Folhas (PNG, JPG, SVG)
+                            <input type="file" id="input-leaves" accept="image/*,.svg" class="hidden">
+                        </label>
+                        <div class="flex justify-between items-center">
+                            <span id="leaves-status" class="text-xs text-gray-500">Padrão (Desenhado)</span>
+                            <button id="btn-remove-leaves" class="hidden text-xs text-red-500 hover:text-red-700 font-bold">Remover</button>
+                        </div>
                     </div>
+                </div>
+
+                <!-- Campos de Texto -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nome do Fornecedor</label>
+                    <div class="relative">
+                        <i data-lucide="type" class="absolute left-3 top-2.5 h-4 w-4 text-gray-400"></i>
+                        <input type="text" id="input-company" class="pl-10 w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Data</label>
+                    <div class="relative">
+                        <i data-lucide="calendar" class="absolute left-3 top-2.5 h-4 w-4 text-gray-400"></i>
+                        <input type="text" id="input-date" class="pl-10 w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nome (Assinatura 1)</label>
+                    <input type="text" id="input-signer1" placeholder="Ex: Dr. Fulano de Tal" class="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-green-500 outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nome (Assinatura 2)</label>
+                    <input type="text" id="input-signer2" placeholder="Ex: Sra. Beltrana" class="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-green-500 outline-none">
+                </div>
+            </div>
+
+            <!-- Botão de Imprimir -->
+            <div class="mt-6 flex flex-col gap-2">
+                <button onclick="handlePrint()" class="w-full bg-[#00995D] hover:bg-[#007f4d] text-white font-bold py-3 px-4 rounded flex items-center justify-center gap-2 transition-colors shadow-lg transform active:scale-95">
+                    <i data-lucide="printer" class="w-6 h-6"></i>
+                    Abrir Janela de Impressão (Modo Perfeito)
+                </button>
+                <p class="text-xs text-gray-500 text-center">
+                    Isso abrirá uma janela limpa e acionará a impressora do sistema. Assegure-se de salvar suas alterações automaticamente.
+                </p>
+            </div>
+        </div>
+
+        <!-- === ÁREA DO CERTIFICADO (PREVIEW) === -->
+        <div id="certificate-area" class="relative w-[297mm] h-[210mm] bg-white shadow-2xl overflow-hidden text-[#005C3B] flex flex-col mx-auto shrink-0">
+            
+            <!-- Fundo Moderno e Profissional (SVG) -->
+            <div class="absolute inset-0 z-0 pointer-events-none">
+                <svg viewBox="0 0 297 210" preserveAspectRatio="none" class="w-full h-full">
+                    <defs>
+                        <linearGradient id="grad-main" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#005C3B;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#00995D;stop-opacity:1" />
+                        </linearGradient>
+                        <linearGradient id="grad-light" x1="0%" y1="100%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#8BC34A;stop-opacity:0.2" />
+                            <stop offset="100%" style="stop-color:#DCEDC8;stop-opacity:0.05" />
+                        </linearGradient>
+                    </defs>
+
+                    <rect width="297" height="210" fill="#FAFAFA" />
                     
-                    <div id="alert-section-container" class="flex-1 p-0 overflow-hidden relative min-h-[300px]">
-                        <!-- Se vazio -->
-                        <div id="alert-empty-state" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400">
-                            <div class="bg-slate-50 p-4 rounded-full mb-3">
-                                <i data-lucide="check-circle-2" class="w-8 h-8 text-green-500"></i>
-                            </div>
-                            <p class="text-sm font-medium">Estoque Saudável</p>
-                        </div>
+                    <!-- MOLDURA LATERAL ESQUERDA -->
+                    <path d="M0,0 L70,0 Q30,105 70,210 L0,210 Z" fill="url(#grad-light)" />
+                    <path d="M0,0 L45,0 Q10,105 45,210 L0,210 Z" fill="#00995D" opacity="0.9" />
+                    <path d="M0,0 L30,0 Q-5,105 30,210 L0,210 Z" fill="#005C3B" />
 
-                        <!-- Lista -->
-                        <div id="alert-list-content" class="hidden overflow-y-auto max-h-[400px]">
-                            <!-- Lista JS -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+                    <!-- MOLDURA LATERAL DIREITA -->
+                    <path d="M297,0 L227,0 Q267,105 227,210 L297,210 Z" fill="url(#grad-light)" />
+                    <path d="M297,0 L252,0 Q287,105 252,210 L297,210 Z" fill="#00995D" opacity="0.9" />
+                    <path d="M297,0 L267,0 Q302,105 267,210 L297,210 Z" fill="#005C3B" />
 
-        <!-- CATEGORIAS -->
-        <div id="view-categories" class="tab-content max-w-5xl mx-auto space-y-6">
-            <h2 class="text-2xl font-bold text-slate-800">Gerenciar Categorias</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 h-fit">
-                    <h3 class="font-bold mb-4 text-slate-700 flex items-center gap-2"><i data-lucide="plus-circle" class="text-blue-500"></i> Nova Categoria</h3>
-                    <form id="form-add-category" class="space-y-4">
-                        <input type="text" id="cat-name" required class="w-full border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" placeholder="Ex: Informática">
-                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition-all text-sm">Adicionar Categoria</button>
-                    </form>
-                </div>
-                <div class="md:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
-                    <div class="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-                        <span class="font-bold text-slate-600 text-sm">Categorias Ativas</span>
-                        <span id="cat-count" class="text-xs bg-white border border-slate-200 text-slate-600 px-2 py-1 rounded-md font-bold shadow-sm">0</span>
-                    </div>
-                    <ul id="categories-list" class="divide-y divide-slate-100 max-h-[500px] overflow-y-auto"></ul>
-                </div>
-            </div>
-        </div>
-
-        <!-- ESTOQUE (INVENTORY) -->
-        <div id="view-inventory" class="tab-content max-w-6xl mx-auto space-y-6">
-            <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-                <h2 class="text-2xl font-bold text-slate-800">Gerenciar Materiais</h2>
-                <div class="flex gap-2 w-full md:w-auto bg-white p-1 rounded-lg border border-slate-200 shadow-sm">
-                    <div class="flex items-center px-3 gap-2 border-r border-slate-100 w-full">
-                        <i data-lucide="search" class="w-4 h-4 text-slate-400"></i>
-                        <input type="text" id="search-term" placeholder="Buscar material..." class="w-full py-2 bg-transparent outline-none text-sm" onkeyup="renderInventory()">
-                    </div>
-                    <select id="filter-category" class="bg-transparent text-sm font-medium text-slate-600 outline-none px-3 cursor-pointer hover:text-blue-600" onchange="renderInventory()"><option value="Todos">Todas</option></select>
-                </div>
-            </div>
-
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="font-bold text-slate-700 flex items-center gap-2"><i data-lucide="package-plus" class="text-blue-500"></i> Cadastrar Novo</h3>
-                </div>
-                <form id="form-add-item" class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-                    <div class="md:col-span-4">
-                        <label class="block text-xs font-bold text-slate-500 mb-1 ml-1">Nome do Material</label>
-                        <input type="text" id="new-name" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex: Papel A4">
-                    </div>
-                    <div class="md:col-span-3">
-                        <label class="block text-xs font-bold text-slate-500 mb-1 ml-1">Categoria</label>
-                        <select id="new-category" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white"></select>
-                    </div>
-                    <div class="md:col-span-3 grid grid-cols-2 gap-2">
-                        <div><label class="block text-xs font-bold text-slate-500 mb-1 ml-1">Qtd Inicial</label><input type="number" id="new-quantity" min="0" value="0" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"></div>
-                        <div><label class="block text-xs font-bold text-slate-500 mb-1 ml-1">Mínimo</label><input type="number" id="new-min" min="0" value="5" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"></div>
-                    </div>
-                    <div class="md:col-span-2">
-                        <label class="block text-xs font-bold text-slate-500 mb-1 ml-1">Unidade</label>
-                        <select id="new-unit" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white"></select>
-                    </div>
+                    <!-- Detalhes Geométricos -->
+                    <path d="M0,0 L120,0 L0,120 Z" fill="url(#grad-main)" opacity="0.03" />
+                    <path d="M297,210 L177,210 L297,90 Z" fill="url(#grad-main)" opacity="0.03" />
                     
-                    <div class="md:col-span-12 flex justify-end gap-3 mt-2 border-t border-slate-50 pt-4">
-                         <button type="button" onclick="clearForm()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-lg flex items-center gap-2 transition-colors text-sm" title="Limpar">
-                            <i data-lucide="eraser" class="w-4 h-4"></i> Limpar
-                        </button>
-                         <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg flex items-center gap-2 shadow-md hover:shadow-lg transition-all text-sm">
-                            <i data-lucide="save" class="w-4 h-4"></i> Salvar Material
-                        </button>
-                    </div>
-                </form>
+                    <rect x="15" y="15" width="267" height="180" rx="2" fill="none" stroke="#005C3B" stroke-width="0.3" opacity="0.4" />
+                </svg>
             </div>
 
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead class="bg-slate-50 text-slate-500 text-xs uppercase font-bold tracking-wider">
-                            <tr><th class="p-4 border-b border-slate-100">Material</th><th class="p-4 border-b border-slate-100">Categoria</th><th class="p-4 text-center border-b border-slate-100">Estoque</th><th class="p-4 text-center border-b border-slate-100">Status</th><th class="p-4 text-center border-b border-slate-100">Ações</th></tr>
-                        </thead>
-                        <tbody id="inventory-list" class="divide-y divide-slate-100 text-sm"></tbody>
-                    </table>
+            <!-- Conteúdo -->
+            <div class="relative z-10 flex flex-col items-center w-full h-full pt-12 pb-8 px-20">
+                
+                <!-- Logo Area -->
+                <div class="mb-2 h-20 flex items-center justify-center" id="logo-container">
+                    <!-- Conteúdo dinâmico da logo será inserido aqui pelo JS -->
                 </div>
-            </div>
-        </div>
 
-        <!-- MOVIMENTAÇÃO -->
-        <div id="view-movement" class="tab-content max-w-2xl mx-auto space-y-6">
-            <h2 class="text-2xl font-bold text-slate-800">Registrar Movimentação</h2>
-            <div class="bg-white p-8 rounded-2xl shadow-lg border border-slate-100">
-                <form id="form-movement" class="space-y-6">
-                    <div class="grid grid-cols-2 gap-4 p-1 bg-slate-50 rounded-xl border border-slate-200">
-                        <div id="btn-type-out" onclick="setMovementType('out')" class="cursor-pointer py-3 px-4 rounded-lg flex flex-col items-center gap-1 transition-all shadow-sm bg-white border border-slate-100 text-red-600 ring-1 ring-red-100">
-                            <i data-lucide="trending-down" class="w-6 h-6"></i><span class="font-bold text-sm">Saída</span>
-                        </div>
-                        <div id="btn-type-in" onclick="setMovementType('in')" class="cursor-pointer py-3 px-4 rounded-lg flex flex-col items-center gap-1 transition-all text-slate-400 hover:text-slate-600 hover:bg-white/50">
-                            <i data-lucide="trending-up" class="w-6 h-6"></i><span class="font-bold text-sm">Entrada</span>
-                        </div>
-                    </div>
-                    <input type="hidden" id="move-type" value="out">
+                <!-- Cabeçalhos -->
+                <div class="text-center mb-6">
+                    <h2 class="text-lg font-bold text-[#2c3e50] uppercase tracking-wide">Hospital Unimed Tatuí</h2>
+                    <h3 class="text-base font-bold text-[#004d32] uppercase tracking-wide">Programa de Monitoramento de Fornecedores Críticos</h3>
+                </div>
+
+                <!-- Título Principal -->
+                <h1 class="text-4xl font-black text-[#005C3B] uppercase tracking-tight mb-8 text-center drop-shadow-sm">
+                    Certificado de Desempenho Excelente
+                </h1>
+
+                <!-- Conjunto do Selo (Escudo + Louros + Faixa) -->
+                <div class="relative mb-8 w-80 h-64 flex items-center justify-center">
                     
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 mb-1 ml-1 uppercase">Material</label>
-                            <div class="relative">
-                                <select id="move-item" required class="w-full p-3 pl-10 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 bg-white appearance-none transition-shadow" onchange="updateUnitLabel()"><option value="">Selecione...</option></select>
-                                <i data-lucide="search" class="absolute left-3 top-3.5 text-slate-400 w-4 h-4"></i>
-                            </div>
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-xs font-bold text-slate-500 mb-1 ml-1 uppercase">Quantidade</label>
-                                <input type="number" id="move-qty" min="1" required class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-shadow">
-                                <p id="move-unit-label" class="text-xs text-slate-400 mt-1 text-right h-4"></p>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-slate-500 mb-1 ml-1 uppercase">Observação / Quem</label>
-                                <input type="text" id="move-reason" placeholder="Ex: João (Limpeza)" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-shadow">
-                            </div>
+                    <!-- CONTAINER DOS LOUROS -->
+                    <div id="leaves-container" class="absolute w-full h-full flex items-center justify-center z-0">
+                        <!-- O conteúdo aqui será trocado dinamicamente pelo JS -->
+                    </div>
+
+                    <!-- Escudo Central -->
+                    <div class="relative z-10 w-20 h-24 drop-shadow-xl transform translate-y-[-12px]">
+                        <svg viewBox="0 0 100 120" class="w-full h-full">
+                            <path d="M50 2 L98 25 V50 C98 90 50 118 50 118 C50 118 2 90 2 50 V25 L50 2Z" fill="#005C3B" stroke="#D4AF37" stroke-width="4"></path>
+                            <path d="M50 5 L93 27 V50 C93 85 50 110 50 110 C50 110 7 85 7 50 V27 Z" fill="#006940" opacity="0.8"></path>
+                        </svg>
+                        <div class="absolute inset-0 flex items-center justify-center text-white pb-2">
+                            <i data-lucide="check" class="w-12 h-12 stroke-[5]"></i>
                         </div>
                     </div>
 
-                    <button type="submit" id="btn-move-submit" class="w-full py-4 rounded-xl text-white font-bold text-lg bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 shadow-lg shadow-red-500/30 transition-all hover:scale-[1.01] active:scale-[0.99]">
-                        Confirmar Saída
-                    </button>
-                </form>
-            </div>
-        </div>
-
-        <!-- HISTÓRICO -->
-        <div id="view-history" class="tab-content max-w-6xl mx-auto space-y-6">
-            <h2 class="text-2xl font-bold text-slate-800">Histórico de Movimentações</h2>
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead class="bg-slate-50 text-slate-500 text-xs uppercase font-bold tracking-wider">
-                            <tr><th class="p-4 border-b border-slate-100">Data</th><th class="p-4 border-b border-slate-100">Tipo</th><th class="p-4 border-b border-slate-100">Material</th><th class="p-4 border-b border-slate-100">Qtd</th><th class="p-4 border-b border-slate-100">Obs</th><th class="p-4 text-center border-b border-slate-100">Ações</th></tr>
-                        </thead>
-                        <tbody id="history-list" class="divide-y divide-slate-100 text-sm"></tbody>
-                    </table>
+                    <!-- Faixa Inferior -->
+                    <div class="absolute -bottom-10 z-20 w-52">
+                        <div class="relative bg-white border-2 border-[#D4AF37] py-1.5 shadow-lg rounded-sm">
+                            <div class="absolute top-1 -left-2 w-4 h-6 bg-[#B08D28] transform skew-y-[20deg] -z-10"></div>
+                            <div class="absolute top-1 -right-2 w-4 h-6 bg-[#B08D28] transform -skew-y-[20deg] -z-10"></div>
+                            
+                            <div class="text-[11px] font-bold text-[#005C3B] text-center leading-tight uppercase font-sans tracking-wide">
+                                Classificação Máxima<br/>
+                                <span class="text-[10px]">(>95 Pontos)</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- Texto do Corpo -->
+                <div class="max-w-4xl text-center text-lg text-gray-800 leading-relaxed mb-auto px-4 mt-12 relative z-20">
+                    <p>
+                        Certificamos que a empresa parceira, 
+                        <span class="font-bold text-black uppercase"> [ <span id="text-company">NOME DO FORNECEDOR AQUI</span> ] </span>, 
+                        atingiu a classificação <span class="font-bold text-[#005C3B]">EXCELENTE</span> na avaliação de desempenho, demonstrando alto compromisso com os pilares de Qualidade, Segurança e Produtividade exigidos pelo Hospital Unimed Tatuí.
+                    </p>
+                </div>
+
+                <!-- Rodapé Assinaturas -->
+                <div class="w-full flex justify-between items-end px-4 pb-12 mt-8 relative z-20">
+                    <div class="text-left w-1/4">
+                        <p class="text-lg text-gray-800 font-medium">Tatuí, [ <span id="text-date"></span> ]</p>
+                    </div>
+
+                    <!-- Assinatura 1 -->
+                    <div class="flex flex-col items-center w-1/3">
+                        <div class="w-full border-t border-gray-800 mb-2"></div>
+                        <p class="text-lg font-medium text-gray-900" id="text-signer1">Nome do Responsável</p>
+                        <p class="text-xs font-bold text-[#005C3B] mt-0.5 uppercase tracking-wide">Gestão de Suprimentos</p>
+                    </div>
+
+                    <!-- Assinatura 2 -->
+                    <div class="flex flex-col items-center w-1/3">
+                        <div class="w-full border-t border-gray-800 mb-2"></div>
+                        <p class="text-lg font-medium text-gray-900" id="text-signer2">Nome do Responsável</p>
+                        <p class="text-xs font-bold text-[#005C3B] mt-0.5 uppercase tracking-wide">Diretoria Administrativa</p>
+                    </div>
+                </div>
+
             </div>
         </div>
+    </div>
 
-    </main>
-
+    <!-- JavaScript (Lógica) -->
     <script>
-        // --- DADOS ---
-        const UNIT_TYPES = ["unidade", "caixa", "kg", "litro", "pacote", "resma", "m", "par"];
-        const DEFAULT_CATEGORIES = ["Limpeza", "Gráfico", "Descartáveis", "Escritório", "Ferramentas", "TI"];
-        
-        // Inicialização segura dos dados
-        let items = [];
-        let transactions = [];
-        let categories = [];
+        lucide.createIcons();
 
-        // --- INICIALIZAÇÃO ---
-        document.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
-            loadDataFromStorage();
-            populateSelects();
-            
-            // Define data atual no filtro
-            const today = new Date();
-            const yyyy = today.getFullYear();
-            const mm = String(today.getMonth() + 1).padStart(2, '0');
-            const dateFilter = document.getElementById('dash-month-filter');
-            if(dateFilter) dateFilter.value = `${yyyy}-${mm}`;
+        // === LÓGICA DE LOGIN ===
+        const CORRECT_PIN = "1234"; // PIN CONFIGURADO AQUI
 
-            renderAll();
-        });
+        function checkPin() {
+            const input = document.getElementById('pin-input');
+            const errorMsg = document.getElementById('error-msg');
+            const loginScreen = document.getElementById('login-screen');
+            const appContent = document.getElementById('app-content');
 
-        // --- STORAGE SYSTEM (PERSISTÊNCIA) ---
-        function loadDataFromStorage() {
-            try {
-                const storedItems = localStorage.getItem('stock_items');
-                const storedTrans = localStorage.getItem('stock_transactions');
-                const storedCats = localStorage.getItem('stock_categories');
-
-                items = storedItems ? JSON.parse(storedItems) : [];
-                transactions = storedTrans ? JSON.parse(storedTrans) : [];
-                categories = storedCats ? JSON.parse(storedCats) : DEFAULT_CATEGORIES;
-            } catch (e) {
-                console.error("Erro ao carregar dados:", e);
-                showToast("Erro ao carregar dados locais", 'error');
+            if (input.value === CORRECT_PIN) {
+                // Sucesso
+                loginScreen.classList.add('hidden-app');
+                appContent.classList.remove('hidden-app');
+                appContent.classList.add('flex'); // Restaura o flex do container
+                sessionStorage.setItem('unimed_auth', 'true'); // Opcional: manter logado na sessão
+            } else {
+                // Erro
+                errorMsg.classList.remove('hidden');
+                input.value = '';
+                input.focus();
             }
+        }
+
+        function handleEnter(e) {
+            if (e.key === 'Enter') {
+                checkPin();
+            }
+        }
+
+        function logout() {
+            sessionStorage.removeItem('unimed_auth');
+            location.reload();
+        }
+
+        // Verifica sessão ao carregar (opcional)
+        if (sessionStorage.getItem('unimed_auth') === 'true') {
+            document.getElementById('login-screen').classList.add('hidden-app');
+            const appContent = document.getElementById('app-content');
+            appContent.classList.remove('hidden-app');
+            appContent.classList.add('flex');
+        } else {
+            document.getElementById('pin-input').focus();
+        }
+
+        // === LÓGICA DO APP ===
+        const defaultData = {
+            companyName: "NOME DO FORNECEDOR AQUI",
+            date: new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' }),
+            signer1: "", 
+            signer2: "", 
+            logo: null,
+            leaves: null
+        };
+
+        const els = {
+            inputCompany: document.getElementById('input-company'),
+            inputDate: document.getElementById('input-date'),
+            inputSigner1: document.getElementById('input-signer1'),
+            inputSigner2: document.getElementById('input-signer2'),
+            inputLogo: document.getElementById('input-logo'),
+            inputLeaves: document.getElementById('input-leaves'),
+            
+            textCompany: document.getElementById('text-company'),
+            textDate: document.getElementById('text-date'),
+            textSigner1: document.getElementById('text-signer1'),
+            textSigner2: document.getElementById('text-signer2'),
+            
+            logoContainer: document.getElementById('logo-container'),
+            leavesContainer: document.getElementById('leaves-container'),
+            logoStatus: document.getElementById('logo-status'),
+            leavesStatus: document.getElementById('leaves-status'),
+            btnRemoveLogo: document.getElementById('btn-remove-logo'),
+            btnRemoveLeaves: document.getElementById('btn-remove-leaves')
+        };
+
+        let appData = { ...defaultData };
+
+        const defaultLeavesSVG = `
+            <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-md z-0" style="transform: scale(1.4);">
+                <defs>
+                    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#DCE775;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#827717;stop-opacity:1" />
+                    </linearGradient>
+                    <path id="pointed-leaf" d="M0,0 Q6,-3 12,0 Q6,3 0,0 Z" />
+                    <g id="laurel-branch-aligned">
+                        <path d="M100,165 Q15,90 100,15" fill="none" stroke="url(#goldGradient)" stroke-width="2.5" stroke-linecap="round" />
+                        <g transform="translate(90, 158) rotate(-25) scale(1.2)"> <use href="#pointed-leaf" /> </g>
+                        <g transform="translate(90, 158) rotate(-155) scale(1.2)"> <use href="#pointed-leaf" /> </g>
+                        <g transform="translate(78, 145) rotate(-35) scale(1.2)"> <use href="#pointed-leaf" /> </g>
+                        <g transform="translate(78, 145) rotate(-165) scale(1.2)"> <use href="#pointed-leaf" /> </g>
+                        <g transform="translate(68, 130) rotate(-45) scale(1.2)"> <use href="#pointed-leaf" /> </g>
+                        <g transform="translate(68, 130) rotate(-175) scale(1.2)"> <use href="#pointed-leaf" /> </g>
+                        <g transform="translate(60, 115) rotate(-55) scale(1.2)"> <use href="#pointed-leaf" /> </g>
+                        <g transform="translate(60, 115) rotate(-185) scale(1.2)"> <use href="#pointed-leaf" /> </g>
+                        <g transform="translate(56, 100) rotate(-65) scale(1.2)"> <use href="#pointed-leaf" /> </g>
+                        <g transform="translate(56, 100) rotate(-195) scale(1.2)"> <use href="#pointed-leaf" /> </g>
+                        <g transform="translate(55, 85) rotate(-75) scale(1.2)"> <use href="#pointed-leaf" /> </g>
+                        <g transform="translate(55, 85) rotate(-205) scale(1.2)"> <use href="#pointed-leaf" /> </g>
+                        <g transform="translate(59, 70) rotate(-85) scale(1.2)"> <use href="#pointed-leaf" /> </g>
+                        <g transform="translate(59, 70) rotate(-215) scale(1.2)"> <use href="#pointed-leaf" /> </g>
+                        <g transform="translate(66, 56) rotate(-95) scale(1.2)"> <use href="#pointed-leaf" /> </g>
+                        <g transform="translate(66, 56) rotate(-225) scale(1.2)"> <use href="#pointed-leaf" /> </g>
+                        <g transform="translate(77, 43) rotate(-105) scale(1.2)"> <use href="#pointed-leaf" /> </g>
+                        <g transform="translate(77, 43) rotate(-235) scale(1.2)"> <use href="#pointed-leaf" /> </g>
+                        <g transform="translate(90, 32) rotate(-115) scale(1.2)"> <use href="#pointed-leaf" /> </g>
+                        <g transform="translate(90, 32) rotate(-245) scale(1.2)"> <use href="#pointed-leaf" /> </g>
+                    </g>
+                </defs>
+                <g fill="url(#goldGradient)" stroke="none">
+                    <use href="#laurel-branch-aligned" />
+                    <g transform="translate(200, 0) scale(-1, 1)">
+                        <use href="#laurel-branch-aligned" />
+                    </g>
+                </g>
+            </svg>
+        `;
+
+        function loadData() {
+            const savedData = localStorage.getItem('unimed_cert_data');
+            if (savedData) {
+                try {
+                    const parsed = JSON.parse(savedData);
+                    appData = { ...defaultData, ...parsed };
+                } catch (e) { console.error(e); }
+            }
+            updateUI();
         }
 
         function saveData() {
-            try {
-                localStorage.setItem('stock_items', JSON.stringify(items));
-                localStorage.setItem('stock_transactions', JSON.stringify(transactions));
-                localStorage.setItem('stock_categories', JSON.stringify(categories));
-            } catch (e) {
-                console.error("Erro ao salvar:", e);
-                if (e.name === 'QuotaExceededError') {
-                    showToast("Memória cheia! Exporte um backup.", 'error');
-                }
-            }
-            renderAll();
+            localStorage.setItem('unimed_cert_data', JSON.stringify(appData));
         }
 
-        // --- SISTEMA DE UI ---
-        let pendingDeleteAction = null; 
+        function updateUI() {
+            els.inputCompany.value = appData.companyName;
+            els.inputDate.value = appData.date;
+            els.inputSigner1.value = appData.signer1;
+            els.inputSigner2.value = appData.signer2;
 
-        function showToast(msg, type = 'success') {
-            const toast = document.getElementById('toast');
-            const title = document.getElementById('toast-title');
-            const message = document.getElementById('toast-message');
-            const iconBg = document.getElementById('toast-icon-bg');
-            const icon = document.getElementById('toast-icon');
+            els.textCompany.innerText = appData.companyName;
+            els.textDate.innerText = appData.date;
+            els.textSigner1.innerText = appData.signer1 || " "; 
+            els.textSigner2.innerText = appData.signer2 || " ";
 
-            message.innerText = msg;
-            
-            if(type === 'error') {
-                title.innerText = 'Erro/Aviso';
-                iconBg.className = 'p-2 rounded-full bg-red-500/20 text-red-400';
-                icon.setAttribute('data-lucide', 'alert-circle');
+            renderLogo();
+            renderLeaves();
+        }
+
+        function renderLogo() {
+            if (appData.logo) {
+                els.logoContainer.innerHTML = `<img src="${appData.logo}" alt="Logo Unimed" class="h-full object-contain">`;
+                els.logoStatus.innerText = "Carregada";
+                els.logoStatus.className = "text-xs text-green-600 font-semibold";
+                els.btnRemoveLogo.classList.remove('hidden');
             } else {
-                title.innerText = 'Sucesso';
-                iconBg.className = 'p-2 rounded-full bg-green-500/20 text-green-400';
-                icon.setAttribute('data-lucide', 'check');
-            }
-            lucide.createIcons();
-
-            toast.classList.remove('translate-x-full', 'opacity-0');
-            setTimeout(() => toast.classList.add('translate-x-full', 'opacity-0'), 3000);
-        }
-
-        function openConfirmModal(message, confirmCallback) {
-            document.getElementById('modal-message').innerText = message;
-            document.getElementById('modal-overlay').classList.remove('hidden');
-            pendingDeleteAction = confirmCallback;
-        }
-
-        function closeModal() {
-            document.getElementById('modal-overlay').classList.add('hidden');
-            pendingDeleteAction = null;
-        }
-
-        document.getElementById('modal-confirm-btn').addEventListener('click', () => {
-            if (pendingDeleteAction) pendingDeleteAction();
-            closeModal();
-        });
-
-        function renderAll() {
-            renderDashboard();
-            renderInventory();
-            renderHistory();
-            renderCategories();
-            updateMovementSelect();
-            lucide.createIcons();
-        }
-
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(el => {
-                el.classList.remove('active', 'bg-blue-600', 'text-white', 'shadow-md', 'bg-slate-800');
-                el.classList.remove('text-slate-300');
-                el.classList.add('text-slate-300', 'hover:bg-slate-800');
-            });
-            
-            document.getElementById(`view-${tabId}`).classList.add('active');
-            const btn = document.getElementById(`nav-${tabId}`);
-            if(btn) {
-                btn.classList.add('active');
-                btn.classList.remove('text-slate-300', 'hover:bg-slate-800');
-            }
-            renderAll();
-        }
-
-        // --- POPULATE & RENDERS ---
-        function populateSelects() {
-            const catOptions = categories.map(c => `<option value="${c}">${c}</option>`).join('');
-            const newCatSelect = document.getElementById('new-category');
-            if(newCatSelect) newCatSelect.innerHTML = catOptions;
-            
-            const currentFilter = document.getElementById('filter-category');
-            if(currentFilter) {
-                const val = currentFilter.value;
-                currentFilter.innerHTML = '<option value="Todos">Todas</option>' + catOptions;
-                currentFilter.value = val;
-            }
-
-            const unitSelect = document.getElementById('new-unit');
-            if(unitSelect) unitSelect.innerHTML = UNIT_TYPES.map(u => `<option value="${u}">${u}</option>`).join('');
-        }
-
-        function renderDashboard() {
-            const lowStock = items.filter(i => i.quantity <= i.minStock);
-            
-            // Lógica do Filtro de Mês (CALENDAR INPUT)
-            const filterVal = document.getElementById('dash-month-filter').value;
-            
-            let periodTransactions = [];
-            if (filterVal) {
-                const [yearStr, monthStr] = filterVal.split('-');
-                const filterYear = parseInt(yearStr);
-                const filterMonth = parseInt(monthStr) - 1; 
-
-                periodTransactions = transactions.filter(t => {
-                    const d = new Date(t.date);
-                    return d.getFullYear() === filterYear && d.getMonth() === filterMonth && t.type === 'out';
-                });
-            }
-            
-            const monthConsumption = periodTransactions.length; 
-            
-            document.getElementById('dash-total-items').innerText = items.length;
-            document.getElementById('dash-low-stock').innerText = lowStock.length;
-            document.getElementById('dash-consumption').innerText = monthConsumption;
-
-            // RENDERIZADOR DE ALERTAS
-            const alertEmpty = document.getElementById('alert-empty-state');
-            const alertList = document.getElementById('alert-list-content');
-            
-            if(lowStock.length > 0) {
-                alertEmpty.classList.add('hidden');
-                alertList.classList.remove('hidden');
-                alertList.innerHTML = lowStock.map(i => `
-                    <div class="flex items-center justify-between p-4 border-b border-slate-50 hover:bg-red-50/20 transition-colors">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-600 flex-shrink-0">
-                                <i data-lucide="arrow-down" class="w-4 h-4"></i>
-                            </div>
-                            <div>
-                                <p class="font-bold text-slate-800 text-sm">${i.name}</p>
-                                <p class="text-xs text-slate-500">${i.category}</p>
-                            </div>
+                els.logoContainer.innerHTML = `
+                    <div class="bg-[#00995D] rounded-lg p-2 px-6 flex flex-col items-center">
+                        <div class="flex items-center gap-2">
+                            <span class="text-white text-4xl font-black tracking-tighter font-sans" style="font-family: Arial, sans-serif;">Unimed</span>
+                            <svg width="30" height="30" viewBox="0 0 100 100" fill="none">
+                                <path d="M50 0 L15 60 H40 V100 H60 V60 H85 L50 0Z" fill="white" />
+                                <path d="M25 60 L15 60 L50 0 L85 60 L75 60 L50 18 L25 60Z" fill="#00995D" />
+                            </svg>
                         </div>
-                        <div class="text-right">
-                             <p class="font-bold text-red-600 text-sm">${i.quantity} ${i.unit}</p>
-                             <p class="text-[10px] text-slate-400 font-medium">Mín: ${i.minStock}</p>
-                        </div>
+                        <span class="text-white text-xs font-bold self-end mr-1 -mt-1">Tatuí</span>
                     </div>
-                `).join('');
-            } else {
-                alertEmpty.classList.remove('hidden');
-                alertList.classList.add('hidden');
-            }
-
-            // RENDERIZADOR DE BARRAS (STATS)
-            const stats = {};
-            categories.forEach(c => stats[c] = 0);
-            periodTransactions.forEach(t => {
-                 stats[t.itemCategory] = (stats[t.itemCategory] || 0) + 1;
-            });
-
-            const sortedCats = Object.entries(stats)
-                .sort(([,a], [,b]) => b - a)
-                .filter(([,val]) => val > 0 || categories.includes(arguments[0])); 
-            
-            const totalMovs = periodTransactions.length;
-            
-            const barsContainer = document.getElementById('category-bars-container');
-            if(totalMovs === 0) {
-                 barsContainer.innerHTML = `<div class="text-center py-8 text-slate-400 text-sm">Sem dados para este período</div>`;
-            } else {
-                barsContainer.innerHTML = sortedCats.slice(0, 5).map(([cat, val]) => {
-                    const pct = totalMovs > 0 ? (val / totalMovs) * 100 : 0;
-                    return `
-                    <div class="group">
-                        <div class="flex justify-between items-end mb-1">
-                            <span class="text-sm font-medium text-slate-600">${cat}</span>
-                            <span class="text-xs font-bold text-slate-800">${val} <span class="text-slate-400 font-normal">movs</span></span>
-                        </div>
-                        <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
-                            <div class="bg-blue-500 h-2.5 rounded-full progress-bar-fill group-hover:bg-blue-600" style="width: ${pct}%"></div>
-                        </div>
-                    </div>
-                    `;
-                }).join('');
+                `;
+                els.logoStatus.innerText = "Padrão";
+                els.logoStatus.className = "text-xs text-gray-500";
+                els.btnRemoveLogo.classList.add('hidden');
             }
         }
 
-        function renderInventory() {
-            const term = document.getElementById('search-term').value.toLowerCase();
-            const catFilter = document.getElementById('filter-category').value;
-            const tbody = document.getElementById('inventory-list');
-            
-            const filtered = items.filter(i => 
-                i.name.toLowerCase().includes(term) && 
-                (catFilter === 'Todos' || i.category === catFilter)
-            );
-
-            if(filtered.length === 0) return tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-400">Nada encontrado.</td></tr>`;
-
-            tbody.innerHTML = filtered.map(item => {
-                const isLow = item.quantity <= item.minStock;
-                return `
-                <tr class="hover:bg-slate-50 border-b border-slate-50 transition-colors">
-                    <td class="p-4 font-medium text-slate-700">${item.name}</td>
-                    <td class="p-4"><span class="px-2.5 py-1 rounded-md text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">${item.category}</span></td>
-                    <td class="p-4 text-center font-bold text-slate-800">${item.quantity} <span class="text-xs text-slate-400 font-normal">${item.unit}</span></td>
-                    <td class="p-4 text-center">${isLow ? '<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700"><span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span> Baixo</span>' : '<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Ok</span>'}</td>
-                    <td class="p-4 text-center">
-                        <button onclick="requestDeleteItem('${item.id}')" class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Apagar">
-                            <i data-lucide="trash-2" class="w-4 h-4"></i>
-                        </button>
-                    </td>
-                </tr>`;
-            }).join('');
+        function renderLeaves() {
+            if (appData.leaves) {
+                els.leavesContainer.innerHTML = `<img src="${appData.leaves}" class="w-full h-full object-contain transform scale-110" alt="Folhas personalizadas">`;
+                els.leavesStatus.innerText = "Carregada";
+                els.leavesStatus.className = "text-xs text-green-600 font-semibold";
+                els.btnRemoveLeaves.classList.remove('hidden');
+            } else {
+                els.leavesContainer.innerHTML = defaultLeavesSVG;
+                els.leavesStatus.innerText = "Padrão (Desenhado)";
+                els.leavesStatus.className = "text-xs text-gray-500";
+                els.btnRemoveLeaves.classList.add('hidden');
+            }
         }
 
-        function renderCategories() {
-            document.getElementById('cat-count').innerText = categories.length;
-            document.getElementById('categories-list').innerHTML = categories.map((cat, idx) => `
-                <li class="p-4 flex justify-between items-center hover:bg-slate-50 transition-colors group">
-                    <div class="flex items-center gap-3">
-                        <div class="p-2 bg-blue-50 text-blue-500 rounded-lg group-hover:bg-blue-100 transition-colors">
-                            <i data-lucide="tag" class="w-4 h-4"></i>
-                        </div>
-                        <span class="font-medium text-slate-700">${cat}</span>
-                    </div>
-                    <button onclick="requestDeleteCategory(${idx})" class="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                </li>
-            `).join('');
-        }
+        els.inputCompany.addEventListener('input', (e) => { appData.companyName = e.target.value; saveData(); updateUI(); });
+        els.inputDate.addEventListener('input', (e) => { appData.date = e.target.value; saveData(); updateUI(); });
+        els.inputSigner1.addEventListener('input', (e) => { appData.signer1 = e.target.value; saveData(); updateUI(); });
+        els.inputSigner2.addEventListener('input', (e) => { appData.signer2 = e.target.value; saveData(); updateUI(); });
 
-        function renderHistory() {
-            const tbody = document.getElementById('history-list');
-            if(transactions.length === 0) return tbody.innerHTML = `<tr><td colspan="6" class="p-12 text-center text-slate-400 flex flex-col items-center gap-2"><i data-lucide="history" class="w-8 h-8 opacity-50"></i><span>Sem histórico registrado.</span></td></tr>`;
-            
-            tbody.innerHTML = [...transactions].reverse().map(t => {
-                const isEntry = t.type === 'in';
-                const date = new Date(t.date);
-                return `
-                <tr class="hover:bg-slate-50 border-b border-slate-50 transition-colors">
-                    <td class="p-4 text-sm text-slate-500">
-                        <div class="font-medium text-slate-700">${date.toLocaleDateString()}</div>
-                        <div class="text-xs opacity-70">${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
-                    </td>
-                    <td class="p-4">
-                        ${isEntry 
-                            ? '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200"><i data-lucide="arrow-down" class="w-3 h-3"></i> Entrada</span>' 
-                            : '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-red-50 text-red-700 border border-red-100"><i data-lucide="arrow-up" class="w-3 h-3"></i> Saída</span>'}
-                    </td>
-                    <td class="p-4">
-                        <div class="font-medium text-slate-700">${t.itemName}</div>
-                        <div class="text-xs text-slate-400">${t.itemCategory}</div>
-                    </td>
-                    <td class="p-4 font-bold text-slate-800">${t.quantity} <span class="text-xs font-normal text-slate-400">${t.unit}</span></td>
-                    <td class="p-4 text-sm text-slate-500 italic max-w-[200px] truncate" title="${t.reason}">${t.reason}</td>
-                    <td class="p-4 text-center">
-                        <button onclick="requestDeleteTransaction('${t.id}')" class="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                    </td>
-                </tr>`;
-            }).join('');
-        }
-
-        // --- ACTIONS ---
-
-        window.requestDeleteItem = function(id) {
-            openConfirmModal('Tem certeza que deseja apagar este material do estoque?', () => {
-                items = items.filter(i => i.id !== id);
+        els.inputLogo.addEventListener('change', (e) => {
+            handleFileUpload(e.target.files[0], (base64) => {
+                appData.logo = base64;
                 saveData();
-                showToast('Material apagado com sucesso!');
+                updateUI();
             });
-        };
-
-        window.requestDeleteCategory = function(index) {
-            openConfirmModal('Apagar esta categoria? (Itens existentes não serão afetados)', () => {
-                categories.splice(index, 1);
+        });
+        
+        els.inputLeaves.addEventListener('change', (e) => {
+            handleFileUpload(e.target.files[0], (base64) => {
+                appData.leaves = base64;
                 saveData();
-                populateSelects();
-                showToast('Categoria removida!');
+                updateUI();
             });
-        };
-
-        window.requestDeleteTransaction = function(id) {
-            openConfirmModal('Apagar movimentação e reverter o estoque?', () => {
-                const idx = transactions.findIndex(t => t.id === id);
-                if (idx === -1) return;
-                const trans = transactions[idx];
-                const item = items.find(i => i.id === trans.itemId);
-                
-                if (item) {
-                    if (trans.type === 'in') item.quantity = Math.max(0, item.quantity - trans.quantity);
-                    else item.quantity += trans.quantity;
-                }
-                transactions.splice(idx, 1);
-                saveData();
-                showToast('Movimentação desfeita!');
-            });
-        };
-
-        // --- FORMS ---
-        function clearForm() {
-            document.getElementById('new-name').value = '';
-            document.getElementById('new-quantity').value = '0';
-            document.getElementById('new-min').value = '5';
-            showToast('Campos limpos!', 'success');
-        }
-
-        document.getElementById('form-add-item').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const name = document.getElementById('new-name').value;
-            if(!name) return;
-            items.push({
-                id: Date.now().toString(),
-                name,
-                category: document.getElementById('new-category').value,
-                quantity: Number(document.getElementById('new-quantity').value),
-                minStock: Number(document.getElementById('new-min').value),
-                unit: document.getElementById('new-unit').value
-            });
-            saveData();
-            clearForm();
-            showToast('Material cadastrado!');
         });
 
-        document.getElementById('form-add-category').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const val = document.getElementById('cat-name').value.trim();
-            if(val && !categories.includes(val)) {
-                categories.push(val);
-                document.getElementById('cat-name').value = '';
-                saveData();
-                populateSelects();
-                showToast('Categoria adicionada!');
-            }
-        });
+        els.btnRemoveLogo.addEventListener('click', () => { appData.logo = null; els.inputLogo.value=""; saveData(); updateUI(); });
+        els.btnRemoveLeaves.addEventListener('click', () => { appData.leaves = null; els.inputLeaves.value=""; saveData(); updateUI(); });
 
-        document.getElementById('form-movement').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const type = document.getElementById('move-type').value;
-            const itemId = document.getElementById('move-item').value;
-            const qty = Number(document.getElementById('move-qty').value);
-            const reason = document.getElementById('move-reason').value;
+        function handleFileUpload(file, callback) {
+            if (!file) return;
+            if (file.size > 5 * 1024 * 1024) { alert("Arquivo muito grande (>5MB)."); return; }
+            const reader = new FileReader();
+            reader.onload = function(event) { callback(event.target.result); };
+            reader.readAsDataURL(file);
+        }
 
-            if(!itemId || qty <= 0) return showToast('Preencha os dados corretamente.', 'error');
-            const item = items.find(i => i.id === itemId);
-            if(type === 'out' && item.quantity < qty) return showToast('Estoque insuficiente!', 'error');
-
-            item.quantity = type === 'in' ? item.quantity + qty : item.quantity - qty;
-            transactions.push({
-                id: Date.now().toString(),
-                itemId,
-                itemName: item.name,
-                itemCategory: item.category,
-                type,
-                quantity: qty,
-                unit: item.unit,
-                date: new Date().toISOString(),
-                reason: reason || (type === 'in' ? 'Entrada' : 'Consumo')
-            });
-            saveData();
-            document.getElementById('move-qty').value = '';
-            document.getElementById('move-reason').value = '';
-            showToast('Movimentação registrada!');
-        });
-
-        // --- HELPERS UI ---
-        function setMovementType(type) {
-            document.getElementById('move-type').value = type;
-            const btnIn = document.getElementById('btn-type-in');
-            const btnOut = document.getElementById('btn-type-out');
-            const submit = document.getElementById('btn-move-submit');
+        function handlePrint() {
+            const printContent = document.getElementById('certificate-area').innerHTML;
+            const win = window.open('', '', 'height=700,width=1000');
             
-            if(type === 'out') {
-                btnOut.className = "cursor-pointer py-3 px-4 rounded-lg flex flex-col items-center gap-1 transition-all shadow-sm bg-white border border-slate-100 text-red-600 ring-1 ring-red-100";
-                btnIn.className = "cursor-pointer py-3 px-4 rounded-lg flex flex-col items-center gap-1 transition-all text-slate-400 hover:text-slate-600 hover:bg-white/50";
-                
-                submit.className = "w-full py-4 rounded-xl text-white font-bold text-lg bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 shadow-lg shadow-red-500/30 transition-all hover:scale-[1.01] active:scale-[0.99]";
-                submit.innerText = "Confirmar Saída";
-            } else {
-                btnOut.className = "cursor-pointer py-3 px-4 rounded-lg flex flex-col items-center gap-1 transition-all text-slate-400 hover:text-slate-600 hover:bg-white/50";
-                btnIn.className = "cursor-pointer py-3 px-4 rounded-lg flex flex-col items-center gap-1 transition-all shadow-sm bg-white border border-slate-100 text-green-600 ring-1 ring-green-100";
-                
-                submit.className = "w-full py-4 rounded-xl text-white font-bold text-lg bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 shadow-lg shadow-green-500/30 transition-all hover:scale-[1.01] active:scale-[0.99]";
-                submit.innerText = "Confirmar Entrada";
-            }
+            win.document.write('<html><head><title>Imprimir Certificado</title>');
+            win.document.write('<script src="https://cdn.tailwindcss.com"><\/script>');
+            win.document.write(`
+                <style>
+                    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap');
+                    body { font-family: 'Roboto', sans-serif; margin: 0; padding: 0; background: white; }
+                    @page { size: landscape; margin: 0; }
+                    .print-container { 
+                        width: 297mm; 
+                        height: 210mm; 
+                        position: relative; 
+                        overflow: hidden; 
+                        page-break-after: always;
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                    }
+                </style>
+            `);
+            win.document.write('</head><body>');
+            win.document.write('<div class="print-container">');
+            win.document.write(printContent);
+            win.document.write('</div>');
+            win.document.write('</body></html>');
+            win.document.close();
+            win.onload = function() {
+                setTimeout(() => { win.focus(); win.print(); }, 1000);
+            };
         }
-        function updateMovementSelect() {
-            const sel = document.getElementById('move-item');
-            const val = sel.value;
-            sel.innerHTML = '<option value="">Selecione...</option>' + items.map(i => `<option value="${i.id}">${i.name} (Atual: ${i.quantity} ${i.unit})</option>`).join('');
-            sel.value = val;
-            updateUnitLabel();
-        }
-        function updateUnitLabel() {
-            const id = document.getElementById('move-item').value;
-            const item = items.find(i => i.id === id);
-            document.getElementById('move-unit-label').innerText = item ? item.unit : '';
-        }
+
+        loadData();
     </script>
 </body>
 </html>
