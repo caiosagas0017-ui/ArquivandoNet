@@ -50,6 +50,7 @@
             </div>
             <div class="flex items-center gap-3">
                 <div class="flex bg-blue-50 rounded-lg p-1 overflow-x-auto border border-blue-100" id="nav-buttons"></div>
+                <!-- Container para botão de logout -->
                 <div id="logout-container"></div>
             </div>
         </div>
@@ -208,6 +209,28 @@
             }
         }
 
+        function handleChangeDriver(e) {
+            e.preventDefault();
+            const newDriver = e.target.newDriver.value;
+            const box = state.boxes.find(b => b.id === state.modal.boxId);
+            
+            if (box) {
+                const oldDriver = box.driver || 'Nenhum';
+                box.driver = newDriver || null; // Atualiza ou remove se vazio
+                
+                addHistoryLog('Alteração', `Motorista alterado: ${oldDriver} -> ${newDriver || 'Nenhum'}`, box.name);
+                
+                const toast = document.createElement('div');
+                toast.className = 'toast-msg fixed bottom-10 left-0 right-0 mx-auto w-max bg-blue-600 text-white text-xs py-1.5 px-3 rounded-full shadow-lg z-[60]';
+                toast.innerHTML = `<i class="inline w-3 h-3 mr-1" data-lucide="check"></i> Motorista atualizado!`;
+                document.body.appendChild(toast);
+                setTimeout(() => { if(toast.parentNode) toast.parentNode.removeChild(toast); }, 2000);
+
+                closeModal();
+                saveData();
+            }
+        }
+
         function handleDelivery(e) {
             e.preventDefault();
             const form = e.target;
@@ -238,7 +261,7 @@
             if (box) {
                 box.status = 'in_delivery';
                 box.destination = destinationName;
-                box.driver = driverName; // Salva o motorista
+                box.driver = driverName; 
                 box.lastDeliveryDate = form.deliveryDate.value;
                 state.currentUser = form.responsible.value; 
                 addHistoryLog('Saída', `Saiu para entrega em: ${destinationName} (Mot: ${driverName})`, box.name);
@@ -461,7 +484,6 @@
                     <div><div class="label">Destino</div><div class="value">${addressStr}</div></div>
                     <div><div class="label">Data</div><div class="value">${dateStr}</div></div>
                     <div><div class="label">Status</div><div class="value">${box.status==='in_delivery'?'Em Entrega':box.status==='delivered'?'Entregue':'Disponível'}</div></div>
-                    <div><div class="label">Responsável</div><div class="value">${state.currentUser}</div></div>
                     <div><div class="label">Motorista</div><div class="value">${box.driver || '-'}</div></div>
                 </div>
                 ${internal.length > 0 ? `<h2>Conteúdo (${internal.reduce((a,i)=>a+(i.quantity||1),0)})</h2><ul>${renderList(internal)}</ul>` : ''}
@@ -637,9 +659,12 @@
                                 <i data-lucide="map-pin" class="w-4 h-4 text-blue-500 shrink-0"></i>
                                 <span class="truncate">${box.destination || '<span class="text-blue-300 font-normal italic">Não definido</span>'}</span>
                             </div>
-                            <div class="flex items-center gap-2 text-slate-700 font-medium truncate mt-1">
+                            <div class="flex items-center gap-2 text-slate-700 font-medium truncate mt-1 group">
                                 <i data-lucide="user" class="w-4 h-4 text-blue-500 shrink-0"></i>
-                                <span class="truncate text-xs">${box.driver || '<span class="text-blue-300 font-normal italic">Sem motorista</span>'}</span>
+                                <span class="truncate text-xs flex-grow">${box.driver || '<span class="text-blue-300 font-normal italic">Sem motorista</span>'}</span>
+                                <button onclick="openModal('changeDriver', ${box.id})" class="text-blue-300 hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-blue-100" title="Alterar Motorista">
+                                    <i data-lucide="pencil" class="w-3 h-3"></i>
+                                </button>
                             </div>
                         </div>
 
@@ -877,6 +902,22 @@
                         <i data-lucide="plus" class="w-4 h-4"></i> Adicionar Item
                     </button>
                     <p class="text-xs text-center text-slate-400">Janela permanece aberta para mais itens.</p>
+                </form>`;
+            } else if (type === 'changeDriver') {
+                title = `Motorista - ${box.name}`;
+                const driversOpts = state.drivers.map(d => `<option value="${d}" ${box.driver === d ? 'selected' : ''}>${d}</option>`).join('');
+                content = `
+                <form onsubmit="handleChangeDriver(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1 text-slate-700">Selecione o Motorista</label>
+                        <select name="newDriver" class="w-full border border-blue-200 rounded px-3 py-2 bg-white outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Sem motorista</option>
+                            ${driversOpts}
+                        </select>
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 flex items-center justify-center gap-2 shadow-sm">
+                        Salvar Alteração
+                    </button>
                 </form>`;
             } else if (type === 'deliver') {
                 title = `Entrega - ${box.name}`;
