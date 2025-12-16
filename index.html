@@ -237,7 +237,7 @@
                 box.status = 'in_delivery';
                 box.destination = destinationName;
                 box.lastDeliveryDate = form.deliveryDate.value;
-                state.currentUser = form.responsible.value; // Atualiza o usuário atual
+                state.currentUser = form.responsible.value; 
                 
                 addHistoryLog('Saída', `Saiu para entrega em: ${destinationName}`, box.name);
                 closeModal();
@@ -766,7 +766,7 @@
             }
 
             container.innerHTML = `
-            <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-fade-in" onclick="if(event.target===this)closeModal()">
+            <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-fade-in">
                 <div class="bg-white rounded-lg shadow-xl w-full max-w-md animate-zoom-in flex flex-col max-h-[90vh]">
                     <div class="p-4 border-b flex justify-between items-center bg-slate-50 rounded-t-lg">
                         <h3 class="font-bold text-lg text-slate-800">${title}</h3>
