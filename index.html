@@ -3,520 +3,813 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerador de Certificado Unimed</title>
+    <title>Logística Central - Controle de Caixas</title>
     
-    <!-- Tailwind CSS (Estilos) -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Fonte Roboto -->
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
-    
-    <!-- Ícones Lucide -->
+    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
-        body { font-family: 'Roboto', sans-serif; }
+        /* Animações simples */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes zoomIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .animate-fade-in { animation: fadeIn 0.2s ease-out; }
+        .animate-zoom-in { animation: zoomIn 0.2s ease-out; }
         
-        /* Estilos específicos para ocultar elementos na impressão padrão do navegador */
-        @media print {
-            .no-print { display: none !important; }
-            #login-screen { display: none !important; }
-            #app-content { display: flex !important; }
+        /* Toast Notification */
+        @keyframes slideUpFade {
+            0% { opacity: 0; transform: translateY(10px); }
+            10% { opacity: 1; transform: translateY(0); }
+            90% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-10px); }
         }
-
-        /* Classe utilitária para esconder elementos */
-        .hidden-app { display: none !important; }
+        .toast-msg { animation: slideUpFade 2s ease-in-out forwards; }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen">
+<body class="bg-slate-100 font-sans text-slate-900 pb-20">
 
-    <!-- === TELA DE LOGIN (PIN) === -->
-    <div id="login-screen" class="fixed inset-0 bg-[#005C3B] z-50 flex flex-col items-center justify-center p-4">
-        <div class="bg-white rounded-lg shadow-2xl p-8 w-full max-w-md text-center">
-            <div class="mb-6 flex justify-center text-[#00995D]">
-                <i data-lucide="lock" class="w-12 h-12"></i>
-            </div>
-            <h2 class="text-2xl font-bold text-gray-800 mb-2">Acesso Restrito</h2>
-            <p class="text-gray-500 mb-6">Digite o PIN para acessar o gerador de certificados.</p>
-            
-            <div class="space-y-4">
-                <input type="password" id="pin-input" placeholder="PIN" maxlength="4" 
-                    class="w-full text-center text-3xl tracking-[0.5em] font-bold border-2 border-gray-300 rounded-md p-3 focus:border-[#00995D] focus:ring-0 outline-none transition-colors text-gray-700"
-                    onkeypress="handleEnter(event)">
-                
-                <button onclick="checkPin()" class="w-full bg-[#00995D] hover:bg-[#007f4d] text-white font-bold py-3 px-4 rounded transition-colors shadow-lg">
-                    Entrar
-                </button>
-            </div>
-            <p id="error-msg" class="text-red-500 text-sm mt-4 hidden font-medium">PIN Incorreto. Tente novamente.</p>
-        </div>
-        <p class="text-white/50 text-xs mt-8">Unimed Tatuí - Sistema Interno</p>
-    </div>
-
-    <!-- === CONTEÚDO DO APLICATIVO (Inicialmente Oculto) === -->
-    <div id="app-content" class="hidden-app flex-col items-center py-8 min-h-screen w-full">
-
-        <!-- === ÁREA DE CONTROLES (Não aparece na impressão) === -->
-        <div class="w-full max-w-4xl bg-white shadow-md rounded-lg p-6 mb-8 no-print">
-            <div class="flex justify-between items-center mb-4">
-                <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                    <i data-lucide="pen-tool" class="w-6 h-6"></i>
-                    Editar Certificado
-                </h1>
-                <button onclick="logout()" class="text-sm text-red-500 hover:text-red-700 font-medium flex items-center gap-1">
-                    <i data-lucide="log-out" class="w-4 h-4"></i> Sair
-                </button>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Upload de Logo -->
-                <div class="bg-gray-50 p-4 rounded-lg border border-dashed border-gray-300">
-                    <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                        <i data-lucide="image" class="w-4 h-4"></i>
-                        Logo da Unimed
-                    </label>
-                    <div class="flex flex-col gap-2">
-                        <label class="cursor-pointer bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-md shadow-sm text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
-                            <i data-lucide="upload" class="w-4 h-4"></i>
-                            Carregar Logo (PNG, JPG, SVG)
-                            <input type="file" id="input-logo" accept="image/*,.svg" class="hidden">
-                        </label>
-                        <div class="flex justify-between items-center">
-                            <span id="logo-status" class="text-xs text-gray-500">Padrão</span>
-                            <button id="btn-remove-logo" class="hidden text-xs text-red-500 hover:text-red-700 font-bold">Remover</button>
-                        </div>
-                    </div>
+    <!-- Header -->
+    <header class="bg-blue-900 text-white shadow-lg sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-white/10 p-2 rounded-lg">
+                    <i data-lucide="package" class="text-blue-100 w-6 h-6"></i>
                 </div>
-
-                <!-- Upload de Louros/Folhas -->
-                <div class="bg-gray-50 p-4 rounded-lg border border-dashed border-gray-300">
-                    <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                        <i data-lucide="leaf" class="w-4 h-4"></i>
-                        Imagem dos Louros (Fundo)
-                    </label>
-                    <div class="flex flex-col gap-2">
-                        <label class="cursor-pointer bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-md shadow-sm text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
-                            <i data-lucide="upload" class="w-4 h-4"></i>
-                            Carregar Folhas (PNG, JPG, SVG)
-                            <input type="file" id="input-leaves" accept="image/*,.svg" class="hidden">
-                        </label>
-                        <div class="flex justify-between items-center">
-                            <span id="leaves-status" class="text-xs text-gray-500">Padrão (Desenhado)</span>
-                            <button id="btn-remove-leaves" class="hidden text-xs text-red-500 hover:text-red-700 font-bold">Remover</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Campos de Texto -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Nome do Fornecedor</label>
-                    <div class="relative">
-                        <i data-lucide="type" class="absolute left-3 top-2.5 h-4 w-4 text-gray-400"></i>
-                        <input type="text" id="input-company" class="pl-10 w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-green-500 outline-none">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Data</label>
-                    <div class="relative">
-                        <i data-lucide="calendar" class="absolute left-3 top-2.5 h-4 w-4 text-gray-400"></i>
-                        <input type="text" id="input-date" class="pl-10 w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-green-500 outline-none">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Nome (Assinatura 1)</label>
-                    <input type="text" id="input-signer1" placeholder="Ex: Dr. Fulano de Tal" class="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-green-500 outline-none">
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Nome (Assinatura 2)</label>
-                    <input type="text" id="input-signer2" placeholder="Ex: Sra. Beltrana" class="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-green-500 outline-none">
+                    <h1 class="text-xl font-bold tracking-tight">Logística Central</h1>
+                    <p class="text-xs text-blue-200">Controle de Caixas e Entregas</p>
                 </div>
             </div>
-
-            <!-- Botão de Imprimir -->
-            <div class="mt-6 flex flex-col gap-2">
-                <button onclick="handlePrint()" class="w-full bg-[#00995D] hover:bg-[#007f4d] text-white font-bold py-3 px-4 rounded flex items-center justify-center gap-2 transition-colors shadow-lg transform active:scale-95">
-                    <i data-lucide="printer" class="w-6 h-6"></i>
-                    Abrir Janela de Impressão (Modo Perfeito)
-                </button>
-                <p class="text-xs text-gray-500 text-center">
-                    Isso abrirá uma janela limpa e acionará a impressora do sistema. Assegure-se de salvar suas alterações automaticamente.
-                </p>
+            <div class="flex items-center gap-2">
+                <div class="flex bg-blue-800 rounded-lg p-1 overflow-x-auto" id="nav-buttons"></div>
+                <!-- Container para botão de logout -->
+                <div id="logout-container"></div>
             </div>
         </div>
+    </header>
 
-        <!-- === ÁREA DO CERTIFICADO (PREVIEW) === -->
-        <div id="certificate-area" class="relative w-[297mm] h-[210mm] bg-white shadow-2xl overflow-hidden text-[#005C3B] flex flex-col mx-auto shrink-0">
-            
-            <!-- Fundo Ondulado (SVG Original) -->
-            <div class="absolute inset-0 z-0 pointer-events-none">
-                <svg viewBox="0 0 1000 600" preserveAspectRatio="none" class="w-full h-full">
-                    <!-- Canto Superior Esquerdo -->
-                    <path d="M0,0 L350,0 C200,0 120,50 80,100 C40,150 0,250 0,350 Z" fill="#D4E157" opacity="0.5"></path>
-                    <path d="M0,0 L300,0 C150,0 80,40 50,80 C20,120 0,200 0,300 Z" fill="#00995D"></path>
+    <!-- Conteúdo Principal -->
+    <main class="max-w-7xl mx-auto px-4 py-8" id="app-content"></main>
 
-                    <!-- Canto Superior Direito -->
-                    <path d="M1000,0 L650,0 C800,0 880,50 920,100 C960,150 1000,250 1000,350 Z" fill="#D4E157" opacity="0.5"></path>
-                    <path d="M1000,0 L700,0 C850,0 920,40 950,80 C980,120 1000,200 1000,300 Z" fill="#00995D"></path>
+    <!-- Container do Modal -->
+    <div id="modal-container"></div>
 
-                    <!-- Canto Inferior Esquerdo -->
-                    <path d="M0,600 L350,600 C200,600 120,550 80,500 C40,450 0,350 0,250 Z" fill="#D4E157" opacity="0.5"></path>
-                    <path d="M0,600 L300,600 C150,600 80,560 50,520 C20,480 0,400 0,300 Z" fill="#00995D"></path>
-
-                    <!-- Canto Inferior Direito -->
-                    <path d="M1000,600 L650,600 C800,600 880,550 920,500 C960,450 1000,350 1000,250 Z" fill="#D4E157" opacity="0.5"></path>
-                    <path d="M1000,600 L700,600 C850,600 920,560 950,520 C980,480 1000,400 1000,300 Z" fill="#00995D"></path>
-                </svg>
-            </div>
-
-            <!-- Conteúdo -->
-            <div class="relative z-10 flex flex-col items-center w-full h-full pt-12 pb-8 px-16">
-                
-                <!-- Logo Area -->
-                <div class="mb-2 h-20 flex items-center justify-center" id="logo-container">
-                    <!-- Conteúdo dinâmico da logo será inserido aqui pelo JS -->
-                </div>
-
-                <!-- Cabeçalhos -->
-                <div class="text-center mb-6">
-                    <h2 class="text-lg font-bold text-[#2c3e50] uppercase tracking-wide">Hospital Unimed Tatuí</h2>
-                    <h3 class="text-base font-bold text-[#004d32] uppercase tracking-wide">Programa de Monitoramento de Fornecedores Críticos</h3>
-                </div>
-
-                <!-- Título Principal -->
-                <h1 class="text-4xl font-black text-[#005C3B] uppercase tracking-tight mb-8 text-center drop-shadow-sm">
-                    Certificado de Desempenho Excelente
-                </h1>
-
-                <!-- Conjunto do Selo (Escudo + Louros + Faixa) -->
-                <div class="relative mb-8 w-80 h-64 flex items-center justify-center">
-                    
-                    <!-- CONTAINER DOS LOUROS -->
-                    <div id="leaves-container" class="absolute w-full h-full flex items-center justify-center z-0">
-                        <!-- O conteúdo aqui será trocado dinamicamente pelo JS -->
-                    </div>
-
-                    <!-- Escudo Central -->
-                    <div class="relative z-10 w-20 h-24 drop-shadow-xl transform translate-y-[-12px]">
-                        <svg viewBox="0 0 100 120" class="w-full h-full">
-                            <path d="M50 2 L98 25 V50 C98 90 50 118 50 118 C50 118 2 90 2 50 V25 L50 2Z" fill="#005C3B" stroke="#D4AF37" stroke-width="4"></path>
-                            <path d="M50 5 L93 27 V50 C93 85 50 110 50 110 C50 110 7 85 7 50 V27 Z" fill="#006940" opacity="0.8"></path>
-                        </svg>
-                        <div class="absolute inset-0 flex items-center justify-center text-white pb-2">
-                            <i data-lucide="check" class="w-12 h-12 stroke-[5]"></i>
-                        </div>
-                    </div>
-
-                    <!-- Faixa Inferior -->
-                    <div class="absolute -bottom-10 z-20 w-52">
-                        <div class="relative bg-white border-2 border-[#D4AF37] py-1.5 shadow-lg rounded-sm">
-                            <div class="absolute top-1 -left-2 w-4 h-6 bg-[#B08D28] transform skew-y-[20deg] -z-10"></div>
-                            <div class="absolute top-1 -right-2 w-4 h-6 bg-[#B08D28] transform -skew-y-[20deg] -z-10"></div>
-                            
-                            <div class="text-[11px] font-bold text-[#005C3B] text-center leading-tight uppercase font-sans tracking-wide">
-                                Classificação Máxima<br/>
-                                <span class="text-[10px]">(>95 Pontos)</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Texto do Corpo -->
-                <div class="max-w-4xl text-center text-lg text-gray-800 leading-relaxed mb-auto px-12 mt-12 relative z-20">
-                    <p>
-                        Certificamos que a empresa parceira, 
-                        <span class="font-bold text-black uppercase"> [ <span id="text-company">NOME DO FORNECEDOR AQUI</span> ] </span>, 
-                        atingiu a classificação <span class="font-bold text-[#005C3B]">EXCELENTE</span> na avaliação de desempenho, demonstrando alto compromisso com os pilares de Qualidade, Segurança e Produtividade exigidos pelo Hospital Unimed Tatuí.
-                    </p>
-                </div>
-
-                <!-- Rodapé Assinaturas -->
-                <div class="w-full flex justify-between items-end px-16 pb-12 mt-8 relative z-20">
-                    <div class="text-left w-1/4">
-                        <p class="text-lg text-gray-800 font-medium">Tatuí, [ <span id="text-date"></span> ]</p>
-                    </div>
-
-                    <!-- Assinatura 1 -->
-                    <div class="flex flex-col items-center w-1/3">
-                        <div class="w-full border-t border-gray-800 mb-2"></div>
-                        <p class="text-lg font-medium text-gray-900" id="text-signer1">Nome do Responsável</p>
-                        <p class="text-xs font-bold text-[#005C3B] mt-0.5 uppercase tracking-wide">Gestão de Suprimentos</p>
-                    </div>
-
-                    <!-- Assinatura 2 -->
-                    <div class="flex flex-col items-center w-1/3">
-                        <div class="w-full border-t border-gray-800 mb-2"></div>
-                        <p class="text-lg font-medium text-gray-900" id="text-signer2">Nome do Responsável</p>
-                        <p class="text-xs font-bold text-[#005C3B] mt-0.5 uppercase tracking-wide">Diretoria Administrativa</p>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-    </div>
-
-    <!-- JavaScript (Lógica) -->
     <script>
-        lucide.createIcons();
+        // --- Configurações Iniciais ---
+        const DEFAULT_DESTINOS = [
+            { name: "Clínica Mult 1", street: "Av. Principal", number: "100", neighborhood: "Centro" },
+            { name: "Clínica Mult 2", street: "Rua das Flores", number: "250", neighborhood: "Jardins" },
+            { name: "Clínica Integra", street: "Rua da Saúde", number: "50", neighborhood: "Vila Nova" },
+            { name: "Laboratório Novo", street: "Av. Industrial", number: "900", neighborhood: "Distrito" },
+            { name: "EVB", street: "Estrada Velha", number: "km 5", neighborhood: "Rural" },
+            { name: "CAMU", street: "Praça Central", number: "1", neighborhood: "Centro" }
+        ];
 
-        // === LÓGICA DE LOGIN ===
-        const CORRECT_PIN = "1234"; // PIN CONFIGURADO AQUI
+        const INITIAL_BOXES = [
+            { id: 1, name: 'Caixa 1', status: 'available', items: [], destination: null },
+            { id: 2, name: 'Caixa 2', status: 'available', items: [], destination: null },
+            { id: 3, name: 'Caixa 3', status: 'available', items: [], destination: null },
+            { id: 4, name: 'Caixa 4', status: 'available', items: [], destination: null },
+        ];
 
-        function checkPin() {
-            const input = document.getElementById('pin-input');
-            const errorMsg = document.getElementById('error-msg');
-            const loginScreen = document.getElementById('login-screen');
-            const appContent = document.getElementById('app-content');
-
-            if (input.value === CORRECT_PIN) {
-                // Sucesso
-                loginScreen.classList.add('hidden-app');
-                appContent.classList.remove('hidden-app');
-                appContent.classList.add('flex'); // Restaura o flex do container
-                sessionStorage.setItem('unimed_auth', 'true'); // Opcional: manter logado na sessão
-            } else {
-                // Erro
-                errorMsg.classList.remove('hidden');
-                input.value = '';
-                input.focus();
-            }
+        // Carregar dados ou usar padrão
+        let storedDestinations = JSON.parse(localStorage.getItem('logistica_destinations'));
+        if (storedDestinations && storedDestinations.length > 0 && typeof storedDestinations[0] === 'string') {
+            storedDestinations = storedDestinations.map(d => ({ name: d, street: "", number: "", neighborhood: "" }));
         }
 
-        function handleEnter(e) {
-            if (e.key === 'Enter') {
-                checkPin();
+        let state = {
+            // Agora usa localStorage para persistir o login
+            isLoggedIn: localStorage.getItem('logistica_auth') === 'true', 
+            boxes: JSON.parse(localStorage.getItem('logistica_boxes')) || INITIAL_BOXES,
+            history: JSON.parse(localStorage.getItem('logistica_history')) || [],
+            missingItems: JSON.parse(localStorage.getItem('logistica_missing')) || [],
+            destinations: storedDestinations || DEFAULT_DESTINOS,
+            // Recupera última aba e usuário
+            activeTab: localStorage.getItem('logistica_activeTab') || 'dashboard',
+            currentUser: localStorage.getItem('logistica_currentUser') || "Logística",
+            modal: { type: null, boxId: null, data: null },
+            historyFilter: { search: '', date: '' }
+        };
+
+        // --- Autenticação ---
+        function handleLogin(e) {
+            e.preventDefault();
+            const password = e.target.password.value;
+            if (password === '1234') {
+                state.isLoggedIn = true;
+                // Salva login permanentemente
+                localStorage.setItem('logistica_auth', 'true');
+                renderApp();
+            } else {
+                // Feedback visual de erro
+                const input = e.target.password;
+                input.classList.add('border-red-500', 'ring-2', 'ring-red-200');
+                input.value = '';
+                input.placeholder = 'Senha Incorreta';
+                setTimeout(() => {
+                    input.classList.remove('border-red-500', 'ring-2', 'ring-red-200');
+                    input.placeholder = 'Senha';
+                }, 2000);
             }
         }
 
         function logout() {
-            sessionStorage.removeItem('unimed_auth');
-            location.reload();
+            state.isLoggedIn = false;
+            localStorage.removeItem('logistica_auth');
+            renderApp();
         }
 
-        // Verifica sessão ao carregar (opcional)
-        if (sessionStorage.getItem('unimed_auth') === 'true') {
-            document.getElementById('login-screen').classList.add('hidden-app');
-            const appContent = document.getElementById('app-content');
-            appContent.classList.remove('hidden-app');
-            appContent.classList.add('flex');
-        } else {
-            document.getElementById('pin-input').focus();
+        // --- Persistência ---
+        function saveData(skipRender = false) {
+            localStorage.setItem('logistica_boxes', JSON.stringify(state.boxes));
+            localStorage.setItem('logistica_history', JSON.stringify(state.history));
+            localStorage.setItem('logistica_missing', JSON.stringify(state.missingItems));
+            localStorage.setItem('logistica_destinations', JSON.stringify(state.destinations));
+            localStorage.setItem('logistica_currentUser', state.currentUser); // Salva usuário
+            localStorage.setItem('logistica_activeTab', state.activeTab); // Salva aba
+            if (!skipRender) renderApp();
         }
 
-        // === LÓGICA DO APP ===
-        const defaultData = {
-            companyName: "NOME DO FORNECEDOR AQUI",
-            date: new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' }),
-            signer1: "", 
-            signer2: "", 
-            logo: null,
-            leaves: null
-        };
-
-        const els = {
-            inputCompany: document.getElementById('input-company'),
-            inputDate: document.getElementById('input-date'),
-            inputSigner1: document.getElementById('input-signer1'),
-            inputSigner2: document.getElementById('input-signer2'),
-            inputLogo: document.getElementById('input-logo'),
-            inputLeaves: document.getElementById('input-leaves'),
-            
-            textCompany: document.getElementById('text-company'),
-            textDate: document.getElementById('text-date'),
-            textSigner1: document.getElementById('text-signer1'),
-            textSigner2: document.getElementById('text-signer2'),
-            
-            logoContainer: document.getElementById('logo-container'),
-            leavesContainer: document.getElementById('leaves-container'),
-            logoStatus: document.getElementById('logo-status'),
-            leavesStatus: document.getElementById('leaves-status'),
-            btnRemoveLogo: document.getElementById('btn-remove-logo'),
-            btnRemoveLeaves: document.getElementById('btn-remove-leaves')
-        };
-
-        let appData = { ...defaultData };
-
-        const defaultLeavesSVG = `
-            <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-md z-0" style="transform: scale(1.4);">
-                <defs>
-                    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" style="stop-color:#DCE775;stop-opacity:1" />
-                        <stop offset="100%" style="stop-color:#827717;stop-opacity:1" />
-                    </linearGradient>
-                    <path id="pointed-leaf" d="M0,0 Q6,-3 12,0 Q6,3 0,0 Z" />
-                    <g id="laurel-branch-aligned">
-                        <path d="M100,165 Q15,90 100,15" fill="none" stroke="url(#goldGradient)" stroke-width="2.5" stroke-linecap="round" />
-                        <g transform="translate(90, 158) rotate(-25) scale(1.2)"> <use href="#pointed-leaf" /> </g>
-                        <g transform="translate(90, 158) rotate(-155) scale(1.2)"> <use href="#pointed-leaf" /> </g>
-                        <g transform="translate(78, 145) rotate(-35) scale(1.2)"> <use href="#pointed-leaf" /> </g>
-                        <g transform="translate(78, 145) rotate(-165) scale(1.2)"> <use href="#pointed-leaf" /> </g>
-                        <g transform="translate(68, 130) rotate(-45) scale(1.2)"> <use href="#pointed-leaf" /> </g>
-                        <g transform="translate(68, 130) rotate(-175) scale(1.2)"> <use href="#pointed-leaf" /> </g>
-                        <g transform="translate(60, 115) rotate(-55) scale(1.2)"> <use href="#pointed-leaf" /> </g>
-                        <g transform="translate(60, 115) rotate(-185) scale(1.2)"> <use href="#pointed-leaf" /> </g>
-                        <g transform="translate(56, 100) rotate(-65) scale(1.2)"> <use href="#pointed-leaf" /> </g>
-                        <g transform="translate(56, 100) rotate(-195) scale(1.2)"> <use href="#pointed-leaf" /> </g>
-                        <g transform="translate(55, 85) rotate(-75) scale(1.2)"> <use href="#pointed-leaf" /> </g>
-                        <g transform="translate(55, 85) rotate(-205) scale(1.2)"> <use href="#pointed-leaf" /> </g>
-                        <g transform="translate(59, 70) rotate(-85) scale(1.2)"> <use href="#pointed-leaf" /> </g>
-                        <g transform="translate(59, 70) rotate(-215) scale(1.2)"> <use href="#pointed-leaf" /> </g>
-                        <g transform="translate(66, 56) rotate(-95) scale(1.2)"> <use href="#pointed-leaf" /> </g>
-                        <g transform="translate(66, 56) rotate(-225) scale(1.2)"> <use href="#pointed-leaf" /> </g>
-                        <g transform="translate(77, 43) rotate(-105) scale(1.2)"> <use href="#pointed-leaf" /> </g>
-                        <g transform="translate(77, 43) rotate(-235) scale(1.2)"> <use href="#pointed-leaf" /> </g>
-                        <g transform="translate(90, 32) rotate(-115) scale(1.2)"> <use href="#pointed-leaf" /> </g>
-                        <g transform="translate(90, 32) rotate(-245) scale(1.2)"> <use href="#pointed-leaf" /> </g>
-                    </g>
-                </defs>
-                <g fill="url(#goldGradient)" stroke="none">
-                    <use href="#laurel-branch-aligned" />
-                    <g transform="translate(200, 0) scale(-1, 1)">
-                        <use href="#laurel-branch-aligned" />
-                    </g>
-                </g>
-            </svg>
-        `;
-
-        function loadData() {
-            const savedData = localStorage.getItem('unimed_cert_data');
-            if (savedData) {
-                try {
-                    const parsed = JSON.parse(savedData);
-                    appData = { ...defaultData, ...parsed };
-                } catch (e) { console.error(e); }
-            }
-            updateUI();
-        }
-
-        function saveData() {
-            localStorage.setItem('unimed_cert_data', JSON.stringify(appData));
-        }
-
-        function updateUI() {
-            els.inputCompany.value = appData.companyName;
-            els.inputDate.value = appData.date;
-            els.inputSigner1.value = appData.signer1;
-            els.inputSigner2.value = appData.signer2;
-
-            els.textCompany.innerText = appData.companyName;
-            els.textDate.innerText = appData.date;
-            els.textSigner1.innerText = appData.signer1 || " "; 
-            els.textSigner2.innerText = appData.signer2 || " ";
-
-            renderLogo();
-            renderLeaves();
-        }
-
-        function renderLogo() {
-            if (appData.logo) {
-                els.logoContainer.innerHTML = `<img src="${appData.logo}" alt="Logo Unimed" class="h-full object-contain">`;
-                els.logoStatus.innerText = "Carregada";
-                els.logoStatus.className = "text-xs text-green-600 font-semibold";
-                els.btnRemoveLogo.classList.remove('hidden');
-            } else {
-                els.logoContainer.innerHTML = `
-                    <div class="bg-[#00995D] rounded-lg p-2 px-6 flex flex-col items-center">
-                        <div class="flex items-center gap-2">
-                            <span class="text-white text-4xl font-black tracking-tighter font-sans" style="font-family: Arial, sans-serif;">Unimed</span>
-                            <svg width="30" height="30" viewBox="0 0 100 100" fill="none">
-                                <path d="M50 0 L15 60 H40 V100 H60 V60 H85 L50 0Z" fill="white" />
-                                <path d="M25 60 L15 60 L50 0 L85 60 L75 60 L50 18 L25 60Z" fill="#00995D" />
-                            </svg>
-                        </div>
-                        <span class="text-white text-xs font-bold self-end mr-1 -mt-1">Tatuí</span>
-                    </div>
-                `;
-                els.logoStatus.innerText = "Padrão";
-                els.logoStatus.className = "text-xs text-gray-500";
-                els.btnRemoveLogo.classList.add('hidden');
-            }
-        }
-
-        function renderLeaves() {
-            if (appData.leaves) {
-                els.leavesContainer.innerHTML = `<img src="${appData.leaves}" class="w-full h-full object-contain transform scale-110" alt="Folhas personalizadas">`;
-                els.leavesStatus.innerText = "Carregada";
-                els.leavesStatus.className = "text-xs text-green-600 font-semibold";
-                els.btnRemoveLeaves.classList.remove('hidden');
-            } else {
-                els.leavesContainer.innerHTML = defaultLeavesSVG;
-                els.leavesStatus.innerText = "Padrão (Desenhado)";
-                els.leavesStatus.className = "text-xs text-gray-500";
-                els.btnRemoveLeaves.classList.add('hidden');
-            }
-        }
-
-        els.inputCompany.addEventListener('input', (e) => { appData.companyName = e.target.value; saveData(); updateUI(); });
-        els.inputDate.addEventListener('input', (e) => { appData.date = e.target.value; saveData(); updateUI(); });
-        els.inputSigner1.addEventListener('input', (e) => { appData.signer1 = e.target.value; saveData(); updateUI(); });
-        els.inputSigner2.addEventListener('input', (e) => { appData.signer2 = e.target.value; saveData(); updateUI(); });
-
-        els.inputLogo.addEventListener('change', (e) => {
-            handleFileUpload(e.target.files[0], (base64) => {
-                appData.logo = base64;
-                saveData();
-                updateUI();
+        function addHistoryLog(action, details, boxName) {
+            state.history.unshift({
+                id: Date.now(),
+                timestamp: new Date().toISOString(),
+                action, details, boxName,
+                user: state.currentUser
             });
-        });
-        
-        els.inputLeaves.addEventListener('change', (e) => {
-            handleFileUpload(e.target.files[0], (base64) => {
-                appData.leaves = base64;
-                saveData();
-                updateUI();
-            });
-        });
-
-        els.btnRemoveLogo.addEventListener('click', () => { appData.logo = null; els.inputLogo.value=""; saveData(); updateUI(); });
-        els.btnRemoveLeaves.addEventListener('click', () => { appData.leaves = null; els.inputLeaves.value=""; saveData(); updateUI(); });
-
-        function handleFileUpload(file, callback) {
-            if (!file) return;
-            if (file.size > 5 * 1024 * 1024) { alert("Arquivo muito grande (>5MB)."); return; }
-            const reader = new FileReader();
-            reader.onload = function(event) { callback(event.target.result); };
-            reader.readAsDataURL(file);
         }
 
-        function handlePrint() {
-            const printContent = document.getElementById('certificate-area').innerHTML;
-            const win = window.open('', '', 'height=700,width=1000');
+        // --- Filtros ---
+        function handleHistoryFilter(key, value) {
+            state.historyFilter[key] = value;
+            renderHistory();
+            lucide.createIcons();
+        }
+
+        function clearHistoryFilters() {
+            state.historyFilter = { search: '', date: '' };
+            renderHistory();
+            lucide.createIcons();
+        }
+
+        // --- Lógica de Negócio (Caixas) ---
+        function handleAddItem(e) {
+            e.preventDefault();
+            const form = e.target;
+            const itemName = form.itemName.value.trim();
+            const quantity = parseInt(form.quantity.value) || 1;
+            const isExternal = form.isExternal.checked;
+            const unitType = form.unitType.value; 
+            const boxId = state.modal.boxId;
+
+            if (!itemName) return;
+
+            const box = state.boxes.find(b => b.id === boxId);
+            if (box) {
+                const existingItem = box.items.find(i => 
+                    i.name.toLowerCase() === itemName.toLowerCase() && 
+                    i.isExternal === isExternal &&
+                    (i.unitType === unitType || (!i.unitType && unitType === 'un'))
+                );
+                
+                if (existingItem) {
+                    existingItem.quantity = (existingItem.quantity || 1) + quantity;
+                    existingItem.unitType = unitType;
+                } else {
+                    box.items.push({ name: itemName, quantity, isExternal, unitType });
+                }
+                
+                const tipo = isExternal ? "EXTERNO" : "INTERNO";
+                const unitLabel = unitType === 'fd' ? 'Fardo(s)' : 'Unidade(s)';
+                addHistoryLog('Adição', `Adicionado ${quantity} ${unitLabel} de ${itemName} (${tipo})`, box.name);
+                
+                form.itemName.value = '';
+                form.quantity.value = '1';
+                form.itemName?.focus();
+                
+                const toast = document.createElement('div');
+                toast.className = 'toast-msg absolute bottom-20 left-0 right-0 mx-auto w-max bg-green-600 text-white text-xs py-1.5 px-3 rounded-full shadow-lg z-50';
+                toast.innerHTML = `<i class="inline w-3 h-3 mr-1" data-lucide="check"></i> ${itemName} adicionado!`;
+                document.getElementById('modal-content-area').appendChild(toast);
+                lucide.createIcons();
+                
+                setTimeout(() => { if(toast.parentNode) toast.parentNode.removeChild(toast); }, 2000);
+                saveData(true);
+            }
+        }
+
+        function handleDelivery(e) {
+            e.preventDefault();
+            const form = e.target;
+            let destinationName = "";
             
-            win.document.write('<html><head><title>Imprimir Certificado</title>');
-            win.document.write('<script src="https://cdn.tailwindcss.com"><\/script>');
-            win.document.write(`
-                <style>
-                    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap');
-                    body { font-family: 'Roboto', sans-serif; margin: 0; padding: 0; background: white; }
-                    @page { size: landscape; margin: 0; }
-                    .print-container { 
-                        width: 297mm; 
-                        height: 210mm; 
-                        position: relative; 
-                        overflow: hidden; 
-                        page-break-after: always;
-                        -webkit-print-color-adjust: exact !important;
-                        print-color-adjust: exact !important;
-                        display: flex;
-                        flex-direction: column;
-                        align-items: center;
-                    }
-                </style>
-            `);
-            win.document.write('</head><body>');
-            win.document.write('<div class="print-container">');
-            win.document.write(printContent);
-            win.document.write('</div>');
-            win.document.write('</body></html>');
-            win.document.close();
-            win.onload = function() {
-                setTimeout(() => { win.focus(); win.print(); }, 1000);
+            const isCustom = !document.getElementById('dest-input-group').classList.contains('hidden');
+            
+            if (isCustom) {
+                const customName = form.customName.value.trim();
+                if (!customName) { alert("Digite o nome do local."); return; }
+                destinationName = customName;
+                
+                if (!state.destinations.some(d => d.name.toLowerCase() === customName.toLowerCase())) {
+                    state.destinations.push({
+                        name: customName,
+                        street: form.customStreet.value.trim(),
+                        number: form.customNumber.value.trim(),
+                        neighborhood: form.customNeighborhood.value.trim()
+                    });
+                }
+            } else {
+                destinationName = form.destination.value;
+                if (!destinationName) { alert("Selecione um destino."); return; }
+            }
+
+            const box = state.boxes.find(b => b.id === state.modal.boxId);
+            if (box) {
+                box.status = 'in_delivery';
+                box.destination = destinationName;
+                box.lastDeliveryDate = form.deliveryDate.value;
+                state.currentUser = form.responsible.value; // Atualiza o usuário atual
+                
+                addHistoryLog('Saída', `Saiu para entrega em: ${destinationName}`, box.name);
+                closeModal();
+                saveData(); 
+            }
+        }
+
+        function handleCompleteDelivery() {
+            const box = state.boxes.find(b => b.id === state.modal.boxId);
+            if (box) {
+                box.status = 'delivered';
+                addHistoryLog('Entrega', `Entrega concluída em: ${box.destination}`, box.name);
+                closeModal();
+                saveData();
+            }
+        }
+
+        function handleResetBox() {
+            const box = state.boxes.find(b => b.id === state.modal.boxId);
+            if (box) {
+                box.status = 'available';
+                box.destination = null;
+                box.items = []; // Limpa itens
+                addHistoryLog('Status', `Caixa reiniciada e esvaziada`, box.name);
+                closeModal();
+                saveData();
+            }
+        }
+
+        function confirmDeleteItem() {
+            const box = state.boxes.find(b => b.id === state.modal.boxId);
+            const idx = state.modal.data;
+            if (box && idx !== null) {
+                const item = box.items[idx];
+                box.items.splice(idx, 1);
+                addHistoryLog('Remoção', `Item removido: ${item.name}`, box.name);
+                closeModal();
+                saveData();
+            }
+        }
+
+        function handleReportMissing(e) {
+            e.preventDefault();
+            const form = e.target;
+            const box = state.boxes.find(b => b.id === state.modal.boxId);
+            
+            state.missingItems.unshift({
+                id: Date.now(),
+                boxId: box.id,
+                boxName: box.name,
+                destination: box.destination || "N/A",
+                itemName: form.itemName.value,
+                quantity: form.quantity.value,
+                reason: form.reason.value,
+                status: 'pending',
+                date: new Date().toISOString()
+            });
+
+            if (box.status === 'delivered') box.status = 'issue';
+            
+            addHistoryLog('Falta', `Falta registrada: ${form.quantity}x ${form.itemName}`, box.name);
+            closeModal();
+            saveData();
+        }
+
+        function resolveMissingItem(id) {
+            const item = state.missingItems.find(i => i.id === id);
+            if (item) {
+                item.status = 'resolved';
+                saveData();
+            }
+        }
+
+        function handleAddDestination(e) {
+            e.preventDefault();
+            const form = e.target;
+            const name = form.newName.value.trim();
+            
+            if (state.destinations.some(d => d.name.toLowerCase() === name.toLowerCase())) {
+                alert("Já existe um local com este nome.");
+                return;
+            }
+
+            state.destinations.push({
+                name,
+                street: form.newStreet.value.trim(),
+                number: form.newNumber.value.trim(),
+                neighborhood: form.newNeighborhood.value.trim()
+            });
+            form.reset();
+            saveData();
+        }
+
+        function handleEditDestination(e) {
+            e.preventDefault();
+            const idx = state.modal.data;
+            const form = e.target;
+            const name = form.editName.value.trim();
+            
+            const exists = state.destinations.some((d, i) => i !== idx && d.name.toLowerCase() === name.toLowerCase());
+            if (exists) { alert("Nome já existe."); return; }
+
+            state.destinations[idx] = {
+                name,
+                street: form.editStreet.value.trim(),
+                number: form.editNumber.value.trim(),
+                neighborhood: form.editNeighborhood.value.trim()
             };
+            closeModal();
+            saveData();
         }
 
-        loadData();
+        function confirmDeleteLocation() {
+            const idx = state.modal.data;
+            if (idx !== null) {
+                const removed = state.destinations[idx];
+                state.destinations.splice(idx, 1);
+                addHistoryLog('Remoção', `Endereço removido: ${removed.name}`, 'Sistema');
+                closeModal();
+                saveData();
+            }
+        }
+
+        // --- Interface Auxiliar ---
+        function toggleDestInput(showInput) {
+            const groupSelect = document.getElementById('dest-select-group');
+            const groupInput = document.getElementById('dest-input-group');
+            const inputs = groupInput.querySelectorAll('input');
+            const selectEl = groupSelect.querySelector('select');
+
+            if (showInput) {
+                groupSelect.classList.add('hidden');
+                groupInput.classList.remove('hidden');
+                inputs[0]?.focus();
+                selectEl.value = "";
+            } else {
+                groupInput.classList.add('hidden');
+                groupSelect.classList.remove('hidden');
+                inputs.forEach(i => i.value = "");
+            }
+        }
+
+        function printBox(boxId) {
+            const box = state.boxes.find(b => b.id === boxId);
+            if (!box) return;
+
+            const dest = state.destinations.find(d => d.name === box.destination);
+            let addressStr = box.destination || 'N/A';
+            if (dest && (dest.street || dest.neighborhood)) {
+                addressStr += `<br><span style="font-size:12px;font-weight:normal;color:#555;">${dest.street||''} ${dest.number?','+dest.number:''} ${dest.neighborhood?' - '+dest.neighborhood:''}</span>`;
+            }
+
+            const internal = box.items.filter(i => !i.isExternal);
+            const external = box.items.filter(i => i.isExternal);
+
+            const renderList = (items) => items.map(i => 
+                `<li style="padding:8px 0;border-bottom:1px solid #eee;display:flex;align-items:center;font-size:14px;">
+                    <span style="display:inline-block;width:16px;height:16px;border:1px solid #333;margin-right:12px;border-radius:2px;"></span>
+                    <span style="font-weight:bold;margin-right:6px;">${i.quantity}${i.unitType==='fd'?' Fd':' Un'}</span> ${i.name}
+                 </li>`
+            ).join('');
+
+            const dateStr = box.lastDeliveryDate ? new Date(box.lastDeliveryDate).toLocaleDateString() : '__/__/__';
+
+            const html = `
+            <html><head><title>Manifesto ${box.name}</title>
+            <style>
+                body { font-family: sans-serif; padding: 20px; color: #1f2937; }
+                .header { border-bottom: 2px solid #1e3a8a; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
+                .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; background: #f3f4f6; padding: 20px; border-radius: 8px; }
+                .label { font-size: 11px; text-transform: uppercase; font-weight: bold; color: #6b7280; }
+                .value { font-size: 16px; font-weight: 500; }
+                h2 { font-size: 18px; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-top: 25px; }
+                ul { list-style: none; padding: 0; }
+                .sign-line { border-top: 1px solid #000; flex: 1; padding-top: 5px; text-align: center; margin-top: 50px; font-size: 12px; }
+                @media print { .info-grid { background: none; border: 1px solid #ddd; } }
+            </style></head><body>
+                <div class="header">
+                    <div><h1 style="margin:0;color:#1e3a8a;">Logística Central</h1><div style="color:#666;">Controle de Entrega</div></div>
+                    <div style="text-align:right;"><div class="value">${box.name}</div></div>
+                </div>
+                <div class="info-grid">
+                    <div><div class="label">Destino</div><div class="value">${addressStr}</div></div>
+                    <div><div class="label">Data</div><div class="value">${dateStr}</div></div>
+                    <div><div class="label">Status</div><div class="value">${box.status==='in_delivery'?'Em Entrega':box.status==='delivered'?'Entregue':'Disponível'}</div></div>
+                    <div><div class="label">Responsável</div><div class="value">${state.currentUser}</div></div>
+                </div>
+                ${internal.length > 0 ? `<h2>Conteúdo (${internal.reduce((a,i)=>a+(i.quantity||1),0)})</h2><ul>${renderList(internal)}</ul>` : ''}
+                ${external.length > 0 ? `<h2>Itens Externos/Anexos (${external.reduce((a,i)=>a+(i.quantity||1),0)})</h2><ul>${renderList(external)}</ul>` : ''}
+                ${internal.length===0 && external.length===0 ? '<p style="text-align:center;color:#999">Vazio</p>' : ''}
+                <div style="display:flex;gap:40px;margin-top:60px;">
+                    <div class="sign-line">Assinatura Expedição</div><div class="sign-line">Assinatura Recebimento</div>
+                </div>
+                <script>window.onload=function(){window.print();} <\/script>
+            </body></html>`;
+
+            const win = window.open('', '_blank');
+            if(win) {
+                win.document.write(html);
+                win.document.close();
+            } else {
+                alert('Pop-up bloqueado. Permita pop-ups para imprimir.');
+            }
+        }
+
+        // --- Renderização de Componentes ---
+
+        function renderLogin() {
+            const container = document.getElementById('app-content');
+            document.getElementById('nav-buttons').innerHTML = ''; 
+            document.getElementById('logout-container').innerHTML = '';
+            
+            container.innerHTML = `
+            <div class="min-h-[70vh] flex items-center justify-center p-4">
+                <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200 w-full max-w-sm animate-zoom-in">
+                    <div class="text-center mb-8">
+                        <div class="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i data-lucide="lock" class="w-8 h-8 text-blue-600"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-slate-800">Acesso Restrito</h2>
+                        <p class="text-slate-500 text-sm mt-1">Identifique-se para continuar</p>
+                    </div>
+                    <form onsubmit="handleLogin(event)" class="space-y-5">
+                        <div>
+                            <input type="password" name="password" placeholder="Senha de Acesso" class="w-full border border-slate-300 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 text-center tracking-widest text-lg transition-all" autofocus>
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors shadow-sm flex items-center justify-center gap-2">
+                            <span>Entrar no Sistema</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>`;
+            lucide.createIcons();
+        }
+
+        function getStatusBadge(status) {
+            const styles = {
+                available: "bg-green-100 text-green-800 border-green-200",
+                in_delivery: "bg-yellow-100 text-yellow-800 border-yellow-200",
+                delivered: "bg-blue-100 text-blue-800 border-blue-200",
+                issue: "bg-red-100 text-red-800 border-red-200"
+            };
+            const labels = {
+                available: "Disponível",
+                in_delivery: "Em Entrega",
+                delivered: "Entregue",
+                issue: "Pendência"
+            };
+            const style = styles[status] || styles.available;
+            return `<span class="px-2 py-1 rounded-full text-xs font-semibold border ${style}">${labels[status]}</span>`;
+        }
+
+        function renderNav() {
+            const pending = state.missingItems.filter(m => m.status === 'pending').length;
+            const btn = (id, label, badge) => `
+                <button onclick="switchTab('${id}')" class="px-4 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer shrink-0 ${state.activeTab === id ? 'bg-white text-blue-900 shadow' : 'text-blue-200 hover:text-white'} flex items-center gap-2">
+                    ${label} ${badge > 0 ? `<span class="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">${badge}</span>` : ''}
+                </button>`;
+            
+            document.getElementById('nav-buttons').innerHTML = 
+                btn('dashboard', 'Caixas', 0) +
+                btn('locations', 'Endereços', 0) +
+                btn('missing', 'Faltantes', pending) +
+                btn('history', 'Histórico', 0);
+
+            document.getElementById('logout-container').innerHTML = `
+                <button onclick="logout()" class="p-2 text-blue-200 hover:text-white hover:bg-blue-800 rounded-lg transition-colors" title="Sair">
+                    <i data-lucide="log-out" class="w-5 h-5"></i>
+                </button>`;
+        }
+
+        function renderDashboard() {
+            const container = document.getElementById('app-content');
+            let html = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">';
+            
+            state.boxes.forEach(box => {
+                const hasIssue = state.missingItems.some(m => m.boxId === box.id && m.status === 'pending');
+                const badgeStyle = {
+                    available: "bg-green-100 text-green-800 border-green-200",
+                    in_delivery: "bg-yellow-100 text-yellow-800 border-yellow-200",
+                    delivered: "bg-blue-100 text-blue-800 border-blue-200",
+                    issue: "bg-red-100 text-red-800 border-red-200"
+                };
+                const statusLabel = { available:"Disponível", in_delivery:"Em Entrega", delivered:"Entregue", issue:"Pendência" };
+                
+                const status = (hasIssue && box.status === 'delivered') ? 'issue' : box.status;
+                const itemsCount = box.items.reduce((a,i) => a+(i.quantity||1), 0);
+                
+                const renderList = (items, title, isExt) => items.length ? `
+                    <div class="mb-3">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
+                            <i data-lucide="${isExt?'package-open':'box'}" class="w-3 h-3"></i> ${title}
+                        </p>
+                        ${items.map((it, i) => `
+                            <div class="flex justify-between text-sm border-b border-slate-50 last:border-0 pb-1 group">
+                                <div class="truncate pr-2 flex-grow">
+                                    <span class="font-bold text-slate-500 mr-1 text-xs bg-slate-100 px-1 rounded">${it.quantity} ${it.unitType==='fd'?'fd':'un'}</span>
+                                    <span class="text-slate-700 ${isExt?'italic':''}">${it.name}</span>
+                                </div>
+                                <button onclick="openModal('deleteItem', ${box.id}, ${i})" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
+                            </div>
+                        `).join('')}
+                    </div>` : '';
+
+                let btns = `<button onclick="openModal('add',${box.id})" class="flex items-center justify-center gap-1 bg-white border border-slate-300 text-slate-700 py-2 rounded hover:bg-slate-100 text-sm font-medium"><i data-lucide="plus" class="w-3 h-3"></i> Adicionar</button>
+                            <button onclick="openModal('missing',${box.id})" class="flex items-center justify-center gap-1 bg-orange-50 text-orange-700 border border-orange-200 py-2 rounded hover:bg-orange-100 text-sm font-medium"><i data-lucide="alert-triangle" class="w-3 h-3"></i> Faltante</button>`;
+                
+                if (box.status === 'available') btns += `<button onclick="openModal('deliver',${box.id})" class="col-span-2 flex items-center justify-center gap-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700 text-sm font-medium"><i data-lucide="truck" class="w-3 h-3"></i> Entregar</button>`;
+                else if (box.status === 'in_delivery') btns += `<button onclick="openModal('complete',${box.id})" class="col-span-2 flex items-center justify-center gap-1 bg-green-600 text-white py-2 rounded hover:bg-green-700 text-sm font-medium"><i data-lucide="check-circle" class="w-3 h-3"></i> Receber</button>`;
+                else btns += `<button onclick="openModal('reset',${box.id})" class="col-span-2 flex items-center justify-center gap-1 bg-white border border-slate-300 text-slate-500 py-2 rounded hover:bg-slate-100 text-sm font-medium">Reiniciar / Disponível</button>`;
+
+                html += `
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full hover:shadow-md transition-shadow">
+                    <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                        <h3 class="font-bold text-lg text-slate-800">${box.name}</h3>
+                        <div class="flex gap-2">
+                            <button onclick="printBox(${box.id})" class="p-1 text-slate-400 hover:text-blue-600"><i data-lucide="printer" class="w-4 h-4"></i></button>
+                            <span class="px-2 py-1 rounded-full text-xs font-semibold border ${badgeStyle[status]}">${statusLabel[status]}</span>
+                        </div>
+                    </div>
+                    <div class="p-4 flex-grow flex flex-col">
+                        <div class="mb-4">
+                            <p class="text-xs text-slate-500 uppercase tracking-wide font-semibold mb-1">Destino</p>
+                            <div class="flex items-center text-slate-700"><i data-lucide="map-pin" class="w-4 h-4 mr-1 text-blue-500"></i> ${box.destination || '<span class="italic text-slate-400">Nenhum</span>'}</div>
+                        </div>
+                        <div class="flex-grow">
+                            <p class="text-xs text-slate-500 uppercase tracking-wide font-semibold mb-2 border-b pb-1">Itens (${itemsCount})</p>
+                            <div class="space-y-1 max-h-48 overflow-y-auto pr-1">
+                                ${box.items.length ? renderList(box.items.filter(i=>!i.isExternal), "Interno", false) + renderList(box.items.filter(i=>i.isExternal), "Externo", true) : '<p class="text-sm text-slate-400 italic">Vazia</p>'}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-3 bg-slate-50 border-t border-slate-100 grid grid-cols-2 gap-2 mt-auto">${btns}</div>
+                </div>`;
+            });
+            container.innerHTML = html + '</div>';
+        }
+
+        function renderLocationsPanel() {
+            const container = document.getElementById('app-content');
+            container.innerHTML = `
+            <div class="max-w-2xl mx-auto space-y-6">
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2 mb-4"><i data-lucide="map-pin" class="text-blue-500"></i> Cadastrar Endereço</h2>
+                    <form onsubmit="handleAddDestination(event)" class="space-y-3">
+                        <input name="newName" type="text" required placeholder="Nome do Local" class="w-full border border-slate-300 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500">
+                        <div class="grid grid-cols-3 gap-3">
+                            <div class="col-span-2"><input name="newStreet" type="text" placeholder="Rua" class="w-full border border-slate-300 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"></div>
+                            <div><input name="newNumber" type="text" placeholder="Nº" class="w-full border border-slate-300 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"></div>
+                        </div>
+                        <input name="newNeighborhood" type="text" placeholder="Bairro" class="w-full border border-slate-300 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500">
+                        <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex justify-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i> Cadastrar</button>
+                    </form>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-4 border-b bg-slate-50 font-semibold text-slate-700">Locais Cadastrados (${state.destinations.length})</div>
+                    <div class="divide-y divide-slate-100">
+                        ${state.destinations.length ? state.destinations.map((d, i) => `
+                            <div class="p-4 flex justify-between items-start group hover:bg-slate-50">
+                                <div class="flex gap-3">
+                                    <div class="bg-slate-100 p-2 rounded-full text-slate-500 mt-1"><i data-lucide="building-2" class="w-4 h-4"></i></div>
+                                    <div><div class="font-medium text-slate-700">${d.name}</div><div class="text-xs text-slate-500">${d.street||''} ${d.number||''} ${d.neighborhood||''}</div></div>
+                                </div>
+                                <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button onclick="openModal('editLocation',null,${i})" class="text-slate-300 hover:text-blue-500"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                                    <button onclick="openModal('deleteLocation',null,${i})" class="text-slate-300 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                </div>
+                            </div>
+                        `).join('') : '<p class="p-6 text-center text-slate-400">Nenhum local cadastrado.</p>'}
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        function renderMissingPanel() {
+            const container = document.getElementById('app-content');
+            if(!state.missingItems.length) {
+                container.innerHTML = `<div class="bg-white rounded-xl p-8 text-center text-slate-400 border border-slate-200"><i data-lucide="check" class="w-12 h-12 mx-auto mb-2 text-slate-200"></i><p>Nada consta.</p></div>`;
+                return;
+            }
+            container.innerHTML = `
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-6 border-b border-slate-100"><h2 class="text-xl font-bold text-slate-800 flex items-center gap-2"><i data-lucide="alert-triangle" class="text-orange-500"></i> Itens Faltantes</h2></div>
+                <div class="overflow-x-auto"><table class="w-full text-left text-sm text-slate-600"><thead class="bg-slate-50 font-semibold uppercase text-xs"><tr><th class="p-4">Data</th><th class="p-4">Caixa</th><th class="p-4">Item</th><th class="p-4">Motivo</th><th class="p-4">Status</th><th class="p-4">Ação</th></tr></thead>
+                <tbody class="divide-y divide-slate-100">
+                    ${state.missingItems.map(m => `
+                        <tr class="hover:bg-slate-50">
+                            <td class="p-4">${new Date(m.date).toLocaleDateString()}</td>
+                            <td class="p-4">${m.boxName}<br><span class="text-xs text-slate-400">${m.destination}</span></td>
+                            <td class="p-4 font-medium text-red-600">${m.quantity}x ${m.itemName}</td>
+                            <td class="p-4 italic">${m.reason}</td>
+                            <td class="p-4"><span class="px-2 py-1 rounded-full text-xs font-bold ${m.status==='resolved'?'bg-green-100 text-green-700':'bg-red-100 text-red-700'}">${m.status==='resolved'?'Resolvido':'Pendente'}</span></td>
+                            <td class="p-4">${m.status==='pending'?`<button onclick="resolveMissingItem(${m.id})" class="text-blue-600 text-xs border border-blue-200 px-2 py-1 rounded hover:bg-blue-50">Resolver</button>`:''}</td>
+                        </tr>
+                    `).join('')}
+                </tbody></table></div>
+            </div>`;
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('app-content');
+            const search = state.historyFilter.search.toLowerCase();
+            const dateFilter = state.historyFilter.date;
+            
+            const filtered = state.history.filter(l => {
+                const txt = (l.action + l.details + l.boxName + l.user).toLowerCase();
+                const d = l.timestamp.substring(0, 10);
+                return (!search || txt.includes(search)) && (!dateFilter || d === dateFilter);
+            });
+
+            container.innerHTML = `
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-6 border-b border-slate-100 flex flex-col md:flex-row justify-between gap-4">
+                    <h2 class="text-xl font-bold text-slate-800 flex gap-2"><i data-lucide="history" class="text-slate-500"></i> Histórico</h2>
+                    <div class="flex gap-2">
+                        <input type="text" placeholder="Buscar..." value="${state.historyFilter.search}" oninput="handleHistoryFilter('search',this.value)" class="border rounded px-3 py-1 text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="date" value="${state.historyFilter.date}" onchange="handleHistoryFilter('date',this.value)" class="border rounded px-3 py-1 text-sm outline-none">
+                        ${(search||dateFilter) ? `<button onclick="clearHistoryFilters()" class="text-red-500 px-2 border rounded hover:bg-red-50"><i data-lucide="x" class="w-4 h-4"></i></button>`:''}
+                    </div>
+                </div>
+                <div class="divide-y divide-slate-100">
+                    ${filtered.length ? filtered.map(l => `
+                        <div class="p-4 hover:bg-slate-50 flex items-start gap-4">
+                            <div class="p-2 rounded-full shrink-0 bg-slate-100 text-slate-600"><i data-lucide="clipboard-list" class="w-4 h-4"></i></div>
+                            <div>
+                                <div class="flex justify-between items-center mb-1"><span class="font-semibold text-slate-800">${l.action} - ${l.boxName}</span><span class="text-xs text-slate-400">${new Date(l.timestamp).toLocaleString()}</span></div>
+                                <p class="text-sm text-slate-600">${l.details}</p>
+                                <p class="text-xs text-slate-400 mt-1 flex items-center gap-1"><i data-lucide="user" class="w-3 h-3"></i> ${l.user}</p>
+                            </div>
+                        </div>
+                    `).join('') : '<p class="p-8 text-center text-slate-400">Nada encontrado.</p>'}
+                </div>
+            </div>`;
+        }
+
+        // --- Renderização de Modais ---
+        function renderModal() {
+            const container = document.getElementById('modal-container');
+            if (!state.modal.type) { container.innerHTML = ''; return; }
+
+            const { type, boxId, data } = state.modal;
+            const box = boxId ? state.boxes.find(b => b.id === boxId) : null;
+            let content = '', title = '';
+
+            // Construção do conteúdo do modal
+            if (type === 'add') {
+                title = `Adicionar Item - ${box.name}`;
+                content = `
+                <form onsubmit="handleAddItem(event)" class="space-y-4">
+                    <div class="grid grid-cols-4 gap-3">
+                        <div class="col-span-3"><label class="text-sm font-medium block mb-1">Item</label><input name="itemName" required class="w-full border rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ex: Luvas" autofocus></div>
+                        <div><label class="text-sm font-medium block mb-1">Qtd</label><input name="quantity" type="number" min="1" value="1" required class="w-full border rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"></div>
+                    </div>
+                    <div class="flex gap-4">
+                        <label class="flex items-center gap-2 text-sm"><input type="radio" name="unitType" value="un" checked class="text-blue-600"> Unidade</label>
+                        <label class="flex items-center gap-2 text-sm"><input type="radio" name="unitType" value="fd" class="text-blue-600"> Fardo</label>
+                    </div>
+                    <label class="flex items-center gap-2 bg-slate-50 p-2 rounded border text-sm"><input type="checkbox" name="isExternal" class="text-blue-600 rounded"> Item fora da caixa (Anexo)</label>
+                    <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded font-medium hover:bg-blue-700 flex justify-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i> Adicionar</button>
+                    <p class="text-xs text-center text-slate-400">Janela permanece aberta para mais itens.</p>
+                </form>`;
+            } else if (type === 'deliver') {
+                title = `Entrega - ${box.name}`;
+                const opts = state.destinations.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+                content = `
+                <form onsubmit="handleDelivery(event)" class="space-y-4">
+                    <div class="bg-yellow-50 p-3 rounded border border-yellow-200 text-sm text-yellow-800">Muda status para "Em Entrega".</div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Destino</label>
+                        <div id="dest-select-group" class="flex gap-2">
+                            <select name="destination" class="flex-1 border rounded px-3 py-2 bg-white outline-none focus:ring-2 focus:ring-blue-500"><option value="">Selecione...</option>${opts}</select>
+                            <button type="button" onclick="toggleDestInput(true)" class="bg-slate-100 border px-3 rounded hover:bg-slate-200 text-sm whitespace-nowrap">+ Novo</button>
+                        </div>
+                        <div id="dest-input-group" class="hidden space-y-2 bg-slate-50 p-3 rounded border mt-2">
+                            <div class="flex justify-between items-center"><span class="text-xs font-bold uppercase text-slate-500">Novo Local</span><button type="button" onclick="toggleDestInput(false)" class="text-xs text-blue-600 underline">Cancelar</button></div>
+                            <input name="customName" placeholder="Nome" class="w-full border rounded px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                            <input name="customStreet" placeholder="Rua" class="w-full border rounded px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                            <div class="flex gap-2"><input name="customNumber" placeholder="Nº" class="w-1/3 border rounded px-3 py-2 text-sm outline-none"><input name="customNeighborhood" placeholder="Bairro" class="w-2/3 border rounded px-3 py-2 text-sm outline-none"></div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="block text-sm font-medium mb-1">Data</label><input name="deliveryDate" type="date" required class="w-full border rounded px-3 py-2 outline-none"></div>
+                        <div><label class="block text-sm font-medium mb-1">Responsável</label><input name="responsible" value="${state.currentUser}" class="w-full border rounded px-3 py-2 outline-none"></div>
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded font-medium hover:bg-blue-700 flex justify-center gap-2"><i data-lucide="truck" class="w-4 h-4"></i> Enviar</button>
+                </form>`;
+            } else if (type === 'complete') {
+                title = 'Confirmar Entrega';
+                content = `<p class="text-center text-slate-600 mb-4">Confirmar recebimento em <strong>${box.destination}</strong>?</p>
+                           <div class="flex gap-2"><button onclick="closeModal()" class="flex-1 border py-2 rounded hover:bg-slate-50">Cancelar</button><button onclick="handleCompleteDelivery()" class="flex-1 bg-green-600 text-white py-2 rounded hover:bg-green-700">Confirmar</button></div>`;
+            } else if (type === 'reset') {
+                title = 'Reiniciar Caixa';
+                content = `<p class="text-center text-slate-600 mb-4">Tornar <strong>${box.name}</strong> disponível novamente? (Esvazia materiais)</p>
+                           <div class="flex gap-2"><button onclick="closeModal()" class="flex-1 border py-2 rounded hover:bg-slate-50">Cancelar</button><button onclick="handleResetBox()" class="flex-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Confirmar</button></div>`;
+            } else if (type === 'deleteItem') {
+                title = 'Excluir Item';
+                content = `<p class="text-center text-slate-600 mb-4">Remover <strong>${box.items[data].name}</strong>?</p>
+                           <div class="flex gap-2"><button onclick="closeModal()" class="flex-1 border py-2 rounded hover:bg-slate-50">Cancelar</button><button onclick="confirmDeleteItem()" class="flex-1 bg-red-600 text-white py-2 rounded hover:bg-red-700">Excluir</button></div>`;
+            } else if (type === 'deleteLocation') {
+                title = 'Excluir Endereço';
+                content = `<p class="text-center text-slate-600 mb-4">Remover <strong>${state.destinations[data].name}</strong>?</p>
+                           <div class="flex gap-2"><button onclick="closeModal()" class="flex-1 border py-2 rounded hover:bg-slate-50">Cancelar</button><button onclick="confirmDeleteLocation()" class="flex-1 bg-red-600 text-white py-2 rounded hover:bg-red-700">Excluir</button></div>`;
+            } else if (type === 'missing') {
+                title = 'Reportar Falta';
+                content = `
+                <form onsubmit="handleReportMissing(event)" class="space-y-3">
+                    <div><label class="text-sm font-medium">Item</label><input name="itemName" required class="w-full border rounded px-3 py-2 outline-none"></div>
+                    <div><label class="text-sm font-medium">Qtd</label><input name="quantity" type="number" min="1" required class="w-full border rounded px-3 py-2 outline-none"></div>
+                    <div><label class="text-sm font-medium">Motivo</label><textarea name="reason" rows="2" required class="w-full border rounded px-3 py-2 outline-none"></textarea></div>
+                    <button type="submit" class="w-full bg-red-600 text-white py-2 rounded font-medium hover:bg-red-700">Registrar</button>
+                </form>`;
+            } else if (type === 'editLocation') {
+                const loc = state.destinations[data];
+                title = 'Editar Endereço';
+                content = `
+                <form onsubmit="handleEditDestination(event)" class="space-y-3">
+                    <div><label class="text-sm font-medium block mb-1">Nome</label><input name="editName" value="${loc.name}" required class="w-full border rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"></div>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="col-span-2"><label class="text-sm font-medium block mb-1">Rua</label><input name="editStreet" value="${loc.street}" class="w-full border rounded px-3 py-2 outline-none"></div>
+                        <div><label class="text-sm font-medium block mb-1">Nº</label><input name="editNumber" value="${loc.number}" class="w-full border rounded px-3 py-2 outline-none"></div>
+                    </div>
+                    <div><label class="text-sm font-medium block mb-1">Bairro</label><input name="editNeighborhood" value="${loc.neighborhood}" class="w-full border rounded px-3 py-2 outline-none"></div>
+                    <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded font-medium hover:bg-blue-700">Salvar</button>
+                </form>`;
+            }
+
+            container.innerHTML = `
+            <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-fade-in" onclick="if(event.target===this)closeModal()">
+                <div class="bg-white rounded-lg shadow-xl w-full max-w-md animate-zoom-in flex flex-col max-h-[90vh]">
+                    <div class="p-4 border-b flex justify-between items-center bg-slate-50 rounded-t-lg">
+                        <h3 class="font-bold text-lg text-slate-800">${title}</h3>
+                        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+                    </div>
+                    <div class="p-6 overflow-y-auto" id="modal-content-area">${content}</div>
+                </div>
+            </div>`;
+            lucide.createIcons();
+        }
+
+        // --- Controle Principal ---
+        function switchTab(tab) {
+            state.activeTab = tab;
+            saveData(); // Save active tab on switch
+        }
+
+        function openModal(type, boxId, data = null) {
+            state.modal = { type, boxId, data };
+            renderModal();
+        }
+
+        function closeModal() {
+            state.modal = { type: null, boxId: null, data: null };
+            document.getElementById('modal-container').innerHTML = ''; // Limpa DOM imediatamente
+            renderApp(); // Atualiza dashboard
+        }
+
+        function renderApp() {
+            if (!state.isLoggedIn) {
+                renderLogin();
+                return;
+            }
+            renderNav();
+            if (state.activeTab === 'dashboard') renderDashboard();
+            else if (state.activeTab === 'locations') renderLocationsPanel();
+            else if (state.activeTab === 'missing') renderMissingPanel();
+            else if (state.activeTab === 'history') renderHistory();
+            lucide.createIcons();
+        }
+
+        // Init
+        renderApp();
     </script>
 </body>
 </html>
