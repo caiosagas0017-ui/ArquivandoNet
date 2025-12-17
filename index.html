@@ -471,6 +471,55 @@
             }
         }
 
+        function printMissingItems() {
+            if (!state.missingItems.length) return;
+
+            const rows = state.missingItems.map(m => `
+                <tr>
+                    <td>${new Date(m.date).toLocaleDateString('pt-BR')}</td>
+                    <td>${m.boxName}<br><span style="font-size:11px;color:#666">${m.destination}</span></td>
+                    <td style="font-weight:bold;color:#c0392b">${m.quantity}x ${m.itemName}</td>
+                    <td style="font-style:italic">${m.reason}</td>
+                    <td><span style="padding:2px 6px;border-radius:4px;font-size:11px;font-weight:bold;${m.status==='resolved'?'background:#dcfce7;color:#15803d':'background:#fee2e2;color:#b91c1c'}">${m.status==='resolved'?'Resolvido':'Pendente'}</span></td>
+                </tr>
+            `).join('');
+
+            const html = `
+            <html><head><title>Relatório de Faltas - Logística Central</title>
+            <style>
+                body { font-family: sans-serif; padding: 20px; color: #1e3a8a; }
+                .header { border-bottom: 2px solid #1e3a8a; padding-bottom: 10px; margin-bottom: 20px; display:flex; justify-content:space-between; align-items:center;}
+                h1 { font-size: 20px; margin: 0; color: #1e3a8a; }
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; }
+                th { background: #eff6ff; color: #1e40af; padding: 10px; text-align: left; border-bottom: 2px solid #bfdbfe; font-size: 11px; text-transform: uppercase; }
+                td { padding: 10px; border-bottom: 1px solid #e2e8f0; color: #334155; }
+                tr:nth-child(even) { background-color: #f8fafc; }
+                @media print { 
+                    body { -webkit-print-color-adjust: exact; }
+                }
+            </style></head><body>
+                <div class="header">
+                    <div>
+                        <h1>Logística Central - Relatório de Faltas</h1>
+                        <div style="font-size:12px;color:#64748b;margin-top:4px;">Gerado em: ${new Date().toLocaleString('pt-BR')}</div>
+                    </div>
+                </div>
+                <table>
+                    <thead><tr><th>Data</th><th>Caixa/Destino</th><th>Item Faltante</th><th>Motivo</th><th>Status</th></tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+                <script>window.onload=function(){window.print();} <\/script>
+            </body></html>`;
+
+            const win = window.open('', '_blank');
+            if(win) {
+                win.document.write(html);
+                win.document.close();
+            } else {
+                alert('Pop-up bloqueado. Permita pop-ups para imprimir.');
+            }
+        }
+
         function printBox(boxId) {
             const box = state.boxes.find(b => b.id === boxId);
             if (!box) return;
@@ -491,7 +540,8 @@
                  </li>`
             ).join('');
 
-            const dateStr = box.lastDeliveryDate ? new Date(box.lastDeliveryDate).toLocaleDateString() : '__/__/__';
+            // DATA ATUAL (Resolvendo problema do dia anterior e atendendo ao pedido de "data atual")
+            const dateStr = new Date().toLocaleDateString('pt-BR');
 
             const html = `
             <html><head><title>Manifesto ${box.name}</title>
@@ -521,7 +571,7 @@
                     <div><div class="label">Motorista</div><div class="value">${box.driver || '-'}</div></div>
                 </div>
                 ${internal.length > 0 ? `<h2>Conteúdo (${internal.reduce((a,i)=>a+(i.quantity||1),0)})</h2><ul>${renderList(internal)}</ul>` : ''}
-                ${external.length > 0 ? `<h2>Itens Externos/Anexos (${external.reduce((a,i)=>a+(i.quantity||1),0)})</h2><ul>${renderList(external)}</ul>` : ''}
+                ${external.length > 0 ? `<h2>Itens Fora da Caixa (${external.reduce((a,i)=>a+(i.quantity||1),0)})</h2><ul>${renderList(external)}</ul>` : ''}
                 ${internal.length===0 && external.length===0 ? '<p style="text-align:center;color:#93c5fd;margin-top:20px;">Vazio</p>' : ''}
                 <div style="display:flex;gap:40px;margin-top:60px;">
                     <div class="sign-line">Assinatura Expedição</div><div class="sign-line">Assinatura Recebimento</div>
@@ -817,7 +867,12 @@
             }
             container.innerHTML = `
             <div class="bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden">
-                <div class="p-6 border-b border-blue-100"><h2 class="text-xl font-bold text-slate-800 flex items-center gap-2"><i data-lucide="alert-triangle" class="text-orange-500"></i> Itens Faltantes</h2></div>
+                <div class="p-6 border-b border-blue-100 flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2"><i data-lucide="alert-triangle" class="text-orange-500"></i> Itens Faltantes</h2>
+                    <button onclick="printMissingItems()" class="flex items-center gap-2 text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors text-sm font-medium border border-blue-200 shadow-sm">
+                        <i data-lucide="printer" class="w-4 h-4"></i> Imprimir
+                    </button>
+                </div>
                 <div class="overflow-x-auto"><table class="w-full text-left text-sm text-slate-600"><thead class="bg-blue-50 font-semibold uppercase text-xs text-blue-800"><tr><th class="p-4">Data</th><th class="p-4">Caixa</th><th class="p-4">Item</th><th class="p-4">Motivo</th><th class="p-4">Status</th><th class="p-4">Ação</th></tr></thead>
                 <tbody class="divide-y divide-blue-50">
                     ${state.missingItems.map(m => `
