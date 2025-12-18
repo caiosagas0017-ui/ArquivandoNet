@@ -59,19 +59,6 @@
     <div id="modal-container"></div>
 
     <script>
-        // --- Helpers de Formatação ---
-        function formatDate(dateInput) {
-            if (!dateInput) return '';
-            const date = new Date(dateInput);
-            return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        }
-
-        function formatTime(dateInput) {
-            if (!dateInput) return '';
-            const date = new Date(dateInput);
-            return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-        }
-
         // --- Configurações Iniciais ---
         const DEFAULT_DESTINOS = [
             { name: "Clínica Mult 1", street: "Av. Principal", number: "100", neighborhood: "Centro" },
@@ -95,24 +82,18 @@
             { id: 4, name: 'Caixa 4', status: 'available', items: [], destination: null, driver: null },
         ];
 
-        // Carregamento Seguro dos Dados
-        let storedDestinations;
-        try {
-            storedDestinations = JSON.parse(localStorage.getItem('logistica_destinations'));
-            if (storedDestinations && storedDestinations.length > 0 && typeof storedDestinations[0] === 'string') {
-                storedDestinations = storedDestinations.map(d => ({ name: d, street: "", number: "", neighborhood: "" }));
-            }
-        } catch (e) { console.error("Erro ao carregar destinos", e); }
+        // Carregar dados ou usar padrão
+        let storedDestinations = JSON.parse(localStorage.getItem('logistica_destinations'));
+        if (storedDestinations && storedDestinations.length > 0 && typeof storedDestinations[0] === 'string') {
+            storedDestinations = storedDestinations.map(d => ({ name: d, street: "", number: "", neighborhood: "" }));
+        }
 
-        let storedDrivers;
-        try {
-            storedDrivers = JSON.parse(localStorage.getItem('logistica_drivers'));
-            if (!storedDrivers) {
-                storedDrivers = DEFAULT_DRIVERS;
-            } else if (storedDrivers.length > 0 && typeof storedDrivers[0] === 'string') {
-                storedDrivers = storedDrivers.map(d => ({ name: d, phone: "" }));
-            }
-        } catch (e) { console.error("Erro ao carregar motoristas", e); }
+        let storedDrivers = JSON.parse(localStorage.getItem('logistica_drivers'));
+        if (!storedDrivers) {
+            storedDrivers = DEFAULT_DRIVERS;
+        } else if (storedDrivers.length > 0 && typeof storedDrivers[0] === 'string') {
+            storedDrivers = storedDrivers.map(d => ({ name: d, phone: "" }));
+        }
 
         let state = {
             isLoggedIn: localStorage.getItem('logistica_auth') === 'true', 
@@ -120,7 +101,7 @@
             history: JSON.parse(localStorage.getItem('logistica_history')) || [],
             missingItems: JSON.parse(localStorage.getItem('logistica_missing')) || [],
             destinations: storedDestinations || DEFAULT_DESTINOS,
-            drivers: storedDrivers || DEFAULT_DRIVERS,
+            drivers: storedDrivers,
             activeTab: localStorage.getItem('logistica_activeTab') || 'dashboard',
             currentUser: localStorage.getItem('logistica_currentUser') || "Logística",
             modal: { type: null, boxId: null, data: null },
@@ -155,20 +136,15 @@
             renderApp();
         }
 
-        // --- Persistência Blindada ---
+        // --- Persistência ---
         function saveData(skipRender = false) {
-            try {
-                localStorage.setItem('logistica_boxes', JSON.stringify(state.boxes));
-                localStorage.setItem('logistica_history', JSON.stringify(state.history));
-                localStorage.setItem('logistica_missing', JSON.stringify(state.missingItems));
-                localStorage.setItem('logistica_destinations', JSON.stringify(state.destinations));
-                localStorage.setItem('logistica_drivers', JSON.stringify(state.drivers));
-                localStorage.setItem('logistica_currentUser', state.currentUser);
-                localStorage.setItem('logistica_activeTab', state.activeTab);
-            } catch (e) {
-                console.error("Erro ao salvar dados (LocalStorage cheio?):", e);
-                alert("Atenção: Não foi possível salvar os dados. O armazenamento pode estar cheio.");
-            }
+            localStorage.setItem('logistica_boxes', JSON.stringify(state.boxes));
+            localStorage.setItem('logistica_history', JSON.stringify(state.history));
+            localStorage.setItem('logistica_missing', JSON.stringify(state.missingItems));
+            localStorage.setItem('logistica_destinations', JSON.stringify(state.destinations));
+            localStorage.setItem('logistica_drivers', JSON.stringify(state.drivers));
+            localStorage.setItem('logistica_currentUser', state.currentUser);
+            localStorage.setItem('logistica_activeTab', state.activeTab);
             if (!skipRender) renderApp();
         }
 
@@ -201,7 +177,7 @@
 
         function toggleDateAccordion(date) {
             state.expandedDate = state.expandedDate === date ? null : date;
-            renderApp(); 
+            renderApp();
         }
 
         // --- Lógica de Negócio ---
@@ -330,7 +306,7 @@
                 box.status = 'available';
                 box.destination = null;
                 box.driver = null;
-                box.items = []; 
+                box.items = []; // Limpa itens
                 addHistoryLog('Status', `Caixa reiniciada e esvaziada`, box.name);
                 closeModal();
                 saveData();
@@ -340,7 +316,7 @@
         function confirmDeleteItem() {
             const box = state.boxes.find(b => b.id === state.modal.boxId);
             const idx = state.modal.data;
-            if (box && idx !== null && box.items[idx]) {
+            if (box && idx !== null) {
                 const item = box.items[idx];
                 box.items.splice(idx, 1);
                 addHistoryLog('Remoção', `Item removido: ${item.name}`, box.name);
@@ -416,7 +392,7 @@
 
         function confirmDeleteMissing() {
             const idx = state.modal.data;
-            if (idx !== null && state.missingItems[idx]) {
+            if (idx !== null) {
                 const item = state.missingItems[idx];
                 state.missingItems.splice(idx, 1);
                 addHistoryLog('Remoção', `Registro de falta excluído: ${item.itemName}`, item.boxName);
@@ -557,7 +533,7 @@
 
             const rows = state.missingItems.map(m => `
                 <tr>
-                    <td>${formatDate(m.date)}</td>
+                    <td>${new Date(m.date).toLocaleDateString('pt-BR')}</td>
                     <td>${m.boxName}<br><span style="font-size:11px;color:#666">${m.destination}</span></td>
                     <td style="font-weight:bold;color:#c0392b">${m.quantity}x ${m.itemName}</td>
                     <td style="font-style:italic">${m.reason}</td>
@@ -621,11 +597,14 @@
                  </li>`
             ).join('');
 
-            const dateStr = formatDate(new Date());
+            const dateStr = new Date().toLocaleDateString('pt-BR');
             
             const driverObj = state.drivers.find(d => d.name === box.driver);
             const driverPhone = driverObj ? driverObj.phone : '';
             const driverDisplay = box.driver ? (driverPhone ? `${box.driver}<br><span style="font-size:11px;font-weight:normal;">${driverPhone}</span>` : box.driver) : '-';
+
+            // Define o título: Usa o destino se houver, senão "Logística Central"
+            const pageTitle = box.destination || "Logística Central";
 
             const html = `
             <html><head><title>Manifesto ${box.name}</title>
@@ -645,7 +624,7 @@
                 }
             </style></head><body>
                 <div class="header">
-                    <div><h1 style="margin:0;color:#1e3a8a;">Logística Central</h1><div style="color:#3b82f6;">Controle de Entrega</div></div>
+                    <div><h1 style="margin:0;color:#1e3a8a;">${pageTitle}</h1><div style="color:#3b82f6;">Controle de Entrega</div></div>
                     <div style="text-align:right;"><div class="value" style="font-size:24px;">${box.name}</div></div>
                 </div>
                 <div class="info-grid">
@@ -672,7 +651,8 @@
             }
         }
 
-        // --- Renderização de Componentes ---
+        // --- Renderização ---
+
         function renderLogin() {
             const container = document.getElementById('app-content');
             document.getElementById('nav-buttons').innerHTML = ''; 
@@ -776,6 +756,7 @@
             state.boxes.forEach(box => {
                 const hasIssue = state.missingItems.some(m => m.boxId === box.id && m.status === 'pending');
                 const status = (hasIssue && box.status === 'delivered') ? 'issue' : box.status;
+                const itemsCount = box.items.reduce((a,i) => a+(i.quantity||1), 0);
                 
                 const borderColors = {
                     available: "border-t-blue-500",
@@ -784,6 +765,7 @@
                     issue: "border-t-red-500"
                 };
 
+                // FIX: Usando o índice REAL do item dentro do array box.items para a exclusão funcionar corretamente
                 const renderList = (items, title, isExt) => items.length ? `
                     <div class="mb-4">
                         <p class="text-[10px] font-bold uppercase tracking-wider text-blue-400 mb-2 flex items-center gap-1.5 border-b border-blue-50 pb-1">
@@ -971,7 +953,7 @@
                 <tbody class="divide-y divide-blue-50">
                     ${state.missingItems.map((m, idx) => `
                         <tr class="hover:bg-blue-50/30 group">
-                            <td class="p-4 text-blue-900">${formatDate(m.date)}</td>
+                            <td class="p-4 text-blue-900">${new Date(m.date).toLocaleDateString()}</td>
                             <td class="p-4">${m.boxName}<br><span class="text-xs text-blue-400">${m.destination}</span></td>
                             <td class="p-4 font-medium text-red-600">${m.quantity}x ${m.itemName}</td>
                             <td class="p-4 italic text-slate-500">${m.reason}</td>
@@ -995,14 +977,16 @@
             const search = state.historyFilter.search.toLowerCase();
             const dateFilter = state.historyFilter.date;
             
+            // 1. Filter global history
             const filtered = state.history.filter(l => {
                 const txt = (l.action + l.details + l.boxName + l.user).toLowerCase();
                 const d = l.timestamp.substring(0, 10);
                 return (!search || txt.includes(search)) && (!dateFilter || d === dateFilter);
             });
             
-            const todayPT = formatDate(new Date());
+            const todayPT = new Date().toLocaleDateString('pt-BR');
             
+            // Helper to render a single log card
             const renderLogCard = (l) => {
                 let icon = 'circle';
                 let color = 'text-slate-400 bg-slate-100';
@@ -1046,7 +1030,7 @@
                         <div class="flex-grow min-w-0">
                             <div class="flex justify-between items-start">
                                 <h4 class="text-sm font-bold text-slate-800">${l.action} <span class="font-normal text-slate-500 text-xs">em ${l.boxName || 'Caixa'}</span></h4>
-                                <span class="text-[10px] text-slate-400 font-mono whitespace-nowrap ml-2">${formatTime(l.timestamp)}</span>
+                                <span class="text-[10px] text-slate-400 font-mono whitespace-nowrap ml-2">${new Date(l.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>
                             </div>
                             <p class="text-sm text-slate-600 mt-0.5 leading-snug">${mainDetails}</p>
                             ${itemsContent}
@@ -1059,10 +1043,13 @@
                 `;
             };
 
+            // Layout Container
             let contentHtml = '';
 
             if (state.historyView === 'today') {
-                const todaysLogs = filtered.filter(l => formatDate(l.timestamp) === todayPT);
+                // TODAY VIEW (Expanded List)
+                const todaysLogs = filtered.filter(l => new Date(l.timestamp).toLocaleDateString('pt-BR') === todayPT);
+                
                 contentHtml = `
                 <div class="bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden flex flex-col flex-grow">
                     <div class="p-4 border-b border-blue-50 bg-blue-50/30">
@@ -1075,16 +1062,20 @@
                         }
                     </div>
                 </div>`;
+
             } else {
-                const archiveLogs = filtered.filter(l => formatDate(l.timestamp) !== todayPT);
+                // ARCHIVE VIEW (Accordion List)
+                const archiveLogs = filtered.filter(l => new Date(l.timestamp).toLocaleDateString('pt-BR') !== todayPT);
                 
+                // Group by date
                 const grouped = {};
                 archiveLogs.forEach(l => {
-                    const d = formatDate(l.timestamp);
+                    const d = new Date(l.timestamp).toLocaleDateString('pt-BR');
                     if(!grouped[d]) grouped[d] = [];
                     grouped[d].push(l);
                 });
 
+                // Sort dates descending
                 const dates = Object.keys(grouped).sort((a,b) => {
                     const [da, ma, ya] = a.split('/');
                     const [db, mb, yb] = b.split('/');
@@ -1125,6 +1116,7 @@
                 </div>`;
             }
 
+            // Wrapper with Tabs and Search
             container.innerHTML = `
             <div class="flex flex-col h-[calc(100vh-140px)]">
                 <div class="flex flex-col md:flex-row gap-4 mb-4 shrink-0 px-1 justify-between items-start md:items-center">
@@ -1145,6 +1137,7 @@
                 ${contentHtml}
             </div>`;
 
+            // Restore focus
             const searchInput = document.getElementById('history-search-input');
             if (searchInput && state.historyFilter.search !== '') {
                 searchInput.focus();
@@ -1167,52 +1160,20 @@
             if (type === 'add') {
                 title = `Adicionar Item - ${box.name}`;
                 content = `
-                <form onsubmit="handleAddItem(event)" class="space-y-5">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Nome do Material</label>
-                        <div class="relative">
-                            <i data-lucide="package" class="absolute left-3.5 top-3.5 w-5 h-5 text-slate-400"></i>
-                            <input name="itemName" required class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-11 pr-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-slate-800 placeholder-slate-400 font-medium" placeholder="Ex: Luvas de Procedimento" autofocus>
-                        </div>
+                <form onsubmit="handleAddItem(event)" class="space-y-4">
+                    <div class="grid grid-cols-4 gap-3">
+                        <div class="col-span-3"><label class="text-sm font-medium block mb-1 text-slate-700">Item</label><input name="itemName" required class="w-full border border-blue-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ex: Luvas" autofocus></div>
+                        <div><label class="text-sm font-medium block mb-1 text-slate-700">Qtd</label><input name="quantity" type="number" min="1" value="1" required class="w-full border border-blue-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"></div>
                     </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Quantidade</label>
-                            <input name="quantity" type="number" min="1" value="1" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white text-center font-bold text-slate-800 text-lg">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Unidade</label>
-                            <div class="flex bg-slate-100 p-1 rounded-xl border border-slate-200 h-[52px]"> 
-                                <label class="flex-1 cursor-pointer relative">
-                                    <input type="radio" name="unitType" value="un" checked class="peer hidden">
-                                    <div class="flex items-center justify-center h-full rounded-lg text-sm font-bold text-slate-500 peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all z-10 relative">UN</div>
-                                </label>
-                                <label class="flex-1 cursor-pointer relative">
-                                    <input type="radio" name="unitType" value="fd" class="peer hidden">
-                                    <div class="flex items-center justify-center h-full rounded-lg text-sm font-bold text-slate-500 peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all z-10 relative">FD</div>
-                                </label>
-                            </div>
-                        </div>
+                    <div class="flex gap-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                        <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="radio" name="unitType" value="un" checked class="text-blue-600 focus:ring-blue-500"> Unidade</label>
+                        <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="radio" name="unitType" value="fd" class="text-blue-600 focus:ring-blue-500"> Fardo</label>
                     </div>
-
-                    <label class="flex items-center gap-3 p-3.5 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-all group bg-white shadow-sm">
-                        <div class="relative flex items-center justify-center shrink-0">
-                            <input type="checkbox" name="isExternal" class="peer h-5 w-5 cursor-pointer appearance-none rounded-md border-2 border-slate-300 checked:bg-blue-600 checked:border-blue-600 transition-all">
-                            <i data-lucide="check" class="absolute w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 pointer-events-none transform scale-50 peer-checked:scale-100 transition-transform stroke-[3]"></i>
-                        </div>
-                        <div class="flex flex-col">
-                            <span class="text-sm font-bold text-slate-700 group-hover:text-blue-700 transition-colors">Item Fora da Caixa</span>
-                            <span class="text-[10px] text-slate-400 font-medium">Marque para itens volumosos/anexos</span>
-                        </div>
-                    </label>
-
-                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold shadow-lg shadow-blue-200/50 flex items-center justify-center gap-2 transition-all active:scale-[0.98] mt-2">
-                        <i data-lucide="plus-circle" class="w-5 h-5"></i>
-                        <span>Adicionar à Lista</span>
+                    <label class="flex items-center gap-2 bg-slate-50 p-3 rounded-lg border border-slate-200 text-sm cursor-pointer hover:bg-slate-100 transition-colors"><input type="checkbox" name="isExternal" class="text-blue-600 rounded focus:ring-blue-500"> Item fora da caixa (Anexo)</label>
+                    <button type="submit" class="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 flex items-center justify-center gap-2 transition-colors shadow-sm shadow-blue-200">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Adicionar Item
                     </button>
-                    <p class="text-[10px] text-center text-slate-400 font-medium">A janela continuará aberta para inserir mais itens</p>
+                    <p class="text-xs text-center text-slate-400">Janela permanece aberta para mais itens.</p>
                 </form>`;
             } else if (type === 'addBox') {
                 title = 'Nova Caixa';
