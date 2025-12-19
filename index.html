@@ -18,43 +18,100 @@
         .animate-zoom-in { animation: zoomIn 0.2s ease-out; }
         
         @keyframes slideUpFade {
-            0% { opacity: 0; transform: translateY(10px); }
-            10% { opacity: 1; transform: translateY(0); }
-            90% { opacity: 1; transform: translateY(0); }
-            100% { opacity: 0; transform: translateY(-10px); }
+            0% { opacity: 0; transform: translate(-50%, 10px); }
+            10% { opacity: 1; transform: translate(-50%, 0); }
+            90% { opacity: 1; transform: translate(-50%, 0); }
+            100% { opacity: 0; transform: translate(-50%, -10px); }
         }
-        .toast-msg { animation: slideUpFade 2s ease-in-out forwards; }
+        .toast-msg { 
+            animation: slideUpFade 3s ease-in-out forwards; 
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+        }
         
         /* Scrollbar personalizada fina e elegante */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #eff6ff; }
-        ::-webkit-scrollbar-thumb { background: #bfdbfe; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #93c5fd; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Ocultar scrollbar no nav mobile */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Transição suave para a sidebar */
+        .sidebar-transition { transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
     </style>
 </head>
-<body class="bg-blue-50 font-sans text-slate-900 pb-20 selection:bg-blue-200">
+<body class="bg-slate-50 font-sans text-slate-900 h-screen overflow-hidden selection:bg-blue-200">
 
-    <!-- Header -->
-    <header class="bg-white border-b border-blue-100 sticky top-0 z-30 shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row justify-between items-center gap-4">
-            <div class="flex items-center gap-3 select-none">
-                <div class="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-200">
-                    <i data-lucide="package" class="text-white w-6 h-6"></i>
+    <!-- Container de Login (Isolado) -->
+    <div id="login-container" class="hidden h-full w-full bg-blue-50 flex items-center justify-center z-50 absolute top-0 left-0"></div>
+
+    <!-- Layout da Aplicação (Sidebar + Main) -->
+    <div id="app-layout" class="flex h-screen w-full overflow-hidden hidden opacity-0 transition-opacity duration-300">
+        
+        <!-- SIDEBAR (Desktop) -->
+        <aside id="main-sidebar" class="hidden md:flex flex-col bg-white border-r border-blue-100 h-full shadow-sm z-20 shrink-0 sidebar-transition w-64">
+            <!-- Logo Area & Toggle -->
+            <div class="p-4 border-b border-blue-50 flex items-center justify-between h-20">
+                <!-- Logo Content -->
+                <div id="sidebar-logo-content" class="flex items-center gap-3 overflow-hidden whitespace-nowrap transition-opacity duration-200">
+                    <div class="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-200 shrink-0">
+                        <i data-lucide="package" class="text-white w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold tracking-tight text-blue-900 leading-tight">Logística</h1>
+                        <p class="text-[10px] text-blue-500 font-medium uppercase tracking-wider">Painel</p>
+                    </div>
                 </div>
-                <div>
-                    <h1 class="text-lg font-bold tracking-tight text-blue-900">Logística Central</h1>
-                    <p class="text-xs text-blue-500 font-medium">Controle de Entregas</p>
+                
+                <!-- Toggle Button (3 Tracinhos) -->
+                <button onclick="toggleSidebar()" class="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-100" title="Alternar Menu">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="flex-1 overflow-y-auto p-3 space-y-1 overflow-x-hidden" id="sidebar-nav">
+                <!-- Preenchido via JS -->
+            </nav>
+
+            <!-- User Footer -->
+            <div class="p-4 border-t border-blue-50 bg-slate-50/50" id="sidebar-footer">
+                <!-- Preenchido via JS -->
+            </div>
+        </aside>
+
+        <!-- Main Content Wrapper -->
+        <div class="flex-1 flex flex-col h-full overflow-hidden relative bg-slate-50">
+            
+            <!-- HEADER MOBILE (Visível apenas em telas pequenas) -->
+            <header class="md:hidden bg-white border-b border-blue-100 flex-shrink-0 z-30">
+                <div class="px-4 py-3 flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <div class="bg-blue-600 p-1.5 rounded-lg">
+                            <i data-lucide="package" class="text-white w-5 h-5"></i>
+                        </div>
+                        <span class="font-bold text-blue-900">Logística</span>
+                    </div>
+                    <button onclick="logout()" class="text-slate-400 hover:text-red-600"><i data-lucide="log-out" class="w-5 h-5"></i></button>
                 </div>
-            </div>
-            <div class="flex items-center gap-3">
-                <div class="flex bg-blue-50 rounded-lg p-1 overflow-x-auto border border-blue-100" id="nav-buttons"></div>
-                <div id="logout-container"></div>
-            </div>
+                <!-- Mobile Horizontal Nav -->
+                <div class="px-2 pb-2 overflow-x-auto no-scrollbar flex gap-2" id="mobile-nav">
+                    <!-- Preenchido via JS -->
+                </div>
+            </header>
+
+            <!-- Conteúdo Principal Scrollável -->
+            <main class="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth" id="app-content">
+                <!-- O conteúdo das abas será renderizado aqui -->
+            </main>
         </div>
-    </header>
-
-    <!-- Conteúdo Principal -->
-    <main class="max-w-7xl mx-auto px-4 py-8" id="app-content"></main>
+    </div>
 
     <!-- Container do Modal -->
     <div id="modal-container"></div>
@@ -62,7 +119,7 @@
     <script>
         // --- Helpers de Segurança e Utilidades ---
         function escapeHtml(text) {
-            if (!text && text !== 0) return "";
+            if (text === null || text === undefined) return "";
             return String(text)
                 .replace(/&/g, "&amp;")
                 .replace(/</g, "&lt;")
@@ -73,9 +130,41 @@
 
         function getLocalDateString(isoString) {
             if (!isoString) return '';
-            const d = new Date(isoString);
-            const offset = d.getTimezoneOffset() * 60000;
-            return new Date(d.getTime() - offset).toISOString().split('T')[0];
+            try {
+                const d = new Date(isoString);
+                if (isNaN(d.getTime())) return ''; // Data inválida
+                const offset = d.getTimezoneOffset() * 60000;
+                return new Date(d.getTime() - offset).toISOString().split('T')[0];
+            } catch (e) {
+                return '';
+            }
+        }
+
+        // Função robusta para carregar do localStorage
+        function safeParse(key, fallbackValue) {
+            try {
+                const item = localStorage.getItem(key);
+                return item ? JSON.parse(item) : fallbackValue;
+            } catch (error) {
+                console.error(`Erro ao carregar dados de ${key}. Usando fallback.`, error);
+                return fallbackValue;
+            }
+        }
+
+        function showToast(message, type = 'success') {
+            const styles = type === 'success' 
+                ? 'bg-emerald-600 text-white shadow-emerald-200' 
+                : 'bg-rose-600 text-white shadow-rose-200';
+            const icon = type === 'success' ? 'check' : 'alert-circle';
+            
+            const toast = document.createElement('div');
+            toast.className = `toast-msg ${styles} text-sm font-medium py-2.5 px-4 rounded-full shadow-lg flex items-center gap-2 pointer-events-none`;
+            toast.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4"></i> ${message}`;
+            
+            document.body.appendChild(toast);
+            if(typeof lucide !== 'undefined') lucide.createIcons();
+            
+            setTimeout(() => { if(toast.parentNode) toast.parentNode.removeChild(toast); }, 3000);
         }
 
         // --- Configurações Iniciais ---
@@ -101,32 +190,33 @@
             { id: 4, name: 'Caixa 4', status: 'available', items: [], destination: null, driver: null },
         ];
 
-        // Carregar dados ou usar padrão
-        let storedDestinations = JSON.parse(localStorage.getItem('logistica_destinations'));
-        if (storedDestinations && storedDestinations.length > 0 && typeof storedDestinations[0] === 'string') {
+        // Carregamento inicial blindado
+        let storedDestinations = safeParse('logistica_destinations', DEFAULT_DESTINOS);
+        // Compatibilidade com versões antigas (array de strings)
+        if (storedDestinations.length > 0 && typeof storedDestinations[0] === 'string') {
             storedDestinations = storedDestinations.map(d => ({ name: d, street: "", number: "", neighborhood: "" }));
         }
 
-        let storedDrivers = JSON.parse(localStorage.getItem('logistica_drivers'));
-        if (!storedDrivers) {
-            storedDrivers = DEFAULT_DRIVERS;
-        } else if (storedDrivers.length > 0 && typeof storedDrivers[0] === 'string') {
+        let storedDrivers = safeParse('logistica_drivers', DEFAULT_DRIVERS);
+        if (storedDrivers.length > 0 && typeof storedDrivers[0] === 'string') {
             storedDrivers = storedDrivers.map(d => ({ name: d, phone: "" }));
         }
 
         let state = {
             isLoggedIn: localStorage.getItem('logistica_auth') === 'true', 
-            boxes: JSON.parse(localStorage.getItem('logistica_boxes')) || INITIAL_BOXES,
-            history: JSON.parse(localStorage.getItem('logistica_history')) || [],
-            missingItems: JSON.parse(localStorage.getItem('logistica_missing')) || [],
-            destinations: storedDestinations || DEFAULT_DESTINOS,
+            boxes: safeParse('logistica_boxes', INITIAL_BOXES),
+            history: safeParse('logistica_history', []),
+            missingItems: safeParse('logistica_missing', []),
+            destinations: storedDestinations,
             drivers: storedDrivers,
             activeTab: localStorage.getItem('logistica_activeTab') || 'dashboard',
             currentUser: localStorage.getItem('logistica_currentUser') || "Logística",
             modal: { type: null, boxId: null, data: null },
             historyFilter: { search: '', date: '' },
             historyView: 'today',
-            expandedDate: null
+            expandedDate: null,
+            pendingImport: null,
+            sidebarCollapsed: safeParse('logistica_sidebar_collapsed', false)
         };
 
         // --- Autenticação ---
@@ -157,14 +247,20 @@
 
         // --- Persistência ---
         function saveData(skipRender = false) {
-            localStorage.setItem('logistica_boxes', JSON.stringify(state.boxes));
-            localStorage.setItem('logistica_history', JSON.stringify(state.history));
-            localStorage.setItem('logistica_missing', JSON.stringify(state.missingItems));
-            localStorage.setItem('logistica_destinations', JSON.stringify(state.destinations));
-            localStorage.setItem('logistica_drivers', JSON.stringify(state.drivers));
-            localStorage.setItem('logistica_currentUser', state.currentUser);
-            localStorage.setItem('logistica_activeTab', state.activeTab);
-            if (!skipRender) renderApp();
+            try {
+                localStorage.setItem('logistica_boxes', JSON.stringify(state.boxes));
+                localStorage.setItem('logistica_history', JSON.stringify(state.history));
+                localStorage.setItem('logistica_missing', JSON.stringify(state.missingItems));
+                localStorage.setItem('logistica_destinations', JSON.stringify(state.destinations));
+                localStorage.setItem('logistica_drivers', JSON.stringify(state.drivers));
+                localStorage.setItem('logistica_currentUser', state.currentUser);
+                localStorage.setItem('logistica_activeTab', state.activeTab);
+                localStorage.setItem('logistica_sidebar_collapsed', JSON.stringify(state.sidebarCollapsed));
+                if (!skipRender) renderApp();
+            } catch (e) {
+                console.error("Erro ao salvar dados:", e);
+                showToast("Erro ao salvar alterações. Espaço cheio?", "error");
+            }
         }
 
         function addHistoryLog(action, details, boxName) {
@@ -186,7 +282,7 @@
                     destinations: state.destinations,
                     drivers: state.drivers,
                     timestamp: new Date().toISOString(),
-                    version: "1.2"
+                    version: "1.3" // Version bump
                 };
                 
                 const dataStr = JSON.stringify(data, null, 2);
@@ -206,25 +302,37 @@
 
             } catch (err) {
                 console.error(err);
-                alert("Erro ao criar arquivo de backup: " + err.message);
+                showToast("Erro ao criar backup.", 'error');
             }
         }
 
         function sanitizeImportData(data) {
-            if (!data.boxes || !Array.isArray(data.boxes)) {
-                data.boxes = JSON.parse(JSON.stringify(INITIAL_BOXES));
-            }
-            data.boxes = data.boxes.map(b => ({
-                ...b,
-                items: Array.isArray(b.items) ? b.items : [],
-                status: b.status || 'available',
-                name: b.name || 'Caixa Sem Nome'
+            // Garante estrutura mínima
+            const safeData = {
+                boxes: Array.isArray(data.boxes) ? data.boxes : JSON.parse(JSON.stringify(INITIAL_BOXES)),
+                history: Array.isArray(data.history) ? data.history : [],
+                missingItems: Array.isArray(data.missingItems) ? data.missingItems : [],
+                destinations: (Array.isArray(data.destinations) && data.destinations.length > 0) ? data.destinations : DEFAULT_DESTINOS,
+                drivers: (Array.isArray(data.drivers) && data.drivers.length > 0) ? data.drivers : DEFAULT_DRIVERS
+            };
+
+            // Sanitização profunda de caixas
+            safeData.boxes = safeData.boxes.map(b => ({
+                id: Number(b.id) || Date.now(),
+                name: String(b.name || 'Caixa Recuperada'),
+                status: ['available', 'in_delivery', 'delivered', 'issue'].includes(b.status) ? b.status : 'available',
+                items: Array.isArray(b.items) ? b.items.map(i => ({
+                    name: String(i.name || 'Item'),
+                    quantity: Math.max(1, Number(i.quantity) || 1),
+                    isExternal: !!i.isExternal,
+                    unitType: i.unitType === 'fd' ? 'fd' : 'un'
+                })) : [],
+                destination: b.destination ? String(b.destination) : null,
+                driver: b.driver ? String(b.driver) : null,
+                lastDeliveryDate: b.lastDeliveryDate || null
             }));
-            if (!Array.isArray(data.history)) data.history = [];
-            if (!Array.isArray(data.missingItems)) data.missingItems = [];
-            if (!Array.isArray(data.destinations) || data.destinations.length === 0) data.destinations = DEFAULT_DESTINOS;
-            if (!Array.isArray(data.drivers) || data.drivers.length === 0) data.drivers = DEFAULT_DRIVERS;
-            return data;
+
+            return safeData;
         }
 
         function handleImportBackup(event) {
@@ -232,37 +340,42 @@
             const file = input.files[0];
             if (!file) return;
 
-            if (!confirm("⚠️ ATENÇÃO: RESTAURAÇÃO DE DADOS\n\nIsso irá APAGAR todos os dados atuais e substituí-los pelo conteúdo do backup.\n\nA página será recarregada após o sucesso.\n\nDeseja continuar?")) {
-                input.value = '';
-                return;
-            }
-
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
                     const rawContent = e.target.result;
                     let data = JSON.parse(rawContent);
-                    if (!data || typeof data !== 'object') throw new Error("Arquivo inválido ou corrompido.");
-                    data = sanitizeImportData(data);
-
-                    localStorage.setItem('logistica_boxes', JSON.stringify(data.boxes));
-                    localStorage.setItem('logistica_history', JSON.stringify(data.history));
-                    localStorage.setItem('logistica_missing', JSON.stringify(data.missingItems));
-                    localStorage.setItem('logistica_destinations', JSON.stringify(data.destinations));
-                    localStorage.setItem('logistica_drivers', JSON.stringify(data.drivers));
-                    localStorage.setItem('logistica_auth', 'true');
-
-                    alert("✅ Dados restaurados com sucesso!\nA página será recarregada.");
-                    window.location.reload();
+                    if (!data || typeof data !== 'object') throw new Error("Formato inválido.");
+                    
+                    state.pendingImport = sanitizeImportData(data);
+                    openModal('confirmImport');
                 } catch (err) {
                     console.error("Erro Import:", err);
-                    alert("❌ Falha crítica ao restaurar:\n" + err.message);
+                    showToast("Arquivo inválido ou corrompido.", 'error');
                 } finally {
                     input.value = '';
                 }
             };
-            reader.onerror = function() { alert("Erro ao ler o arquivo."); input.value = ''; };
+            reader.onerror = function() { showToast("Erro ao ler o arquivo.", 'error'); input.value = ''; };
             reader.readAsText(file);
+        }
+
+        function executeImport() {
+            if (!state.pendingImport) return;
+            const data = state.pendingImport;
+            
+            // Gravação segura
+            state.boxes = data.boxes;
+            state.history = data.history;
+            state.missingItems = data.missingItems;
+            state.destinations = data.destinations;
+            state.drivers = data.drivers;
+            
+            saveData(true); // Salva no localStorage
+            state.pendingImport = null;
+            closeModal();
+            showToast("Dados restaurados com sucesso!", "success");
+            setTimeout(() => window.location.reload(), 1000); // Recarrega para limpar memória
         }
 
         // --- Filtros e View ---
@@ -288,17 +401,31 @@
             renderApp();
         }
 
+        // --- SIDEBAR TOGGLE ---
+        function toggleSidebar() {
+            state.sidebarCollapsed = !state.sidebarCollapsed;
+            saveData(true); 
+            renderApp(); 
+        }
+
         // --- Lógica de Negócio ---
         function handleAddItem(e) {
             e.preventDefault();
             const form = e.target;
             const itemName = form.itemName.value.trim();
-            const quantity = parseInt(form.quantity.value) || 1;
+            const quantity = parseInt(form.quantity.value);
             const isExternal = form.isExternal.checked;
             const unitType = form.unitType.value; 
             const boxId = state.modal.boxId;
 
-            if (!itemName) return;
+            if (!itemName) {
+                showToast("Nome do item é obrigatório.", "error");
+                return;
+            }
+            if (!quantity || quantity < 1) {
+                showToast("Quantidade inválida.", "error");
+                return;
+            }
 
             const box = state.boxes.find(b => b.id === boxId);
             if (box) {
@@ -323,13 +450,7 @@
                 form.quantity.value = '1';
                 form.itemName?.focus();
                 
-                const toast = document.createElement('div');
-                toast.className = 'toast-msg absolute bottom-20 left-0 right-0 mx-auto w-max bg-blue-600 text-white text-xs py-1.5 px-3 rounded-full shadow-lg z-50';
-                toast.innerHTML = `<i class="inline w-3 h-3 mr-1" data-lucide="check"></i> ${escapeHtml(itemName)} adicionado!`;
-                document.getElementById('modal-content-area').appendChild(toast);
-                if(typeof lucide !== 'undefined') lucide.createIcons();
-                
-                setTimeout(() => { if(toast.parentNode) toast.parentNode.removeChild(toast); }, 2000);
+                showToast(`${itemName} adicionado!`, 'success');
                 saveData(true);
             }
         }
@@ -355,7 +476,7 @@
             
             if (isCustom) {
                 const customName = form.customName.value.trim();
-                if (!customName) { alert("Digite o nome do local."); return; }
+                if (!customName) { showToast("Digite o nome do local.", 'error'); return; }
                 destinationName = customName;
                 if (!state.destinations.some(d => d.name.toLowerCase() === customName.toLowerCase())) {
                     state.destinations.push({
@@ -367,23 +488,29 @@
                 }
             } else {
                 destinationName = form.destination.value;
-                if (!destinationName) { alert("Selecione um destino."); return; }
+                if (!destinationName) { showToast("Selecione um destino.", 'error'); return; }
             }
 
             const driverName = form.driver.value;
-            if (!driverName) { alert("Selecione um motorista."); return; }
+            if (!driverName) { showToast("Selecione um motorista.", 'error'); return; }
 
             const box = state.boxes.find(b => b.id === state.modal.boxId);
             if (box) {
+                if (box.items.length === 0 && !confirm("A caixa está vazia. Deseja enviar mesmo assim?")) {
+                    return; 
+                }
                 box.status = 'in_delivery';
                 box.destination = destinationName;
                 box.driver = driverName; 
                 box.lastDeliveryDate = form.deliveryDate.value;
+                
                 const itemSummary = box.items.map(i => `${i.quantity}${i.unitType==='fd'?'f':'u'} ${i.name}`).join(', ');
                 const detailsLog = `Saiu para entrega em: ${destinationName} (Mot: ${driverName})${itemSummary ? '\nConteúdo: ' + itemSummary : ''}`;
+                
                 addHistoryLog('Saída', detailsLog, box.name);
                 closeModal();
-                saveData(); 
+                saveData();
+                showToast(`Saída registrada para ${destinationName}`, 'success');
             }
         }
 
@@ -394,6 +521,7 @@
                 addHistoryLog('Entrega', `Entrega concluída em: ${box.destination}`, box.name);
                 closeModal();
                 saveData();
+                showToast("Entrega confirmada!", "success");
             }
         }
 
@@ -407,18 +535,20 @@
                 addHistoryLog('Status', `Caixa reiniciada e esvaziada`, box.name);
                 closeModal();
                 saveData();
+                showToast("Caixa pronta para uso.", "success");
             }
         }
 
         function confirmDeleteItem() {
             const box = state.boxes.find(b => b.id === state.modal.boxId);
             const idx = state.modal.data;
-            if (box && idx !== null) {
+            if (box && idx !== null && box.items[idx]) {
                 const item = box.items[idx];
                 box.items.splice(idx, 1);
                 addHistoryLog('Remoção', `Item removido: ${item.name}`, box.name);
                 closeModal();
                 saveData();
+                showToast("Item removido.", "success");
             }
         }
 
@@ -448,6 +578,7 @@
                 addHistoryLog('Exclusão', `Caixa excluída do sistema`, deletedName);
                 closeModal();
                 saveData();
+                showToast("Caixa excluída.", "success");
             }
         }
         // ---------------------------------
@@ -457,10 +588,15 @@
             const form = e.target;
             const box = state.boxes.find(b => b.id === state.modal.boxId);
             
-            const itemName = form.itemName.value;
-            const quantity = form.quantity.value;
-            const reason = form.reason.value;
+            const itemName = form.itemName.value.trim();
+            const quantity = parseInt(form.quantity.value);
+            const reason = form.reason.value.trim();
             
+            if (!itemName || !quantity || !reason) {
+                showToast("Preencha todos os campos.", "error");
+                return;
+            }
+
             state.missingItems.unshift({
                 id: Date.now(),
                 boxId: box.id,
@@ -475,12 +611,8 @@
 
             if (box.status === 'delivered') box.status = 'issue';
             addHistoryLog('Falta', `Falta registrada: ${quantity}x ${itemName}`, box.name);
-            const toast = document.createElement('div');
-            toast.className = 'toast-msg absolute bottom-20 left-0 right-0 mx-auto w-max bg-red-600 text-white text-xs py-1.5 px-3 rounded-full shadow-lg z-50';
-            toast.innerHTML = `<i class="inline w-3 h-3 mr-1" data-lucide="check"></i> Falta registrada!`;
-            document.getElementById('modal-content-area').appendChild(toast);
-            if(typeof lucide !== 'undefined') lucide.createIcons();
-            setTimeout(() => { if(toast.parentNode) toast.parentNode.removeChild(toast); }, 2000);
+            showToast('Falta registrada!', 'error');
+            
             form.itemName.value = '';
             form.quantity.value = '';
             form.reason.value = '';
@@ -493,6 +625,7 @@
             if (item) {
                 item.status = 'resolved';
                 saveData();
+                showToast("Pendência resolvida.", "success");
             }
         }
 
@@ -527,8 +660,11 @@
             e.preventDefault();
             const form = e.target;
             const name = form.newName.value.trim();
+            
+            if (!name) { showToast("Nome é obrigatório.", "error"); return; }
+
             if (state.destinations.some(d => d.name.toLowerCase() === name.toLowerCase())) {
-                alert("Já existe um local com este nome.");
+                showToast("Já existe um local com este nome.", 'error');
                 return;
             }
             state.destinations.push({
@@ -539,6 +675,7 @@
             });
             form.reset();
             saveData();
+            showToast('Endereço adicionado!', 'success');
         }
 
         function handleAddDriver(e) {
@@ -547,13 +684,16 @@
             const name = form.newDriverName.value.trim();
             const phone = form.newDriverPhone.value.trim();
             
+            if (!name) { showToast("Nome é obrigatório.", "error"); return; }
+
             if (state.drivers.some(d => d.name.toLowerCase() === name.toLowerCase())) {
-                alert("Motorista já cadastrado.");
+                showToast("Motorista já cadastrado.", 'error');
                 return;
             }
             state.drivers.push({ name, phone });
             form.reset();
             saveData();
+            showToast('Motorista adicionado!', 'success');
         }
 
         function handleAddBox(e) {
@@ -576,6 +716,7 @@
             addHistoryLog('Criação', `Nova caixa criada: ${name}`, 'Sistema');
             closeModal();
             saveData();
+            showToast("Caixa criada com sucesso!", "success");
         }
 
         function handleEditDestination(e) {
@@ -584,7 +725,7 @@
             const form = e.target;
             const name = form.editName.value.trim();
             const exists = state.destinations.some((d, i) => i !== idx && d.name.toLowerCase() === name.toLowerCase());
-            if (exists) { alert("Nome já existe."); return; }
+            if (exists) { showToast("Nome já existe.", 'error'); return; }
             state.destinations[idx] = {
                 name,
                 street: form.editStreet.value.trim(),
@@ -603,7 +744,7 @@
             const phone = form.editDriverPhone.value.trim();
             
             const exists = state.drivers.some((d, i) => i !== idx && d.name.toLowerCase() === name.toLowerCase());
-            if (exists) { alert("Motorista já existe."); return; }
+            if (exists) { showToast("Motorista já existe.", 'error'); return; }
             state.drivers[idx] = { name, phone };
             closeModal();
             saveData();
@@ -632,30 +773,32 @@
         }
 
         function renderLogin() {
-            const container = document.getElementById('app-content');
-            document.getElementById('nav-buttons').innerHTML = ''; 
-            document.getElementById('logout-container').innerHTML = '';
+            const container = document.getElementById('login-container');
+            const appLayout = document.getElementById('app-layout');
+            
+            // Toggle visibility
+            container.classList.remove('hidden');
+            appLayout.classList.add('hidden');
+            appLayout.classList.remove('opacity-100');
             
             container.innerHTML = `
-            <div class="min-h-[70vh] flex items-center justify-center p-4">
-                <div class="bg-white p-8 rounded-xl shadow-lg border border-blue-200 w-full max-w-sm animate-zoom-in">
-                    <div class="text-center mb-8">
-                        <div class="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-200">
-                            <i data-lucide="lock" class="w-8 h-8 text-blue-600"></i>
-                        </div>
-                        <h2 class="text-2xl font-bold text-blue-900">Acesso Restrito</h2>
-                        <p class="text-blue-500 text-sm mt-1">Identifique-se para continuar</p>
+            <div class="bg-white p-8 rounded-xl shadow-lg border border-blue-200 w-full max-w-sm animate-zoom-in">
+                <div class="text-center mb-8">
+                    <div class="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-200">
+                        <i data-lucide="lock" class="w-8 h-8 text-blue-600"></i>
                     </div>
-                    <form onsubmit="handleLogin(event)" class="space-y-5">
-                        <div>
-                            <input type="password" name="password" placeholder="Senha de Acesso" class="w-full border border-blue-200 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 text-center tracking-widest text-lg transition-all" autofocus>
-                        </div>
-                        <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors shadow-sm flex items-center justify-center gap-2">
-                            <span>Entrar no Sistema</span>
-                            <i data-lucide="arrow-right" class="w-4 h-4"></i>
-                        </button>
-                    </form>
+                    <h2 class="text-2xl font-bold text-blue-900">Acesso Restrito</h2>
+                    <p class="text-blue-500 text-sm mt-1">Identifique-se para continuar</p>
                 </div>
+                <form onsubmit="handleLogin(event)" class="space-y-5">
+                    <div>
+                        <input type="password" name="password" placeholder="Senha de Acesso" class="w-full border border-blue-200 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 text-center tracking-widest text-lg transition-all" autofocus>
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors shadow-sm flex items-center justify-center gap-2">
+                        <span>Entrar no Sistema</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </button>
+                </form>
             </div>`;
             if(typeof lucide !== 'undefined') lucide.createIcons();
         }
@@ -673,31 +816,87 @@
 
         function renderNav() {
             const pending = state.missingItems.filter(m => m.status === 'pending').length;
-            const btn = (id, label, badge) => `
-                <button onclick="switchTab('${id}')" class="px-4 py-1.5 rounded-md text-sm font-medium transition-all cursor-pointer shrink-0 ${state.activeTab === id ? 'bg-blue-600 text-white shadow-md' : 'text-blue-600 hover:bg-blue-100'} flex items-center gap-2">
-                    ${label} ${badge > 0 ? `<span class="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full shadow-sm border border-red-400">${badge}</span>` : ''}
-                </button>`;
             
-            document.getElementById('nav-buttons').innerHTML = 
-                btn('dashboard', 'Caixas', 0) +
-                btn('locations', 'Endereços', 0) +
-                btn('drivers', 'Motoristas', 0) +
-                btn('missing', 'Faltantes', pending) +
-                btn('history', 'Histórico', 0) +
-                btn('settings', 'Configurações', 0);
+            const navItems = [
+                { id: 'dashboard', label: 'Caixas', icon: 'box' },
+                { id: 'locations', label: 'Endereços', icon: 'map-pin' },
+                { id: 'drivers', label: 'Motoristas', icon: 'users' },
+                { id: 'missing', label: 'Faltas', icon: 'alert-triangle', badge: pending },
+                { id: 'history', label: 'Histórico', icon: 'clock' },
+                { id: 'settings', label: 'Configurações', icon: 'settings' }
+            ];
 
-            document.getElementById('logout-container').innerHTML = `
-                <button onclick="logout()" class="p-2 text-blue-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Sair">
-                    <i data-lucide="log-out" class="w-5 h-5"></i>
+            // 1. Render Desktop Sidebar Nav
+            const sidebarHtml = navItems.map(item => {
+                const isActive = state.activeTab === item.id;
+                // Ajustes para modo minimizado
+                const collapsed = state.sidebarCollapsed;
+                const baseClass = `w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group ${isActive ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'} ${collapsed ? 'justify-center px-0' : ''}`;
+                const iconClass = isActive ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-600';
+                
+                return `
+                <button onclick="switchTab('${item.id}')" class="${baseClass}" title="${collapsed ? item.label : ''}">
+                    <div class="relative">
+                        <i data-lucide="${item.icon}" class="w-5 h-5 ${iconClass}"></i>
+                        ${collapsed && item.badge > 0 ? `<span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border border-white"></span>` : ''}
+                    </div>
+                    ${!collapsed ? `
+                        <span class="flex-grow text-left truncate">${item.label}</span>
+                        ${item.badge > 0 ? `<span class="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-md">${item.badge}</span>` : ''}
+                        ${isActive ? `<div class="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0"></div>` : ''}
+                    ` : ''}
                 </button>`;
+            }).join('');
+            
+            document.getElementById('sidebar-nav').innerHTML = sidebarHtml;
+
+            // Render Footer
+            const userFooter = document.getElementById('sidebar-footer');
+            if (userFooter) {
+                if (state.sidebarCollapsed) {
+                    userFooter.innerHTML = `
+                        <button onclick="logout()" class="w-full flex items-center justify-center text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors" title="Sair">
+                            <i data-lucide="log-out" class="w-5 h-5"></i>
+                        </button>
+                    `;
+                } else {
+                    userFooter.innerHTML = `
+                        <div class="flex items-center gap-3 mb-3 px-2">
+                            <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200 shrink-0">
+                                <i data-lucide="user" class="w-4 h-4"></i>
+                            </div>
+                            <div class="overflow-hidden">
+                                <p class="text-sm font-bold text-slate-700 truncate" id="user-name-display">${state.currentUser}</p>
+                                <p class="text-xs text-slate-400 truncate">Operador Logístico</p>
+                            </div>
+                        </div>
+                        <button onclick="logout()" class="w-full flex items-center justify-center gap-2 text-sm text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors border border-transparent hover:border-red-100">
+                            <i data-lucide="log-out" class="w-4 h-4"></i> Sair do Sistema
+                        </button>
+                    `;
+                }
+            }
+
+            // 2. Render Mobile Top Nav
+            const mobileHtml = navItems.map(item => {
+                const isActive = state.activeTab === item.id;
+                const baseClass = `flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 ${isActive ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`;
+                
+                return `
+                <button onclick="switchTab('${item.id}')" class="${baseClass}">
+                    ${item.label}
+                    ${item.badge > 0 ? `<span class="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">${item.badge}</span>` : ''}
+                </button>`;
+            }).join('');
+
+            document.getElementById('mobile-nav').innerHTML = mobileHtml;
         }
 
         function renderSettingsPanel() {
             const container = document.getElementById('app-content');
             container.innerHTML = `
-            <div class="max-w-4xl mx-auto space-y-8 animate-fade-in">
+            <div class="max-w-4xl mx-auto space-y-8 animate-fade-in pb-10">
                 
-                <!-- Header da Seção -->
                 <div class="text-center space-y-2 mb-8">
                     <h2 class="text-2xl font-bold text-slate-800">Backup e Restauração</h2>
                     <p class="text-slate-500 max-w-lg mx-auto">Gerencie seus dados com segurança. Exporte para salvar uma cópia ou importe para restaurar o estado anterior.</p>
@@ -733,7 +932,7 @@
                         
                         <div class="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-6 text-xs text-orange-800 text-left w-full flex gap-2 items-start">
                             <i data-lucide="alert-triangle" class="w-4 h-4 shrink-0 mt-0.5"></i>
-                            <span><strong>Atenção:</strong> Esta ação substituirá todos os dados atuais pelos dados do arquivo.</span>
+                            <span><strong>Atenção:</strong> Esta ação substituirá todos os dados atuais.</span>
                         </div>
 
                         <label class="w-full bg-white border-2 border-dashed border-slate-300 hover:border-orange-400 hover:bg-orange-50/30 text-slate-600 hover:text-orange-700 py-3.5 rounded-lg font-medium flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95 group/btn">
@@ -755,7 +954,7 @@
             const delivering = state.boxes.filter(b => b.status === 'in_delivery').length;
             
             let html = `
-            <div class="space-y-8">
+            <div class="space-y-8 pb-10">
                 <!-- Stats Row -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div class="bg-white p-4 rounded-xl shadow-sm border border-blue-100 flex flex-col items-center justify-center hover:shadow-md transition-shadow">
@@ -784,8 +983,8 @@
                     </button>
                 </div>
 
-                <!-- Grid de Caixas -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">`;
+                <!-- Grid de Caixas (Responsive Update) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-6">`;
             
             state.boxes.forEach(box => {
                 const hasIssue = state.missingItems.some(m => m.boxId === box.id && m.status === 'pending');
@@ -965,7 +1164,7 @@
                 win.document.write(html);
                 win.document.close();
             } else {
-                alert('Pop-up bloqueado. Permita pop-ups para imprimir.');
+                showToast("Pop-up bloqueado. Permita pop-ups para imprimir.", 'error');
             }
         }
 
@@ -1038,14 +1237,14 @@
                 win.document.write(html);
                 win.document.close();
             } else {
-                alert('Pop-up bloqueado. Permita pop-ups para imprimir.');
+                showToast("Pop-up bloqueado. Permita pop-ups para imprimir.", 'error');
             }
         }
 
         function renderLocationsPanel() {
             const container = document.getElementById('app-content');
             container.innerHTML = `
-            <div class="max-w-2xl mx-auto space-y-6">
+            <div class="max-w-2xl mx-auto space-y-6 pb-10">
                 <div class="bg-white rounded-xl shadow-sm border border-blue-100 p-6">
                     <h2 class="text-xl font-bold text-blue-900 flex items-center gap-2 mb-4"><i data-lucide="map-pin" class="text-blue-500"></i> Cadastrar Endereço</h2>
                     <form onsubmit="handleAddDestination(event)" class="space-y-3">
@@ -1082,7 +1281,7 @@
         function renderDriversPanel() {
             const container = document.getElementById('app-content');
             container.innerHTML = `
-            <div class="max-w-2xl mx-auto space-y-6">
+            <div class="max-w-2xl mx-auto space-y-6 pb-10">
                 <div class="bg-white rounded-xl shadow-sm border border-blue-100 p-6">
                     <h2 class="text-xl font-bold text-blue-900 flex items-center gap-2 mb-4"><i data-lucide="users" class="text-blue-500"></i> Cadastrar Motorista</h2>
                     <form onsubmit="handleAddDriver(event)" class="space-y-3">
@@ -1127,9 +1326,9 @@
                 return;
             }
             container.innerHTML = `
-            <div class="bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden">
+            <div class="bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden pb-10">
                 <div class="p-6 border-b border-blue-100 flex justify-between items-center">
-                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2"><i data-lucide="alert-triangle" class="text-orange-500"></i> Itens Faltantes</h2>
+                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2"><i data-lucide="alert-triangle" class="text-orange-500"></i> Faltas</h2>
                     <button onclick="printMissingItems()" class="flex items-center gap-2 text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors text-sm font-medium border border-blue-200 shadow-sm">
                         <i data-lucide="printer" class="w-4 h-4"></i> Imprimir
                     </button>
@@ -1312,7 +1511,7 @@
 
             // Wrapper with Tabs and Search
             container.innerHTML = `
-            <div class="flex flex-col h-[calc(100vh-140px)]">
+            <div class="flex flex-col h-full overflow-hidden pb-10">
                 <div class="flex flex-col md:flex-row gap-4 mb-4 shrink-0 px-1 justify-between items-start md:items-center">
                     <div class="flex gap-2 bg-white p-1 rounded-lg border border-blue-100 shadow-sm">
                         <button onclick="setHistoryView('today')" class="px-4 py-2 ${state.historyView==='today'?'bg-blue-600 text-white shadow-sm':'text-slate-600 hover:bg-blue-50'} rounded-md text-sm font-medium transition-all">Hoje</button>
@@ -1401,7 +1600,6 @@
                 title = `Entrega - ${escapeHtml(box.name)}`;
                 const opts = state.destinations.map(d => `<option value="${escapeHtml(d.name)}">${escapeHtml(d.name)}</option>`).join('');
                 const driversOpts = state.drivers.map(d => `<option value="${escapeHtml(d.name)}">${escapeHtml(d.name)}</option>`).join('');
-                // FIX: Usar data local para input padrão em vez de UTC
                 const today = getLocalDateString(new Date().toISOString());
                 
                 content = `
@@ -1540,11 +1738,35 @@
                         <button onclick="confirmDeleteBox()" class="flex-1 bg-red-600 text-white py-2.5 rounded-lg hover:bg-red-700 font-medium shadow-sm shadow-red-200">Excluir Definitivamente</button>
                     </div>
                 </div>`;
+            } else if (type === 'confirmImport') {
+                const data = state.pendingImport;
+                title = 'Restaurar Backup';
+                content = `
+                <div class="text-center space-y-4">
+                    <div class="bg-orange-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto border border-orange-100">
+                        <i data-lucide="refresh-cw" class="w-8 h-8 text-orange-500"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-800">Deseja restaurar este backup?</h3>
+                        <p class="text-sm text-slate-500 mt-2">Isto substituirá todos os dados atuais pelos dados do arquivo.</p>
+                    </div>
+                    
+                    <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm text-slate-600 text-left space-y-1">
+                        <div class="flex justify-between"><span>Caixas:</span> <span class="font-bold">${data.boxes.length}</span></div>
+                        <div class="flex justify-between"><span>Histórico:</span> <span class="font-bold">${data.history.length}</span></div>
+                        <div class="flex justify-between"><span>Locais:</span> <span class="font-bold">${data.destinations.length}</span></div>
+                        <div class="flex justify-between"><span>Motoristas:</span> <span class="font-bold">${data.drivers.length}</span></div>
+                    </div>
+                    
+                    <div class="flex gap-3 pt-2">
+                        <button onclick="closeModal(); state.pendingImport=null;" class="flex-1 border border-slate-300 py-2.5 rounded-lg hover:bg-slate-50 font-medium text-slate-600">Cancelar</button>
+                        <button onclick="executeImport()" class="flex-1 bg-orange-600 text-white py-2.5 rounded-lg hover:bg-orange-700 font-medium shadow-sm shadow-orange-200">Confirmar Restauração</button>
+                    </div>
+                </div>`;
             }
 
-            // MODAL CORRIGIDO: Removido o 'onclick' no fundo para não fechar acidentalmente
             container.innerHTML = `
-            <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+            <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in">
                 <div class="bg-white rounded-xl shadow-2xl w-full max-w-md animate-zoom-in flex flex-col max-h-[90vh] relative border border-slate-100">
                     <div class="p-4 border-b flex justify-between items-center bg-slate-50/50 rounded-t-xl">
                         <h3 class="font-bold text-lg text-slate-800">${title}</h3>
@@ -1553,6 +1775,13 @@
                     <div class="p-6 overflow-y-auto" id="modal-content-area">${content}</div>
                 </div>
             </div>`;
+            
+            // Auto-focus no primeiro input
+            setTimeout(() => {
+               const firstInput = container.querySelector('input');
+               if(firstInput) firstInput.focus();
+            }, 50);
+
             if(typeof lucide !== 'undefined') lucide.createIcons();
         }
 
@@ -1578,7 +1807,32 @@
                 renderLogin();
                 return;
             }
+
+            // Ensure app layout is visible
+            document.getElementById('login-container').classList.add('hidden');
+            const appLayout = document.getElementById('app-layout');
+            appLayout.classList.remove('hidden');
+            setTimeout(() => appLayout.classList.add('opacity-100'), 50); // Fade in
+
+            // Update Sidebar State
+            const sidebar = document.getElementById('main-sidebar');
+            const logoContent = document.getElementById('sidebar-logo-content');
+            
+            if (sidebar) {
+                if (state.sidebarCollapsed) {
+                    sidebar.classList.remove('w-64');
+                    sidebar.classList.add('w-20');
+                    if(logoContent) logoContent.classList.add('opacity-0', 'w-0');
+                } else {
+                    sidebar.classList.remove('w-20');
+                    sidebar.classList.add('w-64');
+                    if(logoContent) logoContent.classList.remove('opacity-0', 'w-0');
+                }
+            }
+
             renderNav();
+            
+            // Render specific tab content
             if (state.activeTab === 'dashboard') renderDashboard();
             else if (state.activeTab === 'locations') renderLocationsPanel();
             else if (state.activeTab === 'drivers') renderDriversPanel();
@@ -1590,6 +1844,13 @@
                 lucide.createIcons();
             }
         }
+
+        // Listener Global para fechar modal com ESC
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && state.modal.type) {
+                closeModal();
+            }
+        });
 
         // Init with safe loading check
         window.addEventListener('load', () => {
