@@ -25,18 +25,19 @@
         }
         .toast-msg { animation: slideUpFade 2s ease-in-out forwards; }
         
-        ::-webkit-scrollbar { width: 6px; }
+        /* Scrollbar personalizada fina e elegante */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #eff6ff; }
         ::-webkit-scrollbar-thumb { background: #bfdbfe; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #93c5fd; }
     </style>
 </head>
-<body class="bg-blue-50 font-sans text-slate-900 pb-20">
+<body class="bg-blue-50 font-sans text-slate-900 pb-20 selection:bg-blue-200">
 
     <!-- Header -->
     <header class="bg-white border-b border-blue-100 sticky top-0 z-30 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row justify-between items-center gap-4">
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3 select-none">
                 <div class="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-200">
                     <i data-lucide="package" class="text-white w-6 h-6"></i>
                 </div>
@@ -61,7 +62,7 @@
     <script>
         // --- Helpers de Segurança e Utilidades ---
         function escapeHtml(text) {
-            if (!text) return "";
+            if (!text && text !== 0) return "";
             return String(text)
                 .replace(/&/g, "&amp;")
                 .replace(/</g, "&lt;")
@@ -175,8 +176,7 @@
             });
         }
 
-        // --- FUNÇÕES DE BACKUP (ATUALIZADAS E BLINDADAS) ---
-
+        // --- FUNÇÕES DE BACKUP ---
         function handleExportBackup() {
             try {
                 const data = {
@@ -210,44 +210,26 @@
             }
         }
 
-        // Função auxiliar para corrigir dados quebrados antes de salvar
         function sanitizeImportData(data) {
-            // Se não tiver caixas, usa o padrão
             if (!data.boxes || !Array.isArray(data.boxes)) {
                 data.boxes = JSON.parse(JSON.stringify(INITIAL_BOXES));
             }
-
-            // Corrige cada caixa individualmente
             data.boxes = data.boxes.map(b => ({
                 ...b,
-                items: Array.isArray(b.items) ? b.items : [], // Garante que items é array
+                items: Array.isArray(b.items) ? b.items : [],
                 status: b.status || 'available',
                 name: b.name || 'Caixa Sem Nome'
             }));
-
-            // Garante histórico
             if (!Array.isArray(data.history)) data.history = [];
-
-            // Garante lista de faltas
             if (!Array.isArray(data.missingItems)) data.missingItems = [];
-
-            // Garante destinos
-            if (!Array.isArray(data.destinations) || data.destinations.length === 0) {
-                data.destinations = DEFAULT_DESTINOS;
-            }
-
-            // Garante motoristas
-            if (!Array.isArray(data.drivers) || data.drivers.length === 0) {
-                data.drivers = DEFAULT_DRIVERS;
-            }
-
+            if (!Array.isArray(data.destinations) || data.destinations.length === 0) data.destinations = DEFAULT_DESTINOS;
+            if (!Array.isArray(data.drivers) || data.drivers.length === 0) data.drivers = DEFAULT_DRIVERS;
             return data;
         }
 
         function handleImportBackup(event) {
             const input = event.target;
             const file = input.files[0];
-            
             if (!file) return;
 
             if (!confirm("⚠️ ATENÇÃO: RESTAURAÇÃO DE DADOS\n\nIsso irá APAGAR todos os dados atuais e substituí-los pelo conteúdo do backup.\n\nA página será recarregada após o sucesso.\n\nDeseja continuar?")) {
@@ -256,35 +238,22 @@
             }
 
             const reader = new FileReader();
-
             reader.onload = function(e) {
                 try {
                     const rawContent = e.target.result;
                     let data = JSON.parse(rawContent);
-
-                    // 1. Validação Básica
-                    if (!data || typeof data !== 'object') {
-                        throw new Error("Arquivo inválido ou corrompido.");
-                    }
-
-                    // 2. Higienização (Corrige falhas para evitar tela branca)
+                    if (!data || typeof data !== 'object') throw new Error("Arquivo inválido ou corrompido.");
                     data = sanitizeImportData(data);
 
-                    // 3. Salva diretamente no LocalStorage
                     localStorage.setItem('logistica_boxes', JSON.stringify(data.boxes));
                     localStorage.setItem('logistica_history', JSON.stringify(data.history));
                     localStorage.setItem('logistica_missing', JSON.stringify(data.missingItems));
                     localStorage.setItem('logistica_destinations', JSON.stringify(data.destinations));
                     localStorage.setItem('logistica_drivers', JSON.stringify(data.drivers));
-                    
-                    // Mantém a sessão ativa
                     localStorage.setItem('logistica_auth', 'true');
 
                     alert("✅ Dados restaurados com sucesso!\nA página será recarregada.");
-                    
-                    // 4. Força o recarregamento para garantir estado limpo
                     window.location.reload();
-
                 } catch (err) {
                     console.error("Erro Import:", err);
                     alert("❌ Falha crítica ao restaurar:\n" + err.message);
@@ -292,12 +261,7 @@
                     input.value = '';
                 }
             };
-
-            reader.onerror = function() {
-                alert("Erro ao ler o arquivo.");
-                input.value = '';
-            };
-
+            reader.onerror = function() { alert("Erro ao ler o arquivo."); input.value = ''; };
             reader.readAsText(file);
         }
 
@@ -374,19 +338,10 @@
             e.preventDefault();
             const newDriver = e.target.newDriver.value;
             const box = state.boxes.find(b => b.id === state.modal.boxId);
-            
             if (box) {
                 const oldDriver = box.driver || 'Nenhum';
                 box.driver = newDriver || null;
-                
                 addHistoryLog('Alteração', `Motorista alterado: ${oldDriver} -> ${newDriver || 'Nenhum'}`, box.name);
-                
-                const toast = document.createElement('div');
-                toast.className = 'toast-msg fixed bottom-10 left-0 right-0 mx-auto w-max bg-blue-600 text-white text-xs py-1.5 px-3 rounded-full shadow-lg z-[60]';
-                toast.innerHTML = `<i class="inline w-3 h-3 mr-1" data-lucide="check"></i> Motorista atualizado!`;
-                document.body.appendChild(toast);
-                setTimeout(() => { if(toast.parentNode) toast.parentNode.removeChild(toast); }, 2000);
-
                 closeModal();
                 saveData();
             }
@@ -424,10 +379,8 @@
                 box.destination = destinationName;
                 box.driver = driverName; 
                 box.lastDeliveryDate = form.deliveryDate.value;
-                
                 const itemSummary = box.items.map(i => `${i.quantity}${i.unitType==='fd'?'f':'u'} ${i.name}`).join(', ');
                 const detailsLog = `Saiu para entrega em: ${destinationName} (Mot: ${driverName})${itemSummary ? '\nConteúdo: ' + itemSummary : ''}`;
-
                 addHistoryLog('Saída', detailsLog, box.name);
                 closeModal();
                 saveData(); 
@@ -450,7 +403,7 @@
                 box.status = 'available';
                 box.destination = null;
                 box.driver = null;
-                box.items = []; // Limpa itens
+                box.items = [];
                 addHistoryLog('Status', `Caixa reiniciada e esvaziada`, box.name);
                 closeModal();
                 saveData();
@@ -468,6 +421,36 @@
                 saveData();
             }
         }
+
+        // --- FUNÇÕES DE EDIÇÃO/EXCLUSÃO DE CAIXAS ---
+        function handleEditBox(e) {
+            e.preventDefault();
+            const form = e.target;
+            const name = form.boxName.value.trim();
+            const box = state.boxes.find(b => b.id === state.modal.boxId);
+            
+            if (box && name) {
+                const oldName = box.name;
+                box.name = name;
+                addHistoryLog('Alteração', `Caixa renomeada: ${oldName} -> ${name}`, name);
+                closeModal();
+                saveData();
+            }
+        }
+
+        function confirmDeleteBox() {
+            const boxId = state.modal.boxId;
+            const boxIndex = state.boxes.findIndex(b => b.id === boxId);
+            
+            if (boxIndex > -1) {
+                const deletedName = state.boxes[boxIndex].name;
+                state.boxes.splice(boxIndex, 1);
+                addHistoryLog('Exclusão', `Caixa excluída do sistema`, deletedName);
+                closeModal();
+                saveData();
+            }
+        }
+        // ---------------------------------
 
         function handleReportMissing(e) {
             e.preventDefault();
@@ -491,22 +474,17 @@
             });
 
             if (box.status === 'delivered') box.status = 'issue';
-            
             addHistoryLog('Falta', `Falta registrada: ${quantity}x ${itemName}`, box.name);
-            
             const toast = document.createElement('div');
             toast.className = 'toast-msg absolute bottom-20 left-0 right-0 mx-auto w-max bg-red-600 text-white text-xs py-1.5 px-3 rounded-full shadow-lg z-50';
             toast.innerHTML = `<i class="inline w-3 h-3 mr-1" data-lucide="check"></i> Falta registrada!`;
             document.getElementById('modal-content-area').appendChild(toast);
             if(typeof lucide !== 'undefined') lucide.createIcons();
-            
             setTimeout(() => { if(toast.parentNode) toast.parentNode.removeChild(toast); }, 2000);
-            
             form.itemName.value = '';
             form.quantity.value = '';
             form.reason.value = '';
             form.itemName.focus();
-            
             saveData(true); 
         }
 
@@ -726,7 +704,6 @@
                 </div>
 
                 <div class="grid md:grid-cols-2 gap-6">
-                    
                     <!-- Card Exportar -->
                     <div class="bg-white rounded-xl shadow-sm border border-blue-100 p-8 flex flex-col items-center text-center hover:shadow-md transition-shadow relative overflow-hidden group">
                         <div class="absolute top-0 left-0 w-full h-1 bg-blue-500"></div>
@@ -764,22 +741,6 @@
                             <span>Selecionar Arquivo JSON</span>
                             <input type="file" id="import-file" accept=".json" style="display:none;" onchange="handleImportBackup(event)">
                         </label>
-                    </div>
-                </div>
-
-                <!-- Footer Info -->
-                <div class="bg-slate-100 rounded-xl border border-slate-200 p-6 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-slate-500 mt-8">
-                    <div class="flex items-center gap-3">
-                        <div class="bg-white p-2 rounded-lg shadow-sm border border-slate-200">
-                            <i data-lucide="info" class="w-5 h-5 text-slate-400"></i>
-                        </div>
-                        <div>
-                            <p class="font-bold text-slate-700">Logística Central</p>
-                            <p class="text-xs">Versão 1.2.0 &bull; Armazenamento Local</p>
-                        </div>
-                    </div>
-                    <div class="text-xs text-slate-400 text-center md:text-right">
-                        Seus dados são salvos apenas neste navegador.<br>Faça backups regulares.
                     </div>
                 </div>
             </div>`;
@@ -872,14 +833,23 @@
                 <div class="bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden flex flex-col h-full hover:shadow-md transition-all duration-200 border-t-4 ${borderColors[status]}">
                     
                     <!-- Header do Card -->
-                    <div class="p-4 border-b border-blue-50 flex justify-between items-start">
-                        <div>
+                    <div class="p-4 border-b border-blue-50 flex justify-between items-start group/card-header">
+                        <div class="pr-2 flex-grow">
                             <h3 class="font-bold text-lg text-blue-900 leading-tight">${escapeHtml(box.name)}</h3>
                             <div class="mt-1">${getStatusBadge(status)}</div>
                         </div>
-                        <button onclick="printBox(${box.id})" class="p-2 text-blue-300 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Imprimir Manifesto">
-                            <i data-lucide="printer" class="w-4 h-4"></i>
-                        </button>
+                        <div class="flex items-center gap-1 opacity-80 group-hover/card-header:opacity-100 transition-opacity">
+                            <button onclick="openModal('editBox', ${box.id})" class="p-1.5 text-blue-300 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Editar Nome">
+                                <i data-lucide="pencil" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="openModal('deleteBox', ${box.id})" class="p-1.5 text-blue-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Excluir Caixa">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                            <div class="w-px h-4 bg-blue-100 mx-1"></div>
+                            <button onclick="printBox(${box.id})" class="p-1.5 text-blue-300 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Imprimir Manifesto">
+                                <i data-lucide="printer" class="w-4 h-4"></i>
+                            </button>
+                        </div>
                     </div>
                     
                     <!-- Corpo do Card -->
@@ -1225,6 +1195,13 @@
                 } else if(l.action === 'Criação') {
                     icon = 'box';
                     color = 'text-blue-600 bg-blue-50';
+                } else if(l.action === 'Exclusão') {
+                    icon = 'trash-2';
+                    color = 'text-red-600 bg-red-50';
+                    borderLeft = 'border-l-4 border-l-red-400';
+                } else if(l.action === 'Alteração') {
+                    icon = 'pencil';
+                    color = 'text-blue-400 bg-blue-50';
                 }
 
                 let mainDetails = escapeHtml(l.details || '');
@@ -1538,8 +1515,34 @@
                     <div><label class="text-sm font-medium block mb-1">Telefone</label><input name="editDriverPhone" value="${escapeHtml(driver.phone || '')}" placeholder="(XX) 9XXXX-XXXX" class="w-full border border-blue-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"></div>
                     <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-blue-700 flex items-center justify-center gap-2 mt-2 shadow-sm">Salvar</button>
                 </form>`;
+            } else if (type === 'editBox') {
+                title = 'Editar Nome da Caixa';
+                content = `
+                <form onsubmit="handleEditBox(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1 text-slate-700">Nome da Caixa</label>
+                        <input name="boxName" value="${escapeHtml(box.name)}" required class="w-full border border-blue-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500" autofocus>
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 flex items-center justify-center gap-2 shadow-sm shadow-blue-200">
+                        Salvar Alterações
+                    </button>
+                </form>`;
+            } else if (type === 'deleteBox') {
+                title = 'Excluir Caixa';
+                content = `
+                <div class="text-center">
+                    <div class="bg-red-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100">
+                        <i data-lucide="trash-2" class="w-8 h-8 text-red-500"></i>
+                    </div>
+                    <p class="text-slate-600 mb-6">Tem certeza que deseja excluir a caixa <strong class="text-slate-900">${escapeHtml(box.name)}</strong>?<br><br><span class="text-xs text-red-500 bg-red-50 px-3 py-1 rounded-full font-bold">Todo o conteúdo da caixa será perdido.</span></p>
+                    <div class="flex gap-3">
+                        <button onclick="closeModal()" class="flex-1 border border-slate-300 py-2.5 rounded-lg hover:bg-slate-50 font-medium text-slate-600">Cancelar</button>
+                        <button onclick="confirmDeleteBox()" class="flex-1 bg-red-600 text-white py-2.5 rounded-lg hover:bg-red-700 font-medium shadow-sm shadow-red-200">Excluir Definitivamente</button>
+                    </div>
+                </div>`;
             }
 
+            // MODAL CORRIGIDO: Removido o 'onclick' no fundo para não fechar acidentalmente
             container.innerHTML = `
             <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
                 <div class="bg-white rounded-xl shadow-2xl w-full max-w-md animate-zoom-in flex flex-col max-h-[90vh] relative border border-slate-100">
