@@ -72,7 +72,6 @@
 
         function getLocalDateString(isoString) {
             if (!isoString) return '';
-            // Retorna YYYY-MM-DD baseado no fuso horário local
             const d = new Date(isoString);
             const offset = d.getTimezoneOffset() * 60000;
             return new Date(d.getTime() - offset).toISOString().split('T')[0];
@@ -176,64 +175,129 @@
             });
         }
 
-        // --- Backup Functions ---
+        // --- FUNÇÕES DE BACKUP (ATUALIZADAS E BLINDADAS) ---
+
         function handleExportBackup() {
-            const data = {
-                boxes: state.boxes,
-                history: state.history,
-                missingItems: state.missingItems,
-                destinations: state.destinations,
-                drivers: state.drivers,
-                timestamp: new Date().toISOString(),
-                version: "1.1"
-            };
-            
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
-            const downloadAnchorNode = document.createElement('a');
-            downloadAnchorNode.setAttribute("href", dataStr);
-            downloadAnchorNode.setAttribute("download", "logistica_backup_" + new Date().toISOString().slice(0,10) + ".json");
-            document.body.appendChild(downloadAnchorNode); 
-            downloadAnchorNode.click();
-            downloadAnchorNode.remove();
+            try {
+                const data = {
+                    boxes: state.boxes,
+                    history: state.history,
+                    missingItems: state.missingItems,
+                    destinations: state.destinations,
+                    drivers: state.drivers,
+                    timestamp: new Date().toISOString(),
+                    version: "1.2"
+                };
+                
+                const dataStr = JSON.stringify(data, null, 2);
+                const blob = new Blob([dataStr], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `logistica_backup_${new Date().toISOString().slice(0,10)}.json`;
+                document.body.appendChild(link);
+                link.click();
+                
+                setTimeout(() => {
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                }, 100);
+
+            } catch (err) {
+                console.error(err);
+                alert("Erro ao criar arquivo de backup: " + err.message);
+            }
+        }
+
+        // Função auxiliar para corrigir dados quebrados antes de salvar
+        function sanitizeImportData(data) {
+            // Se não tiver caixas, usa o padrão
+            if (!data.boxes || !Array.isArray(data.boxes)) {
+                data.boxes = JSON.parse(JSON.stringify(INITIAL_BOXES));
+            }
+
+            // Corrige cada caixa individualmente
+            data.boxes = data.boxes.map(b => ({
+                ...b,
+                items: Array.isArray(b.items) ? b.items : [], // Garante que items é array
+                status: b.status || 'available',
+                name: b.name || 'Caixa Sem Nome'
+            }));
+
+            // Garante histórico
+            if (!Array.isArray(data.history)) data.history = [];
+
+            // Garante lista de faltas
+            if (!Array.isArray(data.missingItems)) data.missingItems = [];
+
+            // Garante destinos
+            if (!Array.isArray(data.destinations) || data.destinations.length === 0) {
+                data.destinations = DEFAULT_DESTINOS;
+            }
+
+            // Garante motoristas
+            if (!Array.isArray(data.drivers) || data.drivers.length === 0) {
+                data.drivers = DEFAULT_DRIVERS;
+            }
+
+            return data;
         }
 
         function handleImportBackup(event) {
             const input = event.target;
             const file = input.files[0];
+            
             if (!file) return;
 
-            if (!confirm("ATENÇÃO: Importar um backup substituirá TODOS os dados atuais.\n\nEsta ação não pode ser desfeita.\nDeseja continuar?")) {
-                input.value = ''; 
+            if (!confirm("⚠️ ATENÇÃO: RESTAURAÇÃO DE DADOS\n\nIsso irá APAGAR todos os dados atuais e substituí-los pelo conteúdo do backup.\n\nA página será recarregada após o sucesso.\n\nDeseja continuar?")) {
+                input.value = '';
                 return;
             }
 
             const reader = new FileReader();
+
             reader.onload = function(e) {
                 try {
-                    const importedData = JSON.parse(e.target.result);
-                    
-                    if (!importedData.boxes || !importedData.drivers || !importedData.destinations) {
-                        throw new Error("O arquivo selecionado não é válido (estrutura de dados incorreta).");
+                    const rawContent = e.target.result;
+                    let data = JSON.parse(rawContent);
+
+                    // 1. Validação Básica
+                    if (!data || typeof data !== 'object') {
+                        throw new Error("Arquivo inválido ou corrompido.");
                     }
 
-                    state.boxes = importedData.boxes;
-                    state.history = importedData.history || [];
-                    state.missingItems = importedData.missingItems || [];
-                    state.destinations = importedData.destinations;
-                    state.drivers = importedData.drivers;
+                    // 2. Higienização (Corrige falhas para evitar tela branca)
+                    data = sanitizeImportData(data);
+
+                    // 3. Salva diretamente no LocalStorage
+                    localStorage.setItem('logistica_boxes', JSON.stringify(data.boxes));
+                    localStorage.setItem('logistica_history', JSON.stringify(data.history));
+                    localStorage.setItem('logistica_missing', JSON.stringify(data.missingItems));
+                    localStorage.setItem('logistica_destinations', JSON.stringify(data.destinations));
+                    localStorage.setItem('logistica_drivers', JSON.stringify(data.drivers));
                     
-                    saveData(true);
+                    // Mantém a sessão ativa
+                    localStorage.setItem('logistica_auth', 'true');
+
+                    alert("✅ Dados restaurados com sucesso!\nA página será recarregada.");
                     
-                    alert("Backup restaurado com sucesso!");
-                    renderApp(); 
-                    
+                    // 4. Força o recarregamento para garantir estado limpo
+                    window.location.reload();
+
                 } catch (err) {
-                    console.error(err);
-                    alert("Erro ao importar arquivo: " + err.message);
+                    console.error("Erro Import:", err);
+                    alert("❌ Falha crítica ao restaurar:\n" + err.message);
                 } finally {
                     input.value = '';
                 }
             };
+
+            reader.onerror = function() {
+                alert("Erro ao ler o arquivo.");
+                input.value = '';
+            };
+
             reader.readAsText(file);
         }
 
