@@ -207,7 +207,6 @@
             boxes: safeParse('logistica_boxes', INITIAL_BOXES),
             history: safeParse('logistica_history', []),
             missingItems: safeParse('logistica_missing', []),
-            savedItems: safeParse('logistica_saved_items', []), // Histórico de itens para autocomplete
             destinations: storedDestinations,
             drivers: storedDrivers,
             activeTab: localStorage.getItem('logistica_activeTab') || 'dashboard',
@@ -252,7 +251,6 @@
                 localStorage.setItem('logistica_boxes', JSON.stringify(state.boxes));
                 localStorage.setItem('logistica_history', JSON.stringify(state.history));
                 localStorage.setItem('logistica_missing', JSON.stringify(state.missingItems));
-                localStorage.setItem('logistica_saved_items', JSON.stringify(state.savedItems)); // Salva lista de sugestões
                 localStorage.setItem('logistica_destinations', JSON.stringify(state.destinations));
                 localStorage.setItem('logistica_drivers', JSON.stringify(state.drivers));
                 localStorage.setItem('logistica_currentUser', state.currentUser);
@@ -281,11 +279,10 @@
                     boxes: state.boxes,
                     history: state.history,
                     missingItems: state.missingItems,
-                    savedItems: state.savedItems, // Inclui no backup
                     destinations: state.destinations,
                     drivers: state.drivers,
                     timestamp: new Date().toISOString(),
-                    version: "1.4" // Version bump
+                    version: "1.3" // Version bump
                 };
                 
                 const dataStr = JSON.stringify(data, null, 2);
@@ -315,7 +312,6 @@
                 boxes: Array.isArray(data.boxes) ? data.boxes : JSON.parse(JSON.stringify(INITIAL_BOXES)),
                 history: Array.isArray(data.history) ? data.history : [],
                 missingItems: Array.isArray(data.missingItems) ? data.missingItems : [],
-                savedItems: Array.isArray(data.savedItems) ? data.savedItems : [], // Importa lista de itens
                 destinations: (Array.isArray(data.destinations) && data.destinations.length > 0) ? data.destinations : DEFAULT_DESTINOS,
                 drivers: (Array.isArray(data.drivers) && data.drivers.length > 0) ? data.drivers : DEFAULT_DRIVERS
             };
@@ -372,7 +368,6 @@
             state.boxes = data.boxes;
             state.history = data.history;
             state.missingItems = data.missingItems;
-            state.savedItems = data.savedItems; // Restaura lista
             state.destinations = data.destinations;
             state.drivers = data.drivers;
             
@@ -451,12 +446,119 @@
                 const unitLabel = unitType === 'fd' ? 'Fardo(s)' : 'Unidade(s)';
                 addHistoryLog('Adição', `Adicionado ${quantity} ${unitLabel} de ${itemName} (${tipo})`, box.name);
                 
-                // Salvar item na lista de sugestões se não existir
-                if (!state.savedItems.includes(itemName)) {
-                    state.savedItems.push(itemName);
-                    state.savedItems.sort(); // Mantém alfabético
+                // ATUALIZAÇÃO DO MANIFESTO (CORREÇÃO)
+                // Se a caixa estiver em trânsito ou entregue, atualiza o log de "Saída" mais recente
+                if (['in_delivery', 'delivered'].includes(box.status)) {
+                    const lastLog = state.history.find(l => l.boxName === box.name && l.action === 'Saída');
+                    if (lastLog) {
+                        const itemSummary = box.items.map(i => `${i.quantity}${i.unitType==='fd'?'f':'u'} ${i.name}`).join(', ');
+                        // Preserva o prefixo (Destino/Motorista) e substitui o conteúdo
+                        const parts = lastLog.details.split('\nConteúdo:');
+                        lastLog.details = `${parts[0]}\nConteúdo: ${itemSummary}`;
+                    }
                 }
 
+                form.itemName.value = '';
+                form.quantity.value = '1';
+                form.itemName?.focus();
+                
+                showToast(`${itemName} adicionado!`, 'success');
+                saveData(true);
+            }
+        }
+
+        function handleChangeDriver(e) {
+            e.preventDefault();
+            const newDriver = e.target.newDriver.value;
+            const box = state.boxes.find(b => b.id === state.modal.boxId);
+            if (box) {
+                const oldDriver = box.driver || 'Nenhum';
+                box.driver = newDriver || null;
+                addHistoryLog('Alteração', `Motorista alterado: ${oldDriver} -> ${newDriver || 'Nenhum'}`, box.name);
+                closeModal();
+                saveData();
+            }
+        }
+
+        function handleDelivery(e) {
+            e.preventDefault();
+            const form = e.target;
+            let destinationName = "";
+            const isCustom = !document.getElementById('dest-input-group').classList.contains('hidden');
+            
+            if (isCustom) {
+                const customName = form.customName.value.trim();
+                if (!customName) { showToast("Digite o nome do local.", 'error'); return; }
+                destinationName = customName;
+                if (!state.destinations.some(d => d.name.toLowerCase() === customName.toLowerCase())) {
+                    state.destinations.push({
+                        name: customName,
+                        street: form.customStreet.value.trim(),
+                        number: form.customNumber.value.trim(),
+                        neighborhood: form.customNeighborhood.value.trim()
+                    });
+                }
+            } else {
+                destinationName = form.destination.value;
+                if (!destinationName) { showToast("Selecione um destino.", 'error'); return; }
+            }
+
+            const driverName = form.driver.value;
+            if (!driverName) { showToast("Selecione um motorista.", 'error'); return; }
+
+            const box = state.boxes.find(b => b.id === state.modal.boxId);
+            if (box) {
+                if (box.items.length === 0 && !confirm("A caixa está vazia. Deseja enviar mesmo assim?")) {
+                    return; 
+                }
+                box.status = 'in_delivery';
+                box.destination = destinationName;
+                box.driver = driverName; 
+                box.lastDeliveryDate = form.deliveryDate.value;
+                
+                const itemSummary = box.items.map(i => `${i.quantity}${i.unitType==='fd'?'f':'u'} ${i.name}`).join(', ');
+                const detailsLog = `Saiu para entrega em: ${destinationName} (Mot: ${driverName})${itemSummary ? '\nConteúdo: ' + itemSummary : ''}`;
+                
+                addHistoryLog('Saída', detailsLog, box.name);
+                closeModal();
+                saveData();
+                showToast(`Saída registrada para ${destinationName}`, 'success');
+            }
+        }
+
+        function handleCompleteDelivery() {
+            const box = state.boxes.find(b => b.id === state.modal.boxId);
+            if (box) {
+                box.status = 'delivered';
+                addHistoryLog('Entrega', `Entrega concluída em: ${box.destination}`, box.name);
+                closeModal();
+                saveData();
+                showToast("Entrega confirmada!", "success");
+            }
+        }
+
+        function handleResetBox() {
+            const box = state.boxes.find(b => b.id === state.modal.boxId);
+            if (box) {
+                box.status = 'available';
+                box.destination = null;
+                box.driver = null;
+                box.items = [];
+                addHistoryLog('Status', `Caixa reiniciada e esvaziada`, box.name);
+                closeModal();
+                saveData();
+                showToast("Caixa pronta para uso.", "success");
+            }
+        }
+
+        function confirmDeleteItem() {
+            const box = state.boxes.find(b => b.id === state.modal.boxId);
+            const idx = state.modal.data;
+            if (box && idx !== null && box.items[idx]) {
+                const item = box.items[idx];
+                box.items.splice(idx, 1);
+                addHistoryLog('Remoção', `Item removido: ${item.name}`, box.name);
+                
                 // ATUALIZAÇÃO DO MANIFESTO (CORREÇÃO)
                 // Se a caixa estiver em trânsito ou entregue, atualiza o log de "Saída" mais recente
                 if (['in_delivery', 'delivered'].includes(box.status)) {
@@ -1578,20 +1680,10 @@
             // Construção do conteúdo do modal
             if (type === 'add') {
                 title = `Adicionar Item - ${escapeHtml(box.name)}`;
-                
-                // Gera opções do datalist
-                const itemOptions = state.savedItems.map(item => `<option value="${escapeHtml(item)}">`).join('');
-
                 content = `
                 <form onsubmit="handleAddItem(event)" class="space-y-4">
                     <div class="grid grid-cols-4 gap-3">
-                        <div class="col-span-3">
-                            <label class="text-sm font-medium block mb-1 text-slate-700">Item</label>
-                            <input name="itemName" list="items-list" required class="w-full border border-blue-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ex: Luvas" autofocus autocomplete="off">
-                            <datalist id="items-list">
-                                ${itemOptions}
-                            </datalist>
-                        </div>
+                        <div class="col-span-3"><label class="text-sm font-medium block mb-1 text-slate-700">Item</label><input name="itemName" required class="w-full border border-blue-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ex: Luvas" autofocus></div>
                         <div><label class="text-sm font-medium block mb-1 text-slate-700">Qtd</label><input name="quantity" type="number" min="1" value="1" required class="w-full border border-blue-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"></div>
                     </div>
                     <div class="flex gap-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
