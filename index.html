@@ -12,6 +12,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
+        /* --- Animações e Estilos Globais --- */
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes zoomIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         .animate-fade-in { animation: fadeIn 0.2s ease-out; }
@@ -25,40 +26,41 @@
         }
         .toast-msg { 
             animation: slideUpFade 3s ease-in-out forwards; 
-            position: fixed;
-            bottom: 2rem;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 9999;
+            position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); z-index: 9999;
         }
         
-        /* Scrollbar personalizada fina e elegante */
+        /* Scrollbar */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         
-        /* Ocultar scrollbar no nav mobile */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* Transição suave para a sidebar */
+        /* Sidebar e Drag & Drop */
         .sidebar-transition { transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .cursor-grab { cursor: grab; }
+        .cursor-grabbing { cursor: grabbing; }
+        .dragging { opacity: 0.5; transform: scale(0.98); }
+        .drop-target { border-color: #3b82f6; background-color: #eff6ff; transform: scale(1.02); }
+
+        /* Timeline */
+        .timeline-line { position: absolute; left: 23px; top: 36px; bottom: -20px; width: 2px; background-color: #e2e8f0; z-index: 0; }
+        .timeline-item:last-child .timeline-line { display: none; }
     </style>
 </head>
 <body class="bg-slate-50 font-sans text-slate-900 h-screen overflow-hidden selection:bg-blue-200">
 
-    <!-- Container de Login (Isolado) -->
+    <!-- Login -->
     <div id="login-container" class="hidden h-full w-full bg-blue-50 flex items-center justify-center z-50 absolute top-0 left-0"></div>
 
-    <!-- Layout da Aplicação (Sidebar + Main) -->
+    <!-- App Layout -->
     <div id="app-layout" class="flex h-screen w-full overflow-hidden hidden opacity-0 transition-opacity duration-300">
         
-        <!-- SIDEBAR (Desktop) -->
+        <!-- SIDEBAR -->
         <aside id="main-sidebar" class="hidden md:flex flex-col bg-white border-r border-blue-100 h-full shadow-sm z-20 shrink-0 sidebar-transition w-64">
-            <!-- Logo Area & Toggle -->
             <div class="p-4 border-b border-blue-50 flex items-center justify-between h-20">
-                <!-- Logo Content -->
                 <div id="sidebar-logo-content" class="flex items-center gap-3 overflow-hidden whitespace-nowrap transition-opacity duration-200">
                     <div class="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-200 shrink-0">
                         <i data-lucide="package" class="text-white w-6 h-6"></i>
@@ -68,615 +70,316 @@
                         <p class="text-[10px] text-blue-500 font-medium uppercase tracking-wider">Painel</p>
                     </div>
                 </div>
-                
-                <!-- Toggle Button (3 Tracinhos) -->
-                <button onclick="toggleSidebar()" class="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-100" title="Alternar Menu">
+                <button onclick="toggleSidebar()" class="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors">
                     <i data-lucide="menu" class="w-6 h-6"></i>
                 </button>
             </div>
-
-            <!-- Navigation Links -->
-            <nav class="flex-1 overflow-y-auto p-3 space-y-1 overflow-x-hidden" id="sidebar-nav">
-                <!-- Preenchido via JS -->
-            </nav>
-
-            <!-- User Footer -->
-            <div class="p-4 border-t border-blue-50 bg-slate-50/50" id="sidebar-footer">
-                <!-- Preenchido via JS -->
-            </div>
+            <nav class="flex-1 overflow-y-auto p-3 space-y-1 overflow-x-hidden" id="sidebar-nav"></nav>
+            <div class="p-4 border-t border-blue-50 bg-slate-50/50" id="sidebar-footer"></div>
         </aside>
 
-        <!-- Main Content Wrapper -->
+        <!-- Main Content -->
         <div class="flex-1 flex flex-col h-full overflow-hidden relative bg-slate-50">
-            
-            <!-- HEADER MOBILE (Visível apenas em telas pequenas) -->
+            <!-- Mobile Header -->
             <header class="md:hidden bg-white border-b border-blue-100 flex-shrink-0 z-30">
                 <div class="px-4 py-3 flex justify-between items-center">
                     <div class="flex items-center gap-2">
-                        <div class="bg-blue-600 p-1.5 rounded-lg">
-                            <i data-lucide="package" class="text-white w-5 h-5"></i>
-                        </div>
+                        <div class="bg-blue-600 p-1.5 rounded-lg"><i data-lucide="package" class="text-white w-5 h-5"></i></div>
                         <span class="font-bold text-blue-900">Logística</span>
                     </div>
                     <button onclick="logout()" class="text-slate-400 hover:text-red-600"><i data-lucide="log-out" class="w-5 h-5"></i></button>
                 </div>
-                <!-- Mobile Horizontal Nav -->
-                <div class="px-2 pb-2 overflow-x-auto no-scrollbar flex gap-2" id="mobile-nav">
-                    <!-- Preenchido via JS -->
-                </div>
+                <div class="px-2 pb-2 overflow-x-auto no-scrollbar flex gap-2" id="mobile-nav"></div>
             </header>
 
-            <!-- Conteúdo Principal Scrollável -->
-            <main class="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth" id="app-content">
-                <!-- O conteúdo das abas será renderizado aqui -->
-            </main>
+            <main class="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth" id="app-content"></main>
         </div>
     </div>
 
-    <!-- Container do Modal -->
+    <!-- Modal Container -->
     <div id="modal-container"></div>
 
     <script>
-        // --- Helpers de Segurança e Utilidades ---
+        // --- 1. Utilitários ---
         function escapeHtml(text) {
             if (text === null || text === undefined) return "";
-            return String(text)
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
+            return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
         function getLocalDateString(isoString) {
             if (!isoString) return '';
-            try {
-                const d = new Date(isoString);
-                if (isNaN(d.getTime())) return ''; // Data inválida
-                const offset = d.getTimezoneOffset() * 60000;
-                return new Date(d.getTime() - offset).toISOString().split('T')[0];
-            } catch (e) {
-                return '';
-            }
+            try { return new Date(new Date(isoString).getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0]; } catch (e) { return ''; }
         }
 
-        // Função robusta para carregar do localStorage
         function safeParse(key, fallbackValue) {
-            try {
-                const item = localStorage.getItem(key);
-                return item ? JSON.parse(item) : fallbackValue;
-            } catch (error) {
-                console.error(`Erro ao carregar dados de ${key}. Usando fallback.`, error);
-                return fallbackValue;
-            }
+            try { return JSON.parse(localStorage.getItem(key)) || fallbackValue; } catch { return fallbackValue; }
         }
 
         function showToast(message, type = 'success') {
-            const styles = type === 'success' 
-                ? 'bg-emerald-600 text-white shadow-emerald-200' 
-                : 'bg-rose-600 text-white shadow-rose-200';
+            const styles = type === 'success' ? 'bg-emerald-600 text-white shadow-emerald-200' : 'bg-rose-600 text-white shadow-rose-200';
             const icon = type === 'success' ? 'check' : 'alert-circle';
-            
             const toast = document.createElement('div');
             toast.className = `toast-msg ${styles} text-sm font-medium py-2.5 px-4 rounded-full shadow-lg flex items-center gap-2 pointer-events-none`;
             toast.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4"></i> ${message}`;
-            
             document.body.appendChild(toast);
-            if(typeof lucide !== 'undefined') lucide.createIcons();
-            
+            lucide.createIcons();
             setTimeout(() => { if(toast.parentNode) toast.parentNode.removeChild(toast); }, 3000);
         }
 
-        // --- Configurações Iniciais ---
+        // --- 2. Estado ---
         const DEFAULT_DESTINOS = [
             { name: "Clínica Mult 1", street: "Av. Principal", number: "100", neighborhood: "Centro" },
             { name: "Clínica Mult 2", street: "Rua das Flores", number: "250", neighborhood: "Jardins" },
-            { name: "Clínica Integra", street: "Rua da Saúde", number: "50", neighborhood: "Vila Nova" },
             { name: "Laboratório Novo", street: "Av. Industrial", number: "900", neighborhood: "Distrito" },
-            { name: "EVB", street: "Estrada Velha", number: "km 5", neighborhood: "Rural" },
             { name: "CAMU", street: "Praça Central", number: "1", neighborhood: "Centro" }
         ];
-
-        const DEFAULT_DRIVERS = [
-            { name: "João Silva", phone: "" },
-            { name: "Maria Oliveira", phone: "" },
-            { name: "Carlos Santos", phone: "" }
-        ];
-
-        const INITIAL_BOXES = [
-            { id: 1, name: 'Caixa 1', status: 'available', items: [], destination: null, driver: null },
-            { id: 2, name: 'Caixa 2', status: 'available', items: [], destination: null, driver: null },
-            { id: 3, name: 'Caixa 3', status: 'available', items: [], destination: null, driver: null },
-            { id: 4, name: 'Caixa 4', status: 'available', items: [], destination: null, driver: null },
-        ];
-
-        // Carregamento inicial blindado
-        let storedDestinations = safeParse('logistica_destinations', DEFAULT_DESTINOS);
-        // Compatibilidade com versões antigas (array de strings)
-        if (storedDestinations.length > 0 && typeof storedDestinations[0] === 'string') {
-            storedDestinations = storedDestinations.map(d => ({ name: d, street: "", number: "", neighborhood: "" }));
-        }
-
-        let storedDrivers = safeParse('logistica_drivers', DEFAULT_DRIVERS);
-        if (storedDrivers.length > 0 && typeof storedDrivers[0] === 'string') {
-            storedDrivers = storedDrivers.map(d => ({ name: d, phone: "" }));
-        }
+        const DEFAULT_DRIVERS = [{ name: "João Silva", phone: "" }, { name: "Maria Oliveira", phone: "" }, { name: "Carlos Santos", phone: "" }];
+        const INITIAL_BOXES = [1,2,3,4].map(id => ({ id, name: `Caixa ${id}`, status: 'available', items: [], destination: null, driver: null }));
 
         let state = {
-            isLoggedIn: localStorage.getItem('logistica_auth') === 'true', 
+            isLoggedIn: localStorage.getItem('logistica_auth') === 'true',
             boxes: safeParse('logistica_boxes', INITIAL_BOXES),
             history: safeParse('logistica_history', []),
             missingItems: safeParse('logistica_missing', []),
-            destinations: storedDestinations,
-            drivers: storedDrivers,
+            destinations: safeParse('logistica_destinations', DEFAULT_DESTINOS),
+            drivers: safeParse('logistica_drivers', DEFAULT_DRIVERS),
             activeTab: localStorage.getItem('logistica_activeTab') || 'dashboard',
             currentUser: localStorage.getItem('logistica_currentUser') || "Logistica",
             modal: { type: null, boxId: null, data: null },
             historyFilter: { search: '', date: '' },
             historyView: 'today',
             expandedDate: null,
-            pendingImport: null,
-            sidebarCollapsed: safeParse('logistica_sidebar_collapsed', false)
+            sidebarCollapsed: safeParse('logistica_sidebar_collapsed', false),
+            dragSourceIndex: null
         };
 
-        // --- Autenticação ---
+        // --- 3. Autenticação & Persistência ---
         function handleLogin(e) {
             e.preventDefault();
-            const password = e.target.password.value;
-            if (password === '1234') {
-                state.isLoggedIn = true;
-                localStorage.setItem('logistica_auth', 'true');
-                renderApp();
-            } else {
-                const input = e.target.password;
-                input.classList.add('border-red-500', 'ring-2', 'ring-red-200');
-                input.value = '';
-                input.placeholder = 'Senha Incorreta';
-                setTimeout(() => {
-                    input.classList.remove('border-red-500', 'ring-2', 'ring-red-200');
-                    input.placeholder = 'Senha';
-                }, 2000);
-            }
+            if (e.target.password.value === '1234') {
+                state.isLoggedIn = true; localStorage.setItem('logistica_auth', 'true'); renderApp();
+            } else { showToast("Senha Incorreta", "error"); }
         }
-
-        function logout() {
-            state.isLoggedIn = false;
-            localStorage.removeItem('logistica_auth');
-            renderApp();
-        }
-
-        // --- Persistência ---
+        function logout() { state.isLoggedIn = false; localStorage.removeItem('logistica_auth'); renderApp(); }
+        
         function saveData(skipRender = false) {
-            try {
-                localStorage.setItem('logistica_boxes', JSON.stringify(state.boxes));
-                localStorage.setItem('logistica_history', JSON.stringify(state.history));
-                localStorage.setItem('logistica_missing', JSON.stringify(state.missingItems));
-                localStorage.setItem('logistica_destinations', JSON.stringify(state.destinations));
-                localStorage.setItem('logistica_drivers', JSON.stringify(state.drivers));
-                localStorage.setItem('logistica_currentUser', state.currentUser);
-                localStorage.setItem('logistica_activeTab', state.activeTab);
-                localStorage.setItem('logistica_sidebar_collapsed', JSON.stringify(state.sidebarCollapsed));
-                if (!skipRender) renderApp();
-            } catch (e) {
-                console.error("Erro ao salvar dados:", e);
-                showToast("Erro ao salvar alterações. Espaço cheio?", "error");
-            }
+            localStorage.setItem('logistica_boxes', JSON.stringify(state.boxes));
+            localStorage.setItem('logistica_history', JSON.stringify(state.history));
+            localStorage.setItem('logistica_missing', JSON.stringify(state.missingItems));
+            localStorage.setItem('logistica_destinations', JSON.stringify(state.destinations));
+            localStorage.setItem('logistica_drivers', JSON.stringify(state.drivers));
+            localStorage.setItem('logistica_activeTab', state.activeTab);
+            localStorage.setItem('logistica_sidebar_collapsed', JSON.stringify(state.sidebarCollapsed));
+            if (!skipRender) renderApp();
         }
 
         function addHistoryLog(action, details, boxName) {
-            state.history.unshift({
-                id: Date.now(),
-                timestamp: new Date().toISOString(),
-                action, details, boxName,
-                user: state.currentUser
-            });
+            state.history.unshift({ id: Date.now(), timestamp: new Date().toISOString(), action, details, boxName, user: state.currentUser });
         }
 
-        // --- FUNÇÕES DE BACKUP ---
+        // --- 4. Ações de Backup ---
         function handleExportBackup() {
-            try {
-                const data = {
-                    boxes: state.boxes,
-                    history: state.history,
-                    missingItems: state.missingItems,
-                    destinations: state.destinations,
-                    drivers: state.drivers,
-                    timestamp: new Date().toISOString(),
-                    version: "1.3" // Version bump
-                };
-                
-                const dataStr = JSON.stringify(data, null, 2);
-                const blob = new Blob([dataStr], { type: "application/json" });
-                const url = URL.createObjectURL(blob);
-                
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `logistica_backup_${new Date().toISOString().slice(0,10)}.json`;
-                document.body.appendChild(link);
-                link.click();
-                
-                setTimeout(() => {
-                    document.body.removeChild(link);
-                    URL.revokeObjectURL(url);
-                }, 100);
-
-            } catch (err) {
-                console.error(err);
-                showToast("Erro ao criar backup.", 'error');
-            }
+            const dataStr = JSON.stringify(state);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url; link.download = `backup_${new Date().toISOString().slice(0,10)}.json`;
+            link.click();
+            showToast("Backup gerado!", "success");
         }
-
-        function sanitizeImportData(data) {
-            // Garante estrutura mínima
-            const safeData = {
-                boxes: Array.isArray(data.boxes) ? data.boxes : JSON.parse(JSON.stringify(INITIAL_BOXES)),
-                history: Array.isArray(data.history) ? data.history : [],
-                missingItems: Array.isArray(data.missingItems) ? data.missingItems : [],
-                destinations: (Array.isArray(data.destinations) && data.destinations.length > 0) ? data.destinations : DEFAULT_DESTINOS,
-                drivers: (Array.isArray(data.drivers) && data.drivers.length > 0) ? data.drivers : DEFAULT_DRIVERS
-            };
-
-            // Sanitização profunda de caixas
-            safeData.boxes = safeData.boxes.map(b => ({
-                id: Number(b.id) || Date.now(),
-                name: String(b.name || 'Caixa Recuperada'),
-                status: ['available', 'in_delivery', 'delivered', 'issue'].includes(b.status) ? b.status : 'available',
-                items: Array.isArray(b.items) ? b.items.map(i => ({
-                    name: String(i.name || 'Item'),
-                    quantity: Math.max(1, Number(i.quantity) || 1),
-                    isExternal: !!i.isExternal,
-                    unitType: i.unitType === 'fd' ? 'fd' : 'un'
-                })) : [],
-                destination: b.destination ? String(b.destination) : null,
-                driver: b.driver ? String(b.driver) : null,
-                lastDeliveryDate: b.lastDeliveryDate || null
-            }));
-
-            return safeData;
-        }
-
+        
         function handleImportBackup(event) {
-            const input = event.target;
-            const file = input.files[0];
+            const file = event.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = (e) => {
                 try {
-                    const rawContent = e.target.result;
-                    let data = JSON.parse(rawContent);
-                    if (!data || typeof data !== 'object') throw new Error("Formato inválido.");
-                    
-                    state.pendingImport = sanitizeImportData(data);
+                    const data = JSON.parse(e.target.result);
+                    state.pendingImport = data; 
                     openModal('confirmImport');
-                } catch (err) {
-                    console.error("Erro Import:", err);
-                    showToast("Arquivo inválido ou corrompido.", 'error');
-                } finally {
-                    input.value = '';
-                }
+                } catch { showToast("Arquivo inválido", "error"); }
             };
-            reader.onerror = function() { showToast("Erro ao ler o arquivo.", 'error'); input.value = ''; };
             reader.readAsText(file);
         }
 
         function executeImport() {
-            if (!state.pendingImport) return;
-            const data = state.pendingImport;
-            
-            // Gravação segura
-            state.boxes = data.boxes;
-            state.history = data.history;
-            state.missingItems = data.missingItems;
-            state.destinations = data.destinations;
-            state.drivers = data.drivers;
-            
-            saveData(true); // Salva no localStorage
-            state.pendingImport = null;
-            closeModal();
-            showToast("Dados restaurados com sucesso!", "success");
-            setTimeout(() => window.location.reload(), 1000); // Recarrega para limpar memória
+            if (state.pendingImport) {
+                state = { ...state, ...state.pendingImport, isLoggedIn: true };
+                state.pendingImport = null;
+                saveData(); 
+                closeModal();
+                showToast("Dados restaurados com sucesso!", "success");
+            }
         }
 
-        // --- Filtros e View ---
-        function handleHistoryFilter(key, value) {
-            state.historyFilter[key] = value;
-            renderHistory();
-            if(typeof lucide !== 'undefined') lucide.createIcons();
+        // --- 5. Drag & Drop ---
+        function enableDrag(e, idx) { document.getElementById(`card-${idx}`).setAttribute('draggable', 'true'); }
+        function disableDrag(e, idx) { document.getElementById(`card-${idx}`).setAttribute('draggable', 'false'); }
+        function handleDragStart(e, idx) { state.dragSourceIndex = idx; e.target.classList.add('dragging'); }
+        function handleDragEnd(e) { e.target.classList.remove('dragging'); document.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target')); }
+        function handleDragOver(e) { e.preventDefault(); }
+        function handleDragEnter(e) { 
+            const card = e.target.closest('.group\\/card-container');
+            if (card && parseInt(card.dataset.index) !== state.dragSourceIndex) card.classList.add('drop-target');
+        }
+        function handleDragLeave(e) {
+            const card = e.target.closest('.group\\/card-container');
+            if (card) card.classList.remove('drop-target');
+        }
+        function handleDrop(e, targetIndex) {
+            e.preventDefault();
+            if (state.dragSourceIndex !== null && state.dragSourceIndex !== targetIndex) {
+                const item = state.boxes.splice(state.dragSourceIndex, 1)[0];
+                state.boxes.splice(targetIndex, 0, item);
+                saveData();
+                showToast("Ordem das caixas atualizada!", "success");
+            }
         }
 
-        function clearHistoryFilters() {
-            state.historyFilter = { search: '', date: '' };
-            renderHistory();
-            if(typeof lucide !== 'undefined') lucide.createIcons();
-        }
-
-        function setHistoryView(view) {
-            state.historyView = view;
-            renderApp();
-        }
-
-        function toggleDateAccordion(date) {
-            state.expandedDate = state.expandedDate === date ? null : date;
-            renderApp();
-        }
-
-        // --- SIDEBAR TOGGLE ---
-        function toggleSidebar() {
-            state.sidebarCollapsed = !state.sidebarCollapsed;
-            saveData(true); 
-            renderApp(); 
-        }
-
-        // --- Lógica de Negócio ---
+        // --- 6. Handlers de Negócio (Caixas e Itens) ---
         function handleAddItem(e) {
             e.preventDefault();
             const form = e.target;
             const itemName = form.itemName.value.trim();
             const quantity = parseInt(form.quantity.value);
+            const unitType = form.unitType.value;
             const isExternal = form.isExternal.checked;
-            const unitType = form.unitType.value; 
-            const boxId = state.modal.boxId;
-
-            if (!itemName) {
-                showToast("Nome do item é obrigatório.", "error");
-                return;
-            }
-            if (!quantity || quantity < 1) {
-                showToast("Quantidade inválida.", "error");
-                return;
-            }
-
-            const box = state.boxes.find(b => b.id === boxId);
-            if (box) {
-                const existingItem = box.items.find(i => 
-                    i.name.toLowerCase() === itemName.toLowerCase() && 
-                    i.isExternal === isExternal &&
-                    (i.unitType === unitType || (!i.unitType && unitType === 'un'))
-                );
-                
-                if (existingItem) {
-                    existingItem.quantity = (existingItem.quantity || 1) + quantity;
-                    existingItem.unitType = unitType;
-                } else {
-                    box.items.push({ name: itemName, quantity, isExternal, unitType });
-                }
-                
-                const tipo = isExternal ? "EXTERNO" : "INTERNO";
-                const unitLabel = unitType === 'fd' ? 'Fardo(s)' : 'Unidade(s)';
-                addHistoryLog('Adição', `Adicionado ${quantity} ${unitLabel} de ${itemName} (${tipo})`, box.name);
-                
-                // ATUALIZAÇÃO DO MANIFESTO (CORREÇÃO)
-                // Se a caixa estiver em trânsito ou entregue, atualiza o log de "Saída" mais recente
-                if (['in_delivery', 'delivered'].includes(box.status)) {
-                    const lastLog = state.history.find(l => l.boxName === box.name && l.action === 'Saída');
-                    if (lastLog) {
-                        const itemSummary = box.items.map(i => `${i.quantity}${i.unitType==='fd'?'f':'u'} ${i.name}`).join(', ');
-                        // Preserva o prefixo (Destino/Motorista) e substitui o conteúdo
-                        const parts = lastLog.details.split('\nConteúdo:');
-                        lastLog.details = `${parts[0]}\nConteúdo: ${itemSummary}`;
-                    }
-                }
-
-                form.itemName.value = '';
-                form.quantity.value = '1';
-                form.itemName?.focus();
-                
-                showToast(`${itemName} adicionado!`, 'success');
-                saveData(true);
-            }
-        }
-
-        function handleChangeDriver(e) {
-            e.preventDefault();
-            const newDriver = e.target.newDriver.value;
             const box = state.boxes.find(b => b.id === state.modal.boxId);
+            
+            if (!itemName) { showToast("Digite o nome do item.", "error"); return; }
+            if (quantity < 1) { showToast("Quantidade inválida.", "error"); return; }
+
             if (box) {
-                const oldDriver = box.driver || 'Nenhum';
-                box.driver = newDriver || null;
-                addHistoryLog('Alteração', `Motorista alterado: ${oldDriver} -> ${newDriver || 'Nenhum'}`, box.name);
-                closeModal();
-                saveData();
+                const existing = box.items.find(i => i.name.toLowerCase() === itemName.toLowerCase() && i.isExternal === isExternal && i.unitType === unitType);
+                if (existing) existing.quantity += quantity;
+                else box.items.push({ name: itemName, quantity, isExternal, unitType });
+                
+                addHistoryLog('Adição', `Adicionado ${quantity} ${unitType} de ${itemName}`, box.name);
+                showToast("Item adicionado com sucesso!", "success");
+                closeModal(); saveData();
             }
         }
 
         function handleDelivery(e) {
             e.preventDefault();
             const form = e.target;
-            let destinationName = "";
-            const isCustom = !document.getElementById('dest-input-group').classList.contains('hidden');
+            const box = state.boxes.find(b => b.id === state.modal.boxId);
+            let dest = form.destination.value;
             
-            if (isCustom) {
-                const customName = form.customName.value.trim();
-                if (!customName) { showToast("Digite o nome do local.", 'error'); return; }
-                destinationName = customName;
-                if (!state.destinations.some(d => d.name.toLowerCase() === customName.toLowerCase())) {
-                    state.destinations.push({
-                        name: customName,
-                        street: form.customStreet.value.trim(),
-                        number: form.customNumber.value.trim(),
-                        neighborhood: form.customNeighborhood.value.trim()
-                    });
-                }
-            } else {
-                destinationName = form.destination.value;
-                if (!destinationName) { showToast("Selecione um destino.", 'error'); return; }
+            if (form.customName && form.customName.value) {
+                dest = form.customName.value;
+                state.destinations.push({ name: dest, street: form.customStreet.value, number: form.customNumber.value, neighborhood: form.customNeighborhood.value });
             }
 
-            const driverName = form.driver.value;
-            if (!driverName) { showToast("Selecione um motorista.", 'error'); return; }
+            if (!dest) { showToast("Selecione um destino.", "error"); return; }
+            if (!form.driver.value) { showToast("Selecione um motorista.", "error"); return; }
 
-            const box = state.boxes.find(b => b.id === state.modal.boxId);
             if (box) {
-                if (box.items.length === 0 && !confirm("A caixa está vazia. Deseja enviar mesmo assim?")) {
-                    return; 
-                }
-                box.status = 'in_delivery';
-                box.destination = destinationName;
-                box.driver = driverName; 
-                box.lastDeliveryDate = form.deliveryDate.value;
-                
-                const itemSummary = box.items.map(i => `${i.quantity}${i.unitType==='fd'?'f':'u'} ${i.name}`).join(', ');
-                const detailsLog = `Saiu para entrega em: ${destinationName} (Mot: ${driverName})${itemSummary ? '\nConteúdo: ' + itemSummary : ''}`;
-                
-                addHistoryLog('Saída', detailsLog, box.name);
-                closeModal();
-                saveData();
-                showToast(`Saída registrada para ${destinationName}`, 'success');
+                box.status = 'in_delivery'; box.destination = dest; box.driver = form.driver.value;
+                const itemsStr = box.items.map(i => `${i.quantity}${i.unitType} ${i.name}`).join(', ');
+                addHistoryLog('Saída', `Saiu para entrega em: ${dest} (Mot: ${box.driver})\nConteúdo: ${itemsStr}`, box.name);
+                showToast("Saída registrada com sucesso!", "success"); closeModal(); saveData();
             }
         }
 
         function handleCompleteDelivery() {
             const box = state.boxes.find(b => b.id === state.modal.boxId);
-            if (box) {
-                box.status = 'delivered';
-                addHistoryLog('Entrega', `Entrega concluída em: ${box.destination}`, box.name);
-                closeModal();
-                saveData();
-                showToast("Entrega confirmada!", "success");
+            if(box) { 
+                box.status = 'delivered'; 
+                addHistoryLog('Entrega', `Entregue em: ${box.destination}`, box.name); 
+                saveData(); closeModal(); 
+                showToast("Entrega confirmada com sucesso!", "success");
             }
         }
 
         function handleResetBox() {
             const box = state.boxes.find(b => b.id === state.modal.boxId);
-            if (box) {
-                box.status = 'available';
-                box.destination = null;
-                box.driver = null;
-                box.items = [];
-                addHistoryLog('Status', `Caixa reiniciada e esvaziada`, box.name);
-                closeModal();
-                saveData();
-                showToast("Caixa pronta para uso.", "success");
+            if(box) { 
+                box.status = 'available'; box.items = []; box.destination = null; box.driver = null; 
+                addHistoryLog('Status', 'Caixa esvaziada', box.name); 
+                saveData(); closeModal(); 
+                showToast("Caixa esvaziada e disponível!", "success");
             }
         }
 
-        function confirmDeleteItem() {
-            const box = state.boxes.find(b => b.id === state.modal.boxId);
-            const idx = state.modal.data;
-            if (box && idx !== null && box.items[idx]) {
-                const item = box.items[idx];
-                box.items.splice(idx, 1);
-                addHistoryLog('Remoção', `Item removido: ${item.name}`, box.name);
-                
-                // ATUALIZAÇÃO DO MANIFESTO (CORREÇÃO)
-                // Se a caixa estiver em trânsito ou entregue, atualiza o log de "Saída" mais recente
-                if (['in_delivery', 'delivered'].includes(box.status)) {
-                    const lastLog = state.history.find(l => l.boxName === box.name && l.action === 'Saída');
-                    if (lastLog) {
-                        const itemSummary = box.items.map(i => `${i.quantity}${i.unitType==='fd'?'f':'u'} ${i.name}`).join(', ');
-                        const parts = lastLog.details.split('\nConteúdo:');
-                        lastLog.details = `${parts[0]}${itemSummary ? '\nConteúdo: ' + itemSummary : ''}`;
-                    }
-                }
-
-                closeModal();
-                saveData();
-                showToast("Item removido.", "success");
-            }
+        function handleAddBox(e) {
+            e.preventDefault();
+            const name = e.target.boxName.value.trim();
+            if (!name) { showToast("Digite o nome da caixa.", "error"); return; }
+            state.boxes.push({ id: Date.now(), name, status: 'available', items: [] });
+            addHistoryLog('Criação', `Nova caixa: ${name}`, 'Sistema');
+            saveData(); closeModal();
+            showToast("Nova caixa criada!", "success");
         }
-
-        // --- FUNÇÕES DE EDIÇÃO/EXCLUSÃO DE CAIXAS ---
+        
         function handleEditBox(e) {
             e.preventDefault();
-            const form = e.target;
-            const name = form.boxName.value.trim();
             const box = state.boxes.find(b => b.id === state.modal.boxId);
-            
-            if (box && name) {
-                const oldName = box.name;
-                box.name = name;
-                addHistoryLog('Alteração', `Caixa renomeada: ${oldName} -> ${name}`, name);
-                closeModal();
-                saveData();
+            const newName = e.target.boxName.value.trim();
+            if (box && newName) { 
+                box.name = newName; 
+                saveData(); closeModal(); 
+                showToast("Nome da caixa atualizado!", "success");
             }
         }
 
         function confirmDeleteBox() {
-            const boxId = state.modal.boxId;
-            const boxIndex = state.boxes.findIndex(b => b.id === boxId);
-            
-            if (boxIndex > -1) {
-                const deletedName = state.boxes[boxIndex].name;
-                state.boxes.splice(boxIndex, 1);
-                addHistoryLog('Exclusão', `Caixa excluída do sistema`, deletedName);
-                closeModal();
-                saveData();
-                showToast("Caixa excluída.", "success");
+            const idx = state.boxes.findIndex(b => b.id === state.modal.boxId);
+            if (idx > -1) { 
+                state.boxes.splice(idx, 1); 
+                saveData(); closeModal(); 
+                showToast("Caixa removida com sucesso!", "success");
             }
         }
-        // ---------------------------------
+        
+        function confirmDeleteItem() {
+            const box = state.boxes.find(b => b.id === state.modal.boxId);
+            if (box) { 
+                box.items.splice(state.modal.data, 1); 
+                saveData(); closeModal(); 
+                showToast("Item removido!", "success");
+            }
+        }
 
         function handleReportMissing(e) {
             e.preventDefault();
+            const box = state.boxes.find(b => b.id === state.modal.boxId);
+            state.missingItems.unshift({ 
+                id: Date.now(), boxId: box.id, boxName: box.name, destination: box.destination || "N/A", 
+                itemName: e.target.itemName.value, quantity: e.target.quantity.value, 
+                reason: e.target.reason.value, status: 'pending', date: new Date().toISOString() 
+            });
+            if (box.status === 'delivered') box.status = 'issue';
+            addHistoryLog('Falta', `Falta: ${e.target.itemName.value}`, box.name);
+            saveData(); closeModal();
+            showToast("Falta registrada com sucesso!", "success");
+        }
+
+        // --- 7. Handlers Adicionais (Gestão de Dados) ---
+        
+        function handleChangeDestination(e) {
+            e.preventDefault();
             const form = e.target;
             const box = state.boxes.find(b => b.id === state.modal.boxId);
-            
-            const itemName = form.itemName.value.trim();
-            const quantity = parseInt(form.quantity.value);
-            const reason = form.reason.value.trim();
-            
-            if (!itemName || !quantity || !reason) {
-                showToast("Preencha todos os campos.", "error");
-                return;
+            let dest = form.destination.value;
+            if (form.customName && form.customName.value) {
+                dest = form.customName.value;
+                state.destinations.push({ name: dest, street: form.customStreet.value, number: form.customNumber.value, neighborhood: form.customNeighborhood.value });
             }
-
-            state.missingItems.unshift({
-                id: Date.now(),
-                boxId: box.id,
-                boxName: box.name,
-                destination: box.destination || "N/A",
-                itemName: itemName,
-                quantity: quantity,
-                reason: reason,
-                status: 'pending',
-                date: new Date().toISOString()
-            });
-
-            if (box.status === 'delivered') box.status = 'issue';
-            addHistoryLog('Falta', `Falta registrada: ${quantity}x ${itemName}`, box.name);
-            showToast('Falta registrada!', 'error');
-            
-            form.itemName.value = '';
-            form.quantity.value = '';
-            form.reason.value = '';
-            form.itemName.focus();
-            saveData(true); 
-        }
-
-        function resolveMissingItem(id) {
-            const item = state.missingItems.find(i => i.id === id);
-            if (item) {
-                item.status = 'resolved';
-                saveData();
-                showToast("Pendência resolvida.", "success");
+            if (box && dest) {
+                box.destination = dest;
+                addHistoryLog('Alteração', `Destino atualizado para: ${dest}`, box.name);
+                saveData(); closeModal(); showToast("Destino atualizado!", "success");
             }
         }
 
-        function handleEditMissing(e) {
+        function handleChangeDriver(e) {
             e.preventDefault();
-            const idx = state.modal.data;
-            const form = e.target;
-            const item = state.missingItems[idx];
-            
-            if (item) {
-                item.itemName = form.editItemName.value;
-                item.quantity = form.editQuantity.value;
-                item.reason = form.editReason.value;
-                addHistoryLog('Alteração', `Falta editada: ${item.itemName}`, item.boxName);
-                closeModal();
-                saveData();
-            }
-        }
-
-        function confirmDeleteMissing() {
-            const idx = state.modal.data;
-            if (idx !== null) {
-                const item = state.missingItems[idx];
-                state.missingItems.splice(idx, 1);
-                addHistoryLog('Remoção', `Registro de falta excluído: ${item.itemName}`, item.boxName);
-                closeModal();
-                saveData();
+            const box = state.boxes.find(b => b.id === state.modal.boxId);
+            if (box) {
+                box.driver = e.target.newDriver.value || null;
+                addHistoryLog('Alteração', `Motorista alterado`, box.name);
+                saveData(); closeModal(); showToast("Motorista atualizado!", "success");
             }
         }
 
@@ -684,617 +387,319 @@
             e.preventDefault();
             const form = e.target;
             const name = form.newName.value.trim();
-            
-            if (!name) { showToast("Nome é obrigatório.", "error"); return; }
-
-            if (state.destinations.some(d => d.name.toLowerCase() === name.toLowerCase())) {
-                showToast("Já existe um local com este nome.", 'error');
-                return;
-            }
-            state.destinations.push({
-                name,
-                street: form.newStreet.value.trim(),
-                number: form.newNumber.value.trim(),
-                neighborhood: form.newNeighborhood.value.trim()
-            });
+            if(!name) return;
+            state.destinations.push({ name, street: form.newStreet.value, number: form.newNumber.value, neighborhood: form.newNeighborhood.value });
+            saveData(); showToast("Endereço cadastrado!", "success");
             form.reset();
-            saveData();
-            showToast('Endereço adicionado!', 'success');
         }
 
         function handleAddDriver(e) {
             e.preventDefault();
             const form = e.target;
             const name = form.newDriverName.value.trim();
-            const phone = form.newDriverPhone.value.trim();
-            
-            if (!name) { showToast("Nome é obrigatório.", "error"); return; }
-
-            if (state.drivers.some(d => d.name.toLowerCase() === name.toLowerCase())) {
-                showToast("Motorista já cadastrado.", 'error');
-                return;
-            }
-            state.drivers.push({ name, phone });
+            if(!name) return;
+            state.drivers.push({ name, phone: form.newDriverPhone.value });
+            saveData(); showToast("Motorista cadastrado!", "success");
             form.reset();
-            saveData();
-            showToast('Motorista adicionado!', 'success');
-        }
-
-        function handleAddBox(e) {
-            e.preventDefault();
-            const form = e.target;
-            const name = form.boxName.value.trim();
-            if (!name) return;
-
-            const newId = state.boxes.length > 0 ? Math.max(...state.boxes.map(b => b.id)) + 1 : 1;
-            const newBox = {
-                id: newId,
-                name: name,
-                status: 'available',
-                items: [],
-                destination: null,
-                driver: null
-            };
-
-            state.boxes.push(newBox);
-            addHistoryLog('Criação', `Nova caixa criada: ${name}`, 'Sistema');
-            closeModal();
-            saveData();
-            showToast("Caixa criada com sucesso!", "success");
         }
 
         function handleEditDestination(e) {
             e.preventDefault();
             const idx = state.modal.data;
             const form = e.target;
-            const name = form.editName.value.trim();
-            const exists = state.destinations.some((d, i) => i !== idx && d.name.toLowerCase() === name.toLowerCase());
-            if (exists) { showToast("Nome já existe.", 'error'); return; }
-            state.destinations[idx] = {
-                name,
-                street: form.editStreet.value.trim(),
-                number: form.editNumber.value.trim(),
-                neighborhood: form.editNeighborhood.value.trim()
-            };
-            closeModal();
-            saveData();
+            state.destinations[idx] = { name: form.editName.value, street: form.editStreet.value, number: form.editNumber.value, neighborhood: form.editNeighborhood.value };
+            saveData(); closeModal(); showToast("Endereço atualizado!", "success");
         }
 
         function handleEditDriver(e) {
             e.preventDefault();
             const idx = state.modal.data;
-            const form = e.target;
-            const name = form.editDriverName.value.trim();
-            const phone = form.editDriverPhone.value.trim();
-            
-            const exists = state.drivers.some((d, i) => i !== idx && d.name.toLowerCase() === name.toLowerCase());
-            if (exists) { showToast("Motorista já existe.", 'error'); return; }
-            state.drivers[idx] = { name, phone };
-            closeModal();
-            saveData();
+            state.drivers[idx] = { name: e.target.editDriverName.value, phone: e.target.editDriverPhone.value };
+            saveData(); closeModal(); showToast("Motorista atualizado!", "success");
         }
 
         function confirmDeleteLocation() {
-            const idx = state.modal.data;
-            if (idx !== null) {
-                const removed = state.destinations[idx];
-                state.destinations.splice(idx, 1);
-                addHistoryLog('Remoção', `Endereço removido: ${removed.name}`, 'Sistema');
-                closeModal();
-                saveData();
-            }
+            state.destinations.splice(state.modal.data, 1);
+            saveData(); closeModal(); showToast("Endereço removido!", "success");
         }
 
         function confirmDeleteDriver() {
+            state.drivers.splice(state.modal.data, 1);
+            saveData(); closeModal(); showToast("Motorista removido!", "success");
+        }
+
+        function handleEditMissing(e) {
+            e.preventDefault();
             const idx = state.modal.data;
-            if (idx !== null) {
-                const removed = state.drivers[idx].name;
-                state.drivers.splice(idx, 1);
-                addHistoryLog('Remoção', `Motorista removido: ${removed}`, 'Sistema');
-                closeModal();
-                saveData();
-            }
+            const form = e.target;
+            state.missingItems[idx].itemName = form.editItemName.value;
+            state.missingItems[idx].quantity = form.editQuantity.value;
+            state.missingItems[idx].reason = form.editReason.value;
+            saveData(); closeModal(); showToast("Registro de falta atualizado!", "success");
         }
 
-        function printHistoryManifest(logId) {
-            const log = state.history.find(l => l.id === logId);
-            if (!log) return;
+        function confirmDeleteMissing() {
+            state.missingItems.splice(state.modal.data, 1);
+            saveData(); closeModal(); showToast("Registro removido!", "success");
+        }
 
-            let destination = "Desconhecido";
-            let driver = "Desconhecido";
-            let itemsText = "";
+        function resolveMissingItem(id) {
+            const item = state.missingItems.find(i => i.id === id);
+            if(item) { item.status = 'resolved'; saveData(); showToast("Pendência resolvida!", "success"); }
+        }
 
-            const destMatch = log.details.match(/Saiu para entrega em: (.*?) \(Mot:/);
-            if (destMatch) destination = destMatch[1];
+        // --- 8. Renderização (Views & Components) ---
 
-            const driverMatch = log.details.match(/\(Mot: (.*?)\)/);
-            if (driverMatch) driver = driverMatch[1];
+        function renderModal() {
+            const container = document.getElementById('modal-container');
+            const { type, boxId, data } = state.modal;
+            
+            if (!type) { container.innerHTML = ''; return; }
 
-            if (log.details.includes("Conteúdo: ")) {
-                itemsText = log.details.split("Conteúdo: ")[1];
-            }
-
-            let itemsHtml = '';
-            if (itemsText) {
-                const itemsList = itemsText.split(', ');
-                itemsHtml = itemsList.map(itemStr => {
-                    const match = itemStr.match(/^(\d+)([fu])\s+(.+)$/);
-                    if (match) {
-                        const qty = match[1];
-                        const unit = match[2] === 'f' ? ' Fd' : ' Un';
-                        const name = match[3];
-                        return `<li style="padding:8px 0;border-bottom:1px solid #e0f2fe;display:flex;align-items:center;font-size:14px;">
-                                    <span style="display:inline-block;width:16px;height:16px;border:1px solid #1e40af;margin-right:12px;border-radius:2px;"></span>
-                                    <span style="font-weight:bold;margin-right:6px;background-color:#eff6ff;padding:2px 6px;border-radius:4px;border:1px solid #bfdbfe;">${qty}${unit}</span> ${escapeHtml(name)}
-                                </li>`;
-                    }
-                    return `<li style="padding:8px 0;">${escapeHtml(itemStr)}</li>`;
-                }).join('');
-            } else {
-                itemsHtml = '<p style="text-align:center;color:#93c5fd;margin-top:20px;">Vazio (Histórico não detalhado)</p>';
-            }
-
-            const dateStr = new Date(log.timestamp).toLocaleDateString('pt-BR');
-            const destObj = state.destinations.find(d => d.name === destination);
-            let addressStr = escapeHtml(destination);
-            if (destObj && (destObj.street || destObj.neighborhood)) {
-                addressStr += `<br><span style="font-size:12px;font-weight:normal;color:#555;">${escapeHtml(destObj.street||'')} ${escapeHtml(destObj.number?','+destObj.number:'')} ${escapeHtml(destObj.neighborhood?' - '+destObj.neighborhood:'')}</span>`;
-            }
-
-            const driverObj = state.drivers.find(d => d.name === driver);
-            const driverPhone = driverObj ? driverObj.phone : '';
-            const driverDisplay = driverPhone ? `${escapeHtml(driver)}<br><span style="font-size:11px;font-weight:normal;">${escapeHtml(driverPhone)}</span>` : escapeHtml(driver);
-
-            const html = `
-            <html><head><title>Manifesto (Arquivo) - ${escapeHtml(log.boxName)}</title>
-            <style>
-                body { font-family: sans-serif; padding: 20px; color: #1e3a8a; }
-                .header { border-bottom: 2px solid #1e3a8a; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
-                .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; background: #eff6ff; padding: 20px; border-radius: 8px; border: 1px solid #bfdbfe; }
-                .label { font-size: 11px; text-transform: uppercase; font-weight: bold; color: #60a5fa; }
-                .value { font-size: 16px; font-weight: 600; color: #1e3a8a; }
-                h2 { font-size: 18px; border-bottom: 2px solid #bfdbfe; padding-bottom: 5px; margin-top: 25px; color: #1e40af; }
-                ul { list-style: none; padding: 0; }
-                .sign-line { border-top: 1px solid #1e3a8a; flex: 1; padding-top: 5px; text-align: center; margin-top: 50px; font-size: 12px; color: #1e3a8a; }
-                .watermark { position:absolute; top:20%; left:20%; font-size:100px; color:rgba(0,0,0,0.05); transform:rotate(-45deg); z-index:-1; font-weight:bold; }
-                @media print { 
-                    .info-grid { background: none; border: 1px solid #bfdbfe; } 
-                    h2 { border-bottom: 2px solid #bfdbfe; }
-                    body { -webkit-print-color-adjust: exact; }
+            const box = state.boxes.find(b => b.id === boxId);
+            let content = '';
+            
+            if (type === 'add') {
+                content = `
+                    <h3 class="text-lg font-bold mb-4">Adicionar Item em ${box.name}</h3>
+                    <form onsubmit="handleAddItem(event)" class="space-y-4">
+                        <div><label class="block text-sm mb-1">Nome do Item</label><input name="itemName" class="w-full border p-2 rounded" autofocus required></div>
+                        <div class="flex gap-2">
+                            <div class="flex-1"><label class="block text-sm mb-1">Qtd</label><input type="number" name="quantity" value="1" min="1" class="w-full border p-2 rounded"></div>
+                            <div class="flex-1"><label class="block text-sm mb-1">Unidade</label><select name="unitType" class="w-full border p-2 rounded"><option value="un">Unidade</option><option value="fd">Fardo</option></select></div>
+                        </div>
+                        <div class="flex items-center gap-2"><input type="checkbox" name="isExternal" id="isExt"><label for="isExt" class="text-sm">Item fora da caixa (Externo)</label></div>
+                        <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded">Adicionar</button>
+                    </form>`;
+            } else if (type === 'deliver') {
+                content = `
+                    <h3 class="text-lg font-bold mb-4">Registrar Saída: ${box.name}</h3>
+                    <form onsubmit="handleDelivery(event)" class="space-y-4">
+                        <div id="dest-input-group">
+                            <label class="block text-sm mb-1">Destino</label>
+                            <select name="destination" class="w-full border p-2 rounded mb-2" onchange="document.getElementById('customDestGroup').classList.toggle('hidden', this.value !== '')">
+                                <option value="" disabled selected>Selecione...</option>
+                                ${state.destinations.map(d => `<option value="${d.name}">${d.name}</option>`).join('')}
+                                <option value="">Outro (Digitar)</option>
+                            </select>
+                            <div id="customDestGroup" class="hidden space-y-2">
+                                <input name="customName" placeholder="Nome do local" class="w-full border p-2 rounded bg-yellow-50">
+                                <input name="customStreet" placeholder="Rua" class="w-full border p-2 rounded text-xs">
+                                <div class="flex gap-2">
+                                    <input name="customNumber" placeholder="Nº" class="w-1/3 border p-2 rounded text-xs">
+                                    <input name="customNeighborhood" placeholder="Bairro" class="w-2/3 border p-2 rounded text-xs">
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-1">Motorista</label>
+                            <select name="driver" class="w-full border p-2 rounded" required>
+                                <option value="">Selecione...</option>
+                                ${state.drivers.map(d => `<option value="${d.name}">${d.name}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div><label class="block text-sm mb-1">Data</label><input type="date" name="deliveryDate" value="${new Date().toISOString().split('T')[0]}" class="w-full border p-2 rounded"></div>
+                        <button type="submit" class="w-full bg-green-600 text-white p-2 rounded">Confirmar Saída</button>
+                    </form>`;
+            } else if (type === 'complete') {
+                content = `<h3 class="text-lg font-bold mb-4">Confirmar Entrega/Retorno</h3><p>Marcar ${box.name} como entregue?</p><div class="mt-4 flex gap-2"><button onclick="handleCompleteDelivery()" class="flex-1 bg-green-600 text-white p-2 rounded">Sim, Recebido</button><button onclick="closeModal()" class="flex-1 border p-2 rounded">Cancelar</button></div>`;
+            } else if (type === 'reset') {
+                content = `<h3 class="text-lg font-bold mb-4 text-red-600">Esvaziar Caixa</h3><p>Deseja esvaziar a <b>${box.name}</b> e torná-la disponível?</p><div class="mt-4 flex gap-2"><button onclick="handleResetBox()" class="flex-1 bg-red-600 text-white p-2 rounded">Sim, Resetar</button><button onclick="closeModal()" class="flex-1 border p-2 rounded">Cancelar</button></div>`;
+            } else if (type === 'addBox') {
+                content = `<h3 class="text-lg font-bold mb-4">Nova Caixa</h3><form onsubmit="handleAddBox(event)"><input name="boxName" placeholder="Nome da Caixa (Ex: Caixa 05)" class="w-full border p-2 rounded mb-4" required><button type="submit" class="w-full bg-blue-600 text-white p-2 rounded">Criar</button></form>`;
+            } else if (type === 'deleteItem') {
+                content = `<h3 class="font-bold mb-2">Remover Item</h3><p>Tem certeza?</p><div class="flex gap-2 mt-4"><button onclick="confirmDeleteItem()" class="bg-red-500 text-white px-4 py-2 rounded">Excluir</button><button onclick="closeModal()" class="border px-4 py-2 rounded">Cancelar</button></div>`;
+            } else if (type === 'missing') {
+                content = `<h3 class="font-bold mb-2 text-orange-600">Reportar Falta</h3><form onsubmit="handleReportMissing(event)" class="space-y-3"><input name="itemName" placeholder="Item faltando" class="w-full border p-2 rounded" required><input type="number" name="quantity" placeholder="Qtd" class="w-full border p-2 rounded" required><textarea name="reason" placeholder="Motivo/Obs" class="w-full border p-2 rounded"></textarea><button class="w-full bg-orange-600 text-white p-2 rounded">Registrar</button></form>`;
+            } else if (type === 'editBox') {
+                content = `<h3 class="font-bold mb-2">Editar ${box.name}</h3><form onsubmit="handleEditBox(event)"><input name="boxName" value="${box.name}" class="w-full border p-2 rounded mb-4"><button class="w-full bg-blue-600 text-white p-2 rounded">Salvar</button></form>`;
+            } else if (type === 'deleteBox') {
+                content = `<h3 class="font-bold mb-2 text-red-600">Excluir Caixa</h3><p>Esta ação não pode ser desfeita.</p><div class="flex gap-2 mt-4"><button onclick="confirmDeleteBox()" class="bg-red-500 text-white px-4 py-2 rounded">Excluir</button><button onclick="closeModal()" class="border px-4 py-2 rounded">Cancelar</button></div>`;
+            } else if (type === 'editLocation' || type === 'deleteLocation') {
+                const loc = state.destinations[data];
+                if (type === 'editLocation') {
+                    content = `<h3 class="font-bold mb-4">Editar Local</h3><form onsubmit="handleEditDestination(event)" class="space-y-2"><input name="editName" value="${loc.name}" class="w-full border p-2 rounded"><input name="editStreet" value="${loc.street||''}" placeholder="Rua" class="w-full border p-2 rounded"><input name="editNumber" value="${loc.number||''}" placeholder="Nº" class="w-full border p-2 rounded"><input name="editNeighborhood" value="${loc.neighborhood||''}" placeholder="Bairro" class="w-full border p-2 rounded"><button class="w-full bg-blue-600 text-white p-2 rounded mt-2">Salvar</button></form>`;
+                } else {
+                    content = `<h3 class="font-bold text-red-600">Excluir Local</h3><p>${loc.name}</p><div class="flex gap-2 mt-4"><button onclick="confirmDeleteLocation()" class="bg-red-500 text-white px-4 py-2 rounded">Confirmar</button><button onclick="closeModal()" class="border px-4 py-2 rounded">Cancelar</button></div>`;
                 }
-            </style></head><body>
-                <div class="watermark">ARQUIVO</div>
-                <div class="header">
-                    <div><h1 style="margin:0;color:#1e3a8a;">${escapeHtml(destination)}</h1><div style="color:#3b82f6;">Cópia de Arquivo</div></div>
-                    <div style="text-align:right;"><div class="value" style="font-size:24px;">${escapeHtml(log.boxName)}</div></div>
-                </div>
-                <div class="info-grid">
-                    <div><div class="label">Destino</div><div class="value">${addressStr}</div></div>
-                    <div><div class="label">Data de Saída</div><div class="value">${dateStr}</div></div>
-                    <div><div class="label">Status</div><div class="value">Histórico</div></div>
-                    <div><div class="label">Motorista</div><div class="value">${driverDisplay}</div></div>
-                </div>
-                <h2>Conteúdo Registrado</h2>
-                <ul>${itemsHtml}</ul>
-                <div style="display:flex;gap:40px;margin-top:60px;">
-                    <div class="sign-line">Assinatura Expedição</div><div class="sign-line">Assinatura Recebimento</div>
-                </div>
-                <script>window.onload=function(){window.print();} <\/script>
-            </body></html>`;
-
-            const win = window.open('', '_blank');
-            if(win) {
-                win.document.write(html);
-                win.document.close();
-            } else {
-                showToast("Pop-up bloqueado. Permita pop-ups para imprimir.", 'error');
+            } else if (type === 'editDriver' || type === 'deleteDriver') {
+                const drv = state.drivers[data];
+                if (type === 'editDriver') {
+                    content = `<h3 class="font-bold mb-4">Editar Motorista</h3><form onsubmit="handleEditDriver(event)" class="space-y-2"><input name="editDriverName" value="${drv.name}" class="w-full border p-2 rounded"><input name="editDriverPhone" value="${drv.phone||''}" placeholder="Telefone" class="w-full border p-2 rounded"><button class="w-full bg-blue-600 text-white p-2 rounded mt-2">Salvar</button></form>`;
+                } else {
+                    content = `<h3 class="font-bold text-red-600">Excluir Motorista</h3><p>${drv.name}</p><div class="flex gap-2 mt-4"><button onclick="confirmDeleteDriver()" class="bg-red-500 text-white px-4 py-2 rounded">Confirmar</button><button onclick="closeModal()" class="border px-4 py-2 rounded">Cancelar</button></div>`;
+                }
+            } else if (type === 'changeDestination') {
+                content = `<h3 class="font-bold mb-4">Alterar Destino</h3><form onsubmit="handleChangeDestination(event)"><div id="dest-input-group"><select name="destination" class="w-full border p-2 rounded mb-2" onchange="document.getElementById('customDestGroup2').classList.toggle('hidden', this.value !== '')"><option value="" disabled selected>Selecione...</option>${state.destinations.map(d => `<option value="${d.name}">${d.name}</option>`).join('')}<option value="">Outro (Digitar)</option></select><div id="customDestGroup2" class="hidden space-y-2"><input name="customName" placeholder="Nome do local" class="w-full border p-2 rounded bg-yellow-50"><input name="customStreet" placeholder="Rua" class="w-full border p-2 rounded text-xs"><div class="flex gap-2"><input name="customNumber" placeholder="Nº" class="w-1/3 border p-2 rounded text-xs"><input name="customNeighborhood" placeholder="Bairro" class="w-2/3 border p-2 rounded text-xs"></div></div></div><button class="w-full bg-blue-600 text-white p-2 rounded mt-2">Salvar</button></form>`;
+            } else if (type === 'changeDriver') {
+                content = `<h3 class="font-bold mb-4">Alterar Motorista</h3><form onsubmit="handleChangeDriver(event)"><select name="newDriver" class="w-full border p-2 rounded mb-4"><option value="">Sem motorista</option>${state.drivers.map(d => `<option value="${d.name}">${d.name}</option>`).join('')}</select><button class="w-full bg-blue-600 text-white p-2 rounded">Salvar</button></form>`;
+            } else if (type === 'editMissing' || type === 'deleteMissing') {
+                 const mItem = state.missingItems[data];
+                 if (type === 'editMissing') {
+                     content = `<h3 class="font-bold mb-4">Editar Falta</h3><form onsubmit="handleEditMissing(event)" class="space-y-2"><input name="editItemName" value="${mItem.itemName}" class="w-full border p-2 rounded"><input name="editQuantity" type="number" value="${mItem.quantity}" class="w-full border p-2 rounded"><textarea name="editReason" class="w-full border p-2 rounded">${mItem.reason}</textarea><button class="w-full bg-blue-600 text-white p-2 rounded">Salvar</button></form>`;
+                 } else {
+                     content = `<h3 class="font-bold text-red-600">Excluir Registro</h3><p>${mItem.itemName}</p><div class="flex gap-2 mt-4"><button onclick="confirmDeleteMissing()" class="bg-red-500 text-white px-4 py-2 rounded">Confirmar</button><button onclick="closeModal()" class="border px-4 py-2 rounded">Cancelar</button></div>`;
+                 }
+            } else if (type === 'confirmImport') {
+                 content = `<h3 class="font-bold text-lg mb-2 text-orange-600">Restaurar Backup?</h3><p class="text-sm text-slate-600 mb-4">Isso substituirá todos os dados atuais pelos do arquivo. Tem certeza?</p><div class="flex gap-2"><button onclick="executeImport()" class="flex-1 bg-orange-600 text-white p-2 rounded">Sim, Restaurar</button><button onclick="closeModal()" class="flex-1 border p-2 rounded">Cancelar</button></div>`;
             }
+
+            container.innerHTML = `
+                <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-fade-in">
+                    <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md animate-zoom-in relative">
+                        <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+                        ${content}
+                    </div>
+                </div>`;
+            lucide.createIcons();
         }
 
+        // --- 9. Renderização Geral e Dashboards ---
+        
         function renderLogin() {
             const container = document.getElementById('login-container');
             const appLayout = document.getElementById('app-layout');
-            
-            // Toggle visibility
             container.classList.remove('hidden');
             appLayout.classList.add('hidden');
             appLayout.classList.remove('opacity-100');
-            
-            container.innerHTML = `
-            <div class="bg-white p-8 rounded-xl shadow-lg border border-blue-200 w-full max-w-sm animate-zoom-in">
-                <div class="text-center mb-8">
-                    <div class="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-200">
-                        <i data-lucide="lock" class="w-8 h-8 text-blue-600"></i>
-                    </div>
-                    <h2 class="text-2xl font-bold text-blue-900">Acesso Restrito</h2>
-                    <p class="text-blue-500 text-sm mt-1">Identifique-se para continuar</p>
-                </div>
-                <form onsubmit="handleLogin(event)" class="space-y-5">
-                    <div>
-                        <input type="password" name="password" placeholder="Senha de Acesso" class="w-full border border-blue-200 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 text-center tracking-widest text-lg transition-all" autofocus>
-                    </div>
-                    <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors shadow-sm flex items-center justify-center gap-2">
-                        <span>Entrar no Sistema</span>
-                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
-                    </button>
-                </form>
-            </div>`;
+            container.innerHTML = `<div class="bg-white p-8 rounded-xl shadow-lg border border-blue-200 w-full max-w-sm animate-zoom-in"><div class="text-center mb-8"><div class="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-200"><i data-lucide="lock" class="w-8 h-8 text-blue-600"></i></div><h2 class="text-2xl font-bold text-blue-900">Acesso Restrito</h2><p class="text-blue-500 text-sm mt-1">Identifique-se para continuar</p></div><form onsubmit="handleLogin(event)" class="space-y-5"><div><input type="password" name="password" placeholder="Senha de Acesso" class="w-full border border-blue-200 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 text-center tracking-widest text-lg transition-all" autofocus></div><button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors shadow-sm flex items-center justify-center gap-2"><span>Entrar no Sistema</span><i data-lucide="arrow-right" class="w-4 h-4"></i></button></form></div>`;
             if(typeof lucide !== 'undefined') lucide.createIcons();
         }
 
         function getStatusBadge(status) {
-            const styles = {
-                available: "text-blue-700 bg-blue-50 ring-1 ring-blue-600/20",
-                in_delivery: "text-yellow-700 bg-yellow-50 ring-1 ring-yellow-600/20",
-                delivered: "text-slate-700 bg-slate-100 ring-1 ring-slate-600/20",
-                issue: "text-red-700 bg-red-50 ring-1 ring-red-600/20"
-            };
+            const styles = { available: "text-blue-700 bg-blue-50 ring-1 ring-blue-600/20", in_delivery: "text-yellow-700 bg-yellow-50 ring-1 ring-yellow-600/20", delivered: "text-slate-700 bg-slate-100 ring-1 ring-slate-600/20", issue: "text-red-700 bg-red-50 ring-1 ring-red-600/20" };
             const labels = { available: "Disponível", in_delivery: "Em Trânsito", delivered: "Entregue", issue: "Pendência" };
             return `<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold ${styles[status]}">${labels[status]}</span>`;
         }
 
         function renderNav() {
             const pending = state.missingItems.filter(m => m.status === 'pending').length;
-            
-            const navItems = [
-                { id: 'dashboard', label: 'Caixas', icon: 'box' },
-                { id: 'locations', label: 'Endereços', icon: 'map-pin' },
-                { id: 'drivers', label: 'Motoristas', icon: 'users' },
-                { id: 'missing', label: 'Faltas', icon: 'alert-triangle', badge: pending },
-                { id: 'history', label: 'Histórico', icon: 'clock' },
-                { id: 'settings', label: 'Configurações', icon: 'settings' }
-            ];
-
-            // 1. Render Desktop Sidebar Nav
+            const navItems = [{ id: 'dashboard', label: 'Caixas', icon: 'box' }, { id: 'locations', label: 'Endereços', icon: 'map-pin' }, { id: 'drivers', label: 'Motoristas', icon: 'users' }, { id: 'missing', label: 'Faltas', icon: 'alert-triangle', badge: pending }, { id: 'history', label: 'Histórico', icon: 'clock' }, { id: 'settings', label: 'Configurações', icon: 'settings' }];
             const sidebarHtml = navItems.map(item => {
                 const isActive = state.activeTab === item.id;
-                // Ajustes para modo minimizado
                 const collapsed = state.sidebarCollapsed;
                 const baseClass = `w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group ${isActive ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'} ${collapsed ? 'justify-center px-0' : ''}`;
                 const iconClass = isActive ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-600';
-                
-                return `
-                <button onclick="switchTab('${item.id}')" class="${baseClass}" title="${collapsed ? item.label : ''}">
-                    <div class="relative">
-                        <i data-lucide="${item.icon}" class="w-5 h-5 ${iconClass}"></i>
-                        ${collapsed && item.badge > 0 ? `<span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border border-white"></span>` : ''}
-                    </div>
-                    ${!collapsed ? `
-                        <span class="flex-grow text-left truncate">${item.label}</span>
-                        ${item.badge > 0 ? `<span class="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-md">${item.badge}</span>` : ''}
-                        ${isActive ? `<div class="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0"></div>` : ''}
-                    ` : ''}
-                </button>`;
+                return `<button onclick="switchTab('${item.id}')" class="${baseClass}" title="${collapsed ? item.label : ''}"><div class="relative"><i data-lucide="${item.icon}" class="w-5 h-5 ${iconClass}"></i>${collapsed && item.badge > 0 ? `<span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border border-white"></span>` : ''}</div>${!collapsed ? `<span class="flex-grow text-left truncate">${item.label}</span>${item.badge > 0 ? `<span class="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-md">${item.badge}</span>` : ''}${isActive ? `<div class="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0"></div>` : ''}` : ''}</button>`;
             }).join('');
-            
             document.getElementById('sidebar-nav').innerHTML = sidebarHtml;
-
-            // Render Footer
             const userFooter = document.getElementById('sidebar-footer');
             if (userFooter) {
-                if (state.sidebarCollapsed) {
-                    userFooter.innerHTML = `
-                        <button onclick="logout()" class="w-full flex items-center justify-center text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors" title="Sair">
-                            <i data-lucide="log-out" class="w-5 h-5"></i>
-                        </button>
-                    `;
-                } else {
-                    userFooter.innerHTML = `
-                        <div class="flex items-center gap-3 mb-3 px-2">
-                            <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200 shrink-0">
-                                <i data-lucide="user" class="w-4 h-4"></i>
-                            </div>
-                            <div class="overflow-hidden">
-                                <p class="text-sm font-bold text-slate-700 truncate" id="user-name-display">${state.currentUser}</p>
-                                <p class="text-xs text-slate-400 truncate">Operador Logístico</p>
-                            </div>
-                        </div>
-                        <button onclick="logout()" class="w-full flex items-center justify-center gap-2 text-sm text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors border border-transparent hover:border-red-100">
-                            <i data-lucide="log-out" class="w-4 h-4"></i> Sair do Sistema
-                        </button>
-                    `;
-                }
+                if (state.sidebarCollapsed) { userFooter.innerHTML = `<button onclick="logout()" class="w-full flex items-center justify-center text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors" title="Sair"><i data-lucide="log-out" class="w-5 h-5"></i></button>`; } 
+                else { userFooter.innerHTML = `<div class="flex items-center gap-3 mb-3 px-2"><div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200 shrink-0"><i data-lucide="user" class="w-4 h-4"></i></div><div class="overflow-hidden"><p class="text-sm font-bold text-slate-700 truncate">${state.currentUser}</p><p class="text-xs text-slate-400 truncate">Operador Logístico</p></div></div><button onclick="logout()" class="w-full flex items-center justify-center gap-2 text-sm text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors border border-transparent hover:border-red-100"><i data-lucide="log-out" class="w-4 h-4"></i> Sair do Sistema</button>`; }
             }
-
-            // 2. Render Mobile Top Nav
             const mobileHtml = navItems.map(item => {
                 const isActive = state.activeTab === item.id;
                 const baseClass = `flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 ${isActive ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`;
-                
-                return `
-                <button onclick="switchTab('${item.id}')" class="${baseClass}">
-                    ${item.label}
-                    ${item.badge > 0 ? `<span class="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">${item.badge}</span>` : ''}
-                </button>`;
+                return `<button onclick="switchTab('${item.id}')" class="${baseClass}">${item.label}${item.badge > 0 ? `<span class="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">${item.badge}</span>` : ''}</button>`;
             }).join('');
-
             document.getElementById('mobile-nav').innerHTML = mobileHtml;
         }
 
         function renderSettingsPanel() {
             const container = document.getElementById('app-content');
-            container.innerHTML = `
-            <div class="max-w-4xl mx-auto space-y-8 animate-fade-in pb-10">
-                
-                <div class="text-center space-y-2 mb-8">
-                    <h2 class="text-2xl font-bold text-slate-800">Backup e Restauração</h2>
-                    <p class="text-slate-500 max-w-lg mx-auto">Gerencie seus dados com segurança. Exporte para salvar uma cópia ou importe para restaurar o estado anterior.</p>
-                </div>
-
-                <div class="grid md:grid-cols-2 gap-6">
-                    <!-- Card Exportar -->
-                    <div class="bg-white rounded-xl shadow-sm border border-blue-100 p-8 flex flex-col items-center text-center hover:shadow-md transition-shadow relative overflow-hidden group">
-                        <div class="absolute top-0 left-0 w-full h-1 bg-blue-500"></div>
-                        <div class="bg-blue-50 p-5 rounded-full mb-6 group-hover:scale-110 transition-transform duration-300">
-                            <i data-lucide="download-cloud" class="w-10 h-10 text-blue-600"></i>
-                        </div>
-                        <h3 class="text-lg font-bold text-slate-800 mb-2">Exportar Dados</h3>
-                        <p class="text-sm text-slate-500 mb-8 flex-grow leading-relaxed">
-                            Cria um arquivo de segurança (JSON) contendo todas as caixas, histórico de movimentações, motoristas e locais cadastrados.
-                        </p>
-                        <button onclick="handleExportBackup()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-lg font-bold flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 shadow-blue-200">
-                            <i data-lucide="download" class="w-5 h-5"></i>
-                            Baixar Backup
-                        </button>
-                    </div>
-
-                    <!-- Card Importar -->
-                    <div class="bg-white rounded-xl shadow-sm border border-orange-100 p-8 flex flex-col items-center text-center hover:shadow-md transition-shadow relative overflow-hidden group">
-                        <div class="absolute top-0 left-0 w-full h-1 bg-orange-500"></div>
-                        <div class="bg-orange-50 p-5 rounded-full mb-6 group-hover:scale-110 transition-transform duration-300">
-                            <i data-lucide="upload-cloud" class="w-10 h-10 text-orange-600"></i>
-                        </div>
-                        <h3 class="text-lg font-bold text-slate-800 mb-2">Restaurar Dados</h3>
-                        <p class="text-sm text-slate-500 mb-4 flex-grow leading-relaxed">
-                            Recupere o sistema a partir de um arquivo salvo anteriormente.
-                        </p>
-                        
-                        <div class="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-6 text-xs text-orange-800 text-left w-full flex gap-2 items-start">
-                            <i data-lucide="alert-triangle" class="w-4 h-4 shrink-0 mt-0.5"></i>
-                            <span><strong>Atenção:</strong> Esta ação substituirá todos os dados atuais.</span>
-                        </div>
-
-                        <label class="w-full bg-white border-2 border-dashed border-slate-300 hover:border-orange-400 hover:bg-orange-50/30 text-slate-600 hover:text-orange-700 py-3.5 rounded-lg font-medium flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95 group/btn">
-                            <i data-lucide="file-up" class="w-5 h-5 text-slate-400 group-hover/btn:text-orange-500 transition-colors"></i>
-                            <span>Selecionar Arquivo JSON</span>
-                            <input type="file" id="import-file" accept=".json" style="display:none;" onchange="handleImportBackup(event)">
-                        </label>
-                    </div>
-                </div>
-            </div>`;
-            if(typeof lucide !== 'undefined') lucide.createIcons();
+            container.innerHTML = `<div class="max-w-4xl mx-auto space-y-8 animate-fade-in pb-10"><div class="text-center space-y-2 mb-8"><h2 class="text-2xl font-bold text-slate-800">Backup e Restauração</h2><p class="text-slate-500 max-w-lg mx-auto">Gerencie seus dados com segurança.</p></div><div class="grid md:grid-cols-2 gap-6"><div class="bg-white rounded-xl shadow-sm border border-blue-100 p-8 flex flex-col items-center text-center hover:shadow-md transition-shadow relative overflow-hidden group"><div class="absolute top-0 left-0 w-full h-1 bg-blue-500"></div><div class="bg-blue-50 p-5 rounded-full mb-6 group-hover:scale-110 transition-transform duration-300"><i data-lucide="download-cloud" class="w-10 h-10 text-blue-600"></i></div><h3 class="text-lg font-bold text-slate-800 mb-2">Exportar Dados</h3><p class="text-sm text-slate-500 mb-8 flex-grow leading-relaxed">Cria um arquivo de segurança (JSON).</p><button onclick="handleExportBackup()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-lg font-bold flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 shadow-blue-200"><i data-lucide="download" class="w-5 h-5"></i> Baixar Backup</button></div><div class="bg-white rounded-xl shadow-sm border border-orange-100 p-8 flex flex-col items-center text-center hover:shadow-md transition-shadow relative overflow-hidden group"><div class="absolute top-0 left-0 w-full h-1 bg-orange-500"></div><div class="bg-orange-50 p-5 rounded-full mb-6 group-hover:scale-110 transition-transform duration-300"><i data-lucide="upload-cloud" class="w-10 h-10 text-orange-600"></i></div><h3 class="text-lg font-bold text-slate-800 mb-2">Restaurar Dados</h3><p class="text-sm text-slate-500 mb-4 flex-grow leading-relaxed">Recupere o sistema a partir de um arquivo salvo.</p><label class="w-full bg-white border-2 border-dashed border-slate-300 hover:border-orange-400 hover:bg-orange-50/30 text-slate-600 hover:text-orange-700 py-3.5 rounded-lg font-medium flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95 group/btn"><i data-lucide="file-up" class="w-5 h-5 text-slate-400 group-hover/btn:text-orange-500 transition-colors"></i><span>Selecionar Arquivo</span><input type="file" id="import-file" accept=".json" style="display:none;" onchange="handleImportBackup(event)"></label></div></div></div>`;
+            lucide.createIcons();
         }
 
         function renderDashboard() {
             const container = document.getElementById('app-content');
-            
             const totalMissing = state.missingItems.filter(m => m.status === 'pending').length;
             const available = state.boxes.filter(b => b.status === 'available').length;
             const delivering = state.boxes.filter(b => b.status === 'in_delivery').length;
             
             let html = `
             <div class="space-y-8 pb-10">
-                <!-- Stats Row -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-blue-100 flex flex-col items-center justify-center hover:shadow-md transition-shadow">
-                        <span class="text-3xl font-bold text-blue-900 tracking-tight">${state.boxes.length}</span>
-                        <span class="text-[10px] text-blue-400 uppercase tracking-widest font-semibold mt-1">Total Caixas</span>
-                    </div>
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-blue-100 flex flex-col items-center justify-center hover:shadow-md transition-shadow border-b-4 border-b-blue-500">
-                        <span class="text-3xl font-bold text-blue-600 tracking-tight">${available}</span>
-                        <span class="text-[10px] text-blue-600/70 uppercase tracking-widest font-semibold mt-1">Disponíveis</span>
-                    </div>
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-blue-100 flex flex-col items-center justify-center hover:shadow-md transition-shadow border-b-4 border-b-yellow-500">
-                        <span class="text-3xl font-bold text-yellow-600 tracking-tight">${delivering}</span>
-                        <span class="text-[10px] text-yellow-600/70 uppercase tracking-widest font-semibold mt-1">Em Trânsito</span>
-                    </div>
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-blue-100 flex flex-col items-center justify-center hover:shadow-md transition-shadow border-b-4 border-b-red-500 relative overflow-hidden">
-                        <span class="text-3xl font-bold text-red-600 tracking-tight z-10">${totalMissing}</span>
-                        <span class="text-[10px] text-red-600/70 uppercase tracking-widest font-semibold mt-1 z-10">Pendências</span>
-                        ${totalMissing > 0 ? '<div class="absolute -right-3 -top-3 w-12 h-12 bg-red-100 rounded-full animate-pulse opacity-50"></div>' : ''}
-                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-blue-100 flex flex-col items-center justify-center border-b-4 border-b-blue-900"><span class="text-3xl font-bold text-blue-900 tracking-tight">${state.boxes.length}</span><span class="text-[10px] text-blue-400 uppercase tracking-widest font-semibold mt-1">Total Caixas</span></div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-blue-100 flex flex-col items-center justify-center border-b-4 border-b-blue-500"><span class="text-3xl font-bold text-blue-600 tracking-tight">${available}</span><span class="text-[10px] text-blue-600/70 uppercase tracking-widest font-semibold mt-1">Disponíveis</span></div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-blue-100 flex flex-col items-center justify-center border-b-4 border-b-yellow-500"><span class="text-3xl font-bold text-yellow-600 tracking-tight">${delivering}</span><span class="text-[10px] text-yellow-600/70 uppercase tracking-widest font-semibold mt-1">Em Trânsito</span></div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-blue-100 flex flex-col items-center justify-center border-b-4 border-b-red-500 relative overflow-hidden"><span class="text-3xl font-bold text-red-600 tracking-tight z-10">${totalMissing}</span><span class="text-[10px] text-red-600/70 uppercase tracking-widest font-semibold mt-1 z-10">Pendências</span>${totalMissing > 0 ? '<div class="absolute -right-3 -top-3 w-12 h-12 bg-red-100 rounded-full animate-pulse opacity-50"></div>' : ''}</div>
                 </div>
-                
-                <div class="flex justify-end">
-                     <button onclick="openModal('addBox')" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl font-medium shadow-md shadow-blue-200 flex items-center justify-center gap-2 transition-all">
-                        <i data-lucide="plus-square" class="w-5 h-5"></i>
-                        <span>Nova Caixa</span>
-                    </button>
-                </div>
-
-                <!-- Grid de Caixas (Responsive Update) -->
+                <div class="flex justify-end"><button onclick="openModal('addBox')" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl font-medium shadow-md shadow-blue-200 flex items-center justify-center gap-2 transition-all"><i data-lucide="plus-square" class="w-5 h-5"></i><span>Nova Caixa</span></button></div>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-6">`;
             
-            state.boxes.forEach(box => {
+            state.boxes.forEach((box, index) => {
                 const hasIssue = state.missingItems.some(m => m.boxId === box.id && m.status === 'pending');
                 const status = (hasIssue && box.status === 'delivered') ? 'issue' : box.status;
-                
-                const borderColors = {
-                    available: "border-t-blue-500",
-                    in_delivery: "border-t-yellow-500",
-                    delivered: "border-t-slate-500",
-                    issue: "border-t-red-500"
-                };
-
+                const borderColors = { available: "border-t-blue-500", in_delivery: "border-t-yellow-500", delivered: "border-t-slate-500", issue: "border-t-red-500" };
                 const mappedItems = box.items.map((item, index) => ({...item, originalIndex: index}));
                 const internalItems = mappedItems.filter(i => !i.isExternal);
                 const externalItems = mappedItems.filter(i => i.isExternal);
-
-                const renderList = (items, title, isExt) => items.length ? `
-                    <div class="mb-4">
-                        <p class="text-[10px] font-bold uppercase tracking-wider text-blue-400 mb-2 flex items-center gap-1.5 border-b border-blue-50 pb-1">
-                            <i data-lucide="${isExt?'package-open':'box'}" class="w-3 h-3"></i> ${title}
-                        </p>
-                        ${items.map((it) => {
-                            return `
-                            <div class="flex justify-between items-center text-sm py-1.5 group hover:bg-blue-50 rounded px-1 -mx-1 transition-colors">
-                                <div class="truncate pr-2 flex-grow flex items-center">
-                                    <span class="font-bold text-slate-700 mr-1.5 min-w-[1.5rem] text-right">${it.quantity}</span>
-                                    <span class="text-[9px] font-bold bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded uppercase tracking-wide mr-2.5 shadow-sm border border-slate-300">${it.unitType==='fd'?'FD':'UN'}</span>
-                                    <span class="text-slate-700 truncate ${isExt?'italic text-slate-500':''}">${escapeHtml(it.name)}</span>
-                                </div>
-                                <button onclick="openModal('deleteItem', ${box.id}, ${it.originalIndex})" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-0.5"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
-                            </div>
-                        `}).join('')}
-                    </div>` : '';
-
+                const renderList = (items, title, isExt) => items.length ? `<div class="mb-4"><p class="text-[10px] font-bold uppercase tracking-wider text-blue-400 mb-2 flex items-center gap-1.5 border-b border-blue-50 pb-1"><i data-lucide="${isExt?'package-open':'box'}" class="w-3 h-3"></i> ${title}</p>${items.map((it) => `<div class="flex justify-between items-center text-sm py-1.5 group hover:bg-blue-50 rounded px-1 -mx-1 transition-colors"><div class="truncate pr-2 flex-grow flex items-center"><span class="font-bold text-slate-700 mr-1.5 min-w-[1.5rem] text-right">${it.quantity}</span><span class="text-[9px] font-bold bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded uppercase tracking-wide mr-2.5 shadow-sm border border-slate-300">${it.unitType==='fd'?'FD':'UN'}</span><span class="text-slate-700 truncate ${isExt?'italic text-slate-500':''}">${escapeHtml(it.name)}</span></div><button onclick="openModal('deleteItem', ${box.id}, ${it.originalIndex})" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-0.5"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button></div>`).join('')}</div>` : '';
                 let mainAction = '';
-                if (box.status === 'available') {
-                    mainAction = `<button onclick="openModal('deliver',${box.id})" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2 transition-colors shadow-sm"><i data-lucide="truck" class="w-4 h-4"></i> Entregar</button>`;
-                } else if (box.status === 'in_delivery') {
-                    mainAction = `<button onclick="openModal('complete',${box.id})" class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2 transition-colors shadow-sm"><i data-lucide="check-circle" class="w-4 h-4"></i> Receber</button>`;
-                } else {
-                    mainAction = `<button onclick="openModal('reset',${box.id})" class="w-full bg-white border border-blue-200 hover:bg-blue-50 text-blue-600 py-2 rounded-md text-sm font-medium transition-colors">Disponibilizar</button>`;
-                }
+                if (box.status === 'available') mainAction = `<button onclick="openModal('deliver',${box.id})" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2 transition-colors shadow-sm"><i data-lucide="truck" class="w-4 h-4"></i> Entregar</button>`;
+                else if (box.status === 'in_delivery') mainAction = `<button onclick="openModal('complete',${box.id})" class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2 transition-colors shadow-sm"><i data-lucide="check-circle" class="w-4 h-4"></i> Receber</button>`;
+                else mainAction = `<button onclick="openModal('reset',${box.id})" class="w-full bg-white border border-blue-200 hover:bg-blue-50 text-blue-600 py-2 rounded-md text-sm font-medium transition-colors">Disponibilizar</button>`;
 
                 html += `
-                <div class="bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden flex flex-col h-full hover:shadow-md transition-all duration-200 border-t-4 ${borderColors[status]}">
-                    
-                    <!-- Header do Card -->
-                    <div class="p-4 border-b border-blue-50 flex justify-between items-start group/card-header">
-                        <div class="pr-2 flex-grow">
-                            <h3 class="font-bold text-lg text-blue-900 leading-tight">${escapeHtml(box.name)}</h3>
-                            <div class="mt-1">${getStatusBadge(status)}</div>
-                        </div>
+                <div 
+                    id="card-${index}"
+                    draggable="false"
+                    data-index="${index}"
+                    ondragstart="handleDragStart(event, ${index})"
+                    ondragend="handleDragEnd(event)"
+                    ondragover="handleDragOver(event)"
+                    ondragenter="handleDragEnter(event)"
+                    ondragleave="handleDragLeave(event)"
+                    ondrop="handleDrop(event, ${index})"
+                    class="group/card-container bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden flex flex-col h-full hover:shadow-md transition-all duration-200 border-t-4 ${borderColors[status]} cursor-default transform transition-transform"
+                >
+                    <div class="w-full flex justify-center -mt-2.5 mb-0 relative z-10">
+                         <div 
+                            class="drag-handle bg-white border border-t-0 border-blue-100 rounded-b-lg px-4 py-0.5 cursor-grab hover:bg-blue-50 text-slate-300 hover:text-blue-500 shadow-sm transition-colors select-none" 
+                            title="Segure para arrastar"
+                            onmousedown="enableDrag(event, ${index})"
+                            onmouseup="disableDrag(event, ${index})"
+                         >
+                            <i data-lucide="grip-horizontal" class="w-4 h-4 pointer-events-none"></i>
+                         </div>
+                    </div>
+                    <div class="p-4 pt-1 border-b border-blue-50 flex justify-between items-start group/card-header">
+                        <div class="pr-2 flex-grow"><h3 class="font-bold text-lg text-blue-900 leading-tight">${escapeHtml(box.name)}</h3><div class="mt-1">${getStatusBadge(status)}</div></div>
                         <div class="flex items-center gap-1 opacity-80 group-hover/card-header:opacity-100 transition-opacity">
-                            <button onclick="openModal('editBox', ${box.id})" class="p-1.5 text-blue-300 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Editar Nome">
-                                <i data-lucide="pencil" class="w-4 h-4"></i>
-                            </button>
-                            <button onclick="openModal('deleteBox', ${box.id})" class="p-1.5 text-blue-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Excluir Caixa">
-                                <i data-lucide="trash-2" class="w-4 h-4"></i>
-                            </button>
+                            <button onclick="openModal('editBox', ${box.id})" class="p-1.5 text-blue-300 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                            <button onclick="openModal('deleteBox', ${box.id})" class="p-1.5 text-blue-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                             <div class="w-px h-4 bg-blue-100 mx-1"></div>
-                            <button onclick="printBox(${box.id})" class="p-1.5 text-blue-300 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Imprimir Manifesto">
-                                <i data-lucide="printer" class="w-4 h-4"></i>
-                            </button>
+                            <button onclick="printBox(${box.id})" class="p-1.5 text-blue-300 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><i data-lucide="printer" class="w-4 h-4"></i></button>
                         </div>
                     </div>
-                    
-                    <!-- Corpo do Card -->
                     <div class="p-4 flex-grow flex flex-col">
                         <div class="mb-5 bg-blue-50/50 rounded-lg p-3 border border-blue-50">
                             <p class="text-[10px] text-blue-400 uppercase tracking-wide font-bold mb-1">Destino Atual</p>
-                            <div class="flex items-center gap-2 text-slate-700 font-medium truncate">
+                            <div class="flex items-center gap-2 text-slate-700 font-medium truncate group relative">
                                 <i data-lucide="map-pin" class="w-4 h-4 text-blue-500 shrink-0"></i>
-                                <span class="truncate">${escapeHtml(box.destination) || '<span class="text-blue-300 font-normal italic">Não definido</span>'}</span>
+                                <span class="truncate flex-grow">${escapeHtml(box.destination) || '<span class="text-blue-300 font-normal italic">Não definido</span>'}</span>
+                                ${ box.status !== 'available' ? `<button onclick="openModal('changeDestination', ${box.id})" class="text-blue-300 hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-blue-100 shrink-0" title="Alterar Destino"><i data-lucide="pencil" class="w-3 h-3"></i></button>` : '' }
                             </div>
                             <div class="flex items-center gap-2 text-slate-700 font-medium truncate mt-1 group">
                                 <i data-lucide="user" class="w-4 h-4 text-blue-500 shrink-0"></i>
                                 <span class="truncate text-xs flex-grow">${escapeHtml(box.driver) || '<span class="text-blue-300 font-normal italic">Sem motorista</span>'}</span>
-                                <button onclick="openModal('changeDriver', ${box.id})" class="text-blue-300 hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-blue-100" title="Alterar Motorista">
-                                    <i data-lucide="pencil" class="w-3 h-3"></i>
-                                </button>
+                                <button onclick="openModal('changeDriver', ${box.id})" class="text-blue-300 hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-blue-100"><i data-lucide="pencil" class="w-3 h-3"></i></button>
                             </div>
                         </div>
-
-                        <div class="flex-grow">
-                            ${box.items.length ? 
-                                `<div class="space-y-1 max-h-60 overflow-y-auto pr-1 scrollbar-thin">
-                                    ${renderList(internalItems, "Interno", false)}
-                                    ${renderList(externalItems, "Externos", true)}
-                                </div>` : 
-                                `<div class="h-32 flex flex-col items-center justify-center text-blue-200 italic text-sm border-2 border-dashed border-blue-100 rounded-lg">
-                                    <i data-lucide="box" class="w-8 h-8 mb-2 opacity-50"></i>
-                                    Caixa vazia
-                                </div>`
-                            }
-                        </div>
+                        <div class="flex-grow">${box.items.length ? `<div class="space-y-1 max-h-60 overflow-y-auto pr-1 scrollbar-thin">${renderList(internalItems, "Interno", false)}${renderList(externalItems, "Externos", true)}</div>` : `<div class="h-32 flex flex-col items-center justify-center text-blue-200 italic text-sm border-2 border-dashed border-blue-100 rounded-lg"><i data-lucide="box" class="w-8 h-8 mb-2 opacity-50"></i> Caixa vazia</div>`}</div>
                     </div>
-
-                    <!-- Footer do Card -->
                     <div class="p-4 bg-blue-50/30 border-t border-blue-50 flex flex-col gap-2 mt-auto">
-                        <div class="grid grid-cols-2 gap-2">
-                            <button onclick="openModal('add',${box.id})" class="flex items-center justify-center gap-1.5 bg-white border border-blue-200 text-blue-600 py-1.5 rounded hover:bg-blue-50 text-xs font-medium transition-colors">
-                                <i data-lucide="plus" class="w-3 h-3"></i> Item
-                            </button>
-                            <button onclick="openModal('missing',${box.id})" class="flex items-center justify-center gap-1.5 bg-white border border-orange-200 text-orange-600 py-1.5 rounded hover:bg-orange-50 text-xs font-medium transition-colors">
-                                <i data-lucide="alert-triangle" class="w-3 h-3"></i> Falta
-                            </button>
-                        </div>
+                        <div class="grid grid-cols-2 gap-2"><button onclick="openModal('add',${box.id})" class="flex items-center justify-center gap-1.5 bg-white border border-blue-200 text-blue-600 py-1.5 rounded hover:bg-blue-50 text-xs font-medium transition-colors"><i data-lucide="plus" class="w-3 h-3"></i> Item</button><button onclick="openModal('missing',${box.id})" class="flex items-center justify-center gap-1.5 bg-white border border-orange-200 text-orange-600 py-1.5 rounded hover:bg-orange-50 text-xs font-medium transition-colors"><i data-lucide="alert-triangle" class="w-3 h-3"></i> Falta</button></div>
                         ${mainAction}
                     </div>
                 </div>`;
             });
             container.innerHTML = html + '</div></div>';
-            if(typeof lucide !== 'undefined') lucide.createIcons();
-        }
-
-        // --- Helpers UI ---
-        function toggleDestInput(showInput) {
-            const groupSelect = document.getElementById('dest-select-group');
-            const groupInput = document.getElementById('dest-input-group');
-            const inputs = groupInput.querySelectorAll('input');
-            const selectEl = groupSelect.querySelector('select');
-
-            if (showInput) {
-                groupSelect.classList.add('hidden');
-                groupInput.classList.remove('hidden');
-                inputs[0]?.focus();
-                selectEl.value = "";
-            } else {
-                groupInput.classList.add('hidden');
-                groupSelect.classList.remove('hidden');
-                inputs.forEach(i => i.value = "");
-            }
-        }
-
-        function printMissingItems() {
-            if (!state.missingItems.length) return;
-
-            const rows = state.missingItems.map(m => `
-                <tr>
-                    <td>${new Date(m.date).toLocaleDateString('pt-BR')}</td>
-                    <td>${escapeHtml(m.boxName)}<br><span style="font-size:11px;color:#666">${escapeHtml(m.destination)}</span></td>
-                    <td style="font-weight:bold;color:#c0392b">${m.quantity}x ${escapeHtml(m.itemName)}</td>
-                    <td style="font-style:italic">${escapeHtml(m.reason)}</td>
-                    <td><span style="padding:2px 6px;border-radius:4px;font-size:11px;font-weight:bold;${m.status==='resolved'?'background:#dcfce7;color:#15803d':'background:#fee2e2;color:#b91c1c'}">${m.status==='resolved'?'Resolvido':'Pendente'}</span></td>
-                </tr>
-            `).join('');
-
-            const html = `
-            <html><head><title>Relatório de Faltas - Logística Central</title>
-            <style>
-                body { font-family: sans-serif; padding: 20px; color: #1e3a8a; }
-                .header { border-bottom: 2px solid #1e3a8a; padding-bottom: 10px; margin-bottom: 20px; display:flex; justify-content:space-between; align-items:center;}
-                h1 { font-size: 20px; margin: 0; color: #1e3a8a; }
-                table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; }
-                th { background: #eff6ff; color: #1e40af; padding: 10px; text-align: left; border-bottom: 2px solid #bfdbfe; font-size: 11px; text-transform: uppercase; }
-                td { padding: 10px; border-bottom: 1px solid #e2e8f0; color: #334155; }
-                tr:nth-child(even) { background-color: #f8fafc; }
-                @media print { 
-                    body { -webkit-print-color-adjust: exact; }
-                }
-            </style></head><body>
-                <div class="header">
-                    <div>
-                        <h1>Logística Central - Relatório de Faltas</h1>
-                        <div style="font-size:12px;color:#64748b;margin-top:4px;">Gerado em: ${new Date().toLocaleString('pt-BR')}</div>
-                    </div>
-                </div>
-                <table>
-                    <thead><tr><th>Data</th><th>Caixa/Destino</th><th>Item Faltante</th><th>Motivo</th><th>Status</th></tr></thead>
-                    <tbody>${rows}</tbody>
-                </table>
-                <script>window.onload=function(){window.print();} <\/script>
-            </body></html>`;
-
-            const win = window.open('', '_blank');
-            if(win) {
-                win.document.write(html);
-                win.document.close();
-            } else {
-                showToast("Pop-up bloqueado. Permita pop-ups para imprimir.", 'error');
-            }
+            lucide.createIcons();
         }
 
         function printBox(boxId) {
             const box = state.boxes.find(b => b.id === boxId);
             if (!box) return;
-
-            const dest = state.destinations.find(d => d.name === box.destination);
-            let addressStr = escapeHtml(box.destination || 'N/A');
+            const dest = state.destinations.find(d => d.name.trim().toLowerCase() === (box.destination || '').trim().toLowerCase());
+            let addressStr = `<div style="font-size:16px;font-weight:600;color:#1e3a8a;">${escapeHtml(box.destination || 'N/A')}</div>`;
             if (dest && (dest.street || dest.neighborhood)) {
-                addressStr += `<br><span style="font-size:12px;font-weight:normal;color:#555;">${escapeHtml(dest.street||'')} ${escapeHtml(dest.number?','+dest.number:'')} ${escapeHtml(dest.neighborhood?' - '+dest.neighborhood:'')}</span>`;
+                const street = dest.street ? escapeHtml(dest.street) : '';
+                const num = dest.number ? `, ${escapeHtml(dest.number)}` : '';
+                const hood = dest.neighborhood ? ` - ${escapeHtml(dest.neighborhood)}` : '';
+                addressStr += `<div style="font-size:12px;font-weight:normal;color:#555;margin-top:4px;">${street}${num}${hood}</div>`;
             }
 
             const internal = box.items.filter(i => !i.isExternal);
@@ -1307,13 +712,9 @@
                  </li>`
             ).join('');
 
-            const dateStr = new Date().toLocaleDateString('pt-BR');
-            
             const driverObj = state.drivers.find(d => d.name === box.driver);
             const driverPhone = driverObj ? driverObj.phone : '';
             const driverDisplay = box.driver ? (driverPhone ? `${escapeHtml(box.driver)}<br><span style="font-size:11px;font-weight:normal;">${escapeHtml(driverPhone)}</span>` : escapeHtml(box.driver)) : '-';
-
-            const pageTitle = box.destination || "Logística Central";
 
             const html = `
             <html><head><title>Manifesto ${escapeHtml(box.name)}</title>
@@ -1321,24 +722,20 @@
                 body { font-family: sans-serif; padding: 20px; color: #1e3a8a; }
                 .header { border-bottom: 2px solid #1e3a8a; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
                 .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; background: #eff6ff; padding: 20px; border-radius: 8px; border: 1px solid #bfdbfe; }
-                .label { font-size: 11px; text-transform: uppercase; font-weight: bold; color: #60a5fa; }
+                .label { font-size: 11px; text-transform: uppercase; font-weight: bold; color: #60a5fa; margin-bottom: 2px; }
                 .value { font-size: 16px; font-weight: 600; color: #1e3a8a; }
                 h2 { font-size: 18px; border-bottom: 2px solid #bfdbfe; padding-bottom: 5px; margin-top: 25px; color: #1e40af; }
                 ul { list-style: none; padding: 0; }
                 .sign-line { border-top: 1px solid #1e3a8a; flex: 1; padding-top: 5px; text-align: center; margin-top: 50px; font-size: 12px; color: #1e3a8a; }
-                @media print { 
-                    .info-grid { background: none; border: 1px solid #bfdbfe; } 
-                    h2 { border-bottom: 2px solid #bfdbfe; }
-                    body { -webkit-print-color-adjust: exact; }
-                }
+                @media print { .info-grid { background: none; border: 1px solid #bfdbfe; } h2 { border-bottom: 2px solid #bfdbfe; } body { -webkit-print-color-adjust: exact; } }
             </style></head><body>
                 <div class="header">
-                    <div><h1 style="margin:0;color:#1e3a8a;">${escapeHtml(pageTitle)}</h1><div style="color:#3b82f6;">Controle de Entrega</div></div>
+                    <div><h1 style="margin:0;color:#1e3a8a;font-size:28px;">${escapeHtml(box.destination || "Logística Central")}</h1><div style="color:#3b82f6;">Controle de Entrega</div></div>
                     <div style="text-align:right;"><div class="value" style="font-size:24px;">${escapeHtml(box.name)}</div></div>
                 </div>
                 <div class="info-grid">
-                    <div><div class="label">Destino</div><div class="value">${addressStr}</div></div>
-                    <div><div class="label">Data</div><div class="value">${dateStr}</div></div>
+                    <div><div class="label">Destino</div>${addressStr}</div>
+                    <div><div class="label">Data</div><div class="value">${new Date().toLocaleDateString('pt-BR')}</div></div>
                     <div><div class="label">Status</div><div class="value">${box.status==='in_delivery'?'Em Entrega':box.status==='delivered'?'Entregue':'Disponível'}</div></div>
                     <div><div class="label">Motorista</div><div class="value">${driverDisplay}</div></div>
                 </div>
@@ -1350,129 +747,57 @@
                 </div>
                 <script>window.onload=function(){window.print();} <\/script>
             </body></html>`;
-
             const win = window.open('', '_blank');
-            if(win) {
-                win.document.write(html);
-                win.document.close();
-            } else {
-                showToast("Pop-up bloqueado. Permita pop-ups para imprimir.", 'error');
+            if(win) { win.document.write(html); win.document.close(); }
+            else { showToast("Pop-up bloqueado.", 'error'); }
+        }
+
+        function printMissingItems() {
+            if (!state.missingItems.length) return;
+            const rows = state.missingItems.map(m => `<tr><td>${new Date(m.date).toLocaleDateString('pt-BR')}</td><td>${escapeHtml(m.boxName)}<br><span style="font-size:11px;color:#666">${escapeHtml(m.destination)}</span></td><td style="font-weight:bold;color:#c0392b">${m.quantity}x ${escapeHtml(m.itemName)}</td><td style="font-style:italic">${escapeHtml(m.reason)}</td><td>${m.status==='resolved'?'Resolvido':'Pendente'}</td></tr>`).join('');
+            const html = `<html><head><title>Relatório de Faltas</title><style>body { font-family: sans-serif; padding: 20px; color: #1e3a8a; } table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; } th { background: #eff6ff; color: #1e40af; padding: 10px; text-align: left; border-bottom: 2px solid #bfdbfe; } td { padding: 10px; border-bottom: 1px solid #e2e8f0; }</style></head><body><h1>Relatório de Faltas</h1><table><thead><tr><th>Data</th><th>Caixa</th><th>Item</th><th>Motivo</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table><script>window.onload=function(){window.print();} <\/script></body></html>`;
+            const win = window.open('', '_blank');
+            if(win) { win.document.write(html); win.document.close(); }
+        }
+
+        function printHistoryManifest(logId) {
+            const log = state.history.find(l => l.id === logId);
+            if (!log) return;
+            let destinationName = "Desconhecido";
+            let driverName = "Desconhecido";
+            let itemsText = "";
+            const destMatch = log.details.match(/Saiu para entrega em: (.*?) \(Mot:/);
+            if (destMatch) destinationName = destMatch[1];
+            const driverMatch = log.details.match(/\(Mot: (.*?)\)/);
+            if (driverMatch) driverName = driverMatch[1];
+            if (log.details.includes("Conteúdo: ")) { itemsText = log.details.split("Conteúdo: ")[1]; }
+            const destObj = state.destinations.find(d => d.name.trim().toLowerCase() === destinationName.trim().toLowerCase());
+            const driverObj = state.drivers.find(d => d.name.trim().toLowerCase() === driverName.trim().toLowerCase());
+            let addressStr = `<div style="font-size:16px;font-weight:600;color:#1e3a8a;">${escapeHtml(destinationName)}</div>`;
+            if (destObj) {
+                const street = destObj.street ? escapeHtml(destObj.street) : '';
+                const num = destObj.number ? `, ${escapeHtml(destObj.number)}` : '';
+                const hood = destObj.neighborhood ? ` - ${escapeHtml(destObj.neighborhood)}` : '';
+                if(street || hood) { addressStr += `<div style="font-size:12px;font-weight:normal;color:#555;margin-top:4px;">${street}${num}${hood}</div>`; }
             }
-        }
-
-        function renderLocationsPanel() {
-            const container = document.getElementById('app-content');
-            container.innerHTML = `
-            <div class="max-w-2xl mx-auto space-y-6 pb-10">
-                <div class="bg-white rounded-xl shadow-sm border border-blue-100 p-6">
-                    <h2 class="text-xl font-bold text-blue-900 flex items-center gap-2"><i data-lucide="map-pin" class="text-blue-500"></i> Cadastrar Endereço</h2>
-                    <form onsubmit="handleAddDestination(event)" class="space-y-3">
-                        <input name="newName" type="text" required placeholder="Nome do Local" class="w-full border border-blue-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500">
-                        <div class="grid grid-cols-3 gap-3">
-                            <div class="col-span-2"><input name="newStreet" type="text" placeholder="Rua" class="w-full border border-blue-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"></div>
-                            <div><input name="newNumber" type="text" placeholder="Nº" class="w-full border border-blue-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"></div>
-                        </div>
-                        <input name="newNeighborhood" type="text" placeholder="Bairro" class="w-full border border-blue-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500">
-                        <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex justify-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i> Cadastrar</button>
-                    </form>
-                </div>
-                <div class="bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden">
-                    <div class="p-4 border-b border-blue-50 bg-blue-50/50 font-semibold text-blue-800">Locais Cadastrados (${state.destinations.length})</div>
-                    <div class="divide-y divide-blue-50">
-                        ${state.destinations.length ? state.destinations.map((d, i) => `
-                            <div class="p-4 flex justify-between items-start group hover:bg-blue-50/30">
-                                <div class="flex gap-3">
-                                    <div class="bg-blue-100 p-2 rounded-full text-blue-600 mt-1"><i data-lucide="building-2" class="w-4 h-4"></i></div>
-                                    <div><div class="font-medium text-slate-700">${escapeHtml(d.name)}</div><div class="text-xs text-blue-400">${escapeHtml(d.street)||''} ${escapeHtml(d.number)||''} ${escapeHtml(d.neighborhood)||''}</div></div>
-                                </div>
-                                <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button onclick="openModal('editLocation',null,${i})" class="text-blue-300 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button>
-                                    <button onclick="openModal('deleteLocation',null,${i})" class="text-blue-300 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                                </div>
-                            </div>
-                        `).join('') : '<p class="p-6 text-center text-blue-300">Nenhum local cadastrado.</p>'}
-                    </div>
-                </div>
-            </div>`;
-            if(typeof lucide !== 'undefined') lucide.createIcons();
-        }
-
-        function renderDriversPanel() {
-            const container = document.getElementById('app-content');
-            container.innerHTML = `
-            <div class="max-w-2xl mx-auto space-y-6 pb-10">
-                <div class="bg-white rounded-xl shadow-sm border border-blue-100 p-6">
-                    <h2 class="text-xl font-bold text-blue-900 flex items-center gap-2"><i data-lucide="users" class="text-blue-500"></i> Cadastrar Motorista</h2>
-                    <form onsubmit="handleAddDriver(event)" class="space-y-3">
-                        <div class="flex flex-col gap-2">
-                            <input name="newDriverName" type="text" required placeholder="Nome do Motorista" class="w-full border border-blue-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500">
-                            <div class="flex gap-2">
-                                <input name="newDriverPhone" type="text" placeholder="Telefone (Opcional)" class="flex-1 border border-blue-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500">
-                                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center justify-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i> Cadastrar</button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-                <div class="bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden">
-                    <div class="p-4 border-b border-blue-50 bg-blue-50/50 font-semibold text-blue-800">Motoristas Cadastrados (${state.drivers.length})</div>
-                    <div class="divide-y divide-blue-50">
-                        ${state.drivers.length ? state.drivers.map((d, i) => `
-                            <div class="p-4 flex justify-between items-center group hover:bg-blue-50/30">
-                                <div class="flex gap-3 items-center">
-                                    <div class="bg-blue-100 p-2 rounded-full text-blue-600"><i data-lucide="user" class="w-4 h-4"></i></div>
-                                    <div>
-                                        <div class="font-medium text-slate-700">${escapeHtml(d.name)}</div>
-                                        <div class="text-xs text-blue-400">${escapeHtml(d.phone) || 'Sem telefone'}</div>
-                                    </div>
-                                </div>
-                                <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button onclick="openModal('editDriver',null,${i})" class="text-blue-300 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button>
-                                    <button onclick="openModal('deleteDriver',null,${i})" class="text-blue-300 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                                </div>
-                            </div>
-                        `).join('') : '<p class="p-6 text-center text-blue-300">Nenhum motorista cadastrado.</p>'}
-                    </div>
-                </div>
-            </div>`;
-            if(typeof lucide !== 'undefined') lucide.createIcons();
-        }
-
-        function renderMissingPanel() {
-            const container = document.getElementById('app-content');
-            if(!state.missingItems.length) {
-                container.innerHTML = `<div class="bg-white rounded-xl p-8 text-center text-blue-300 border border-blue-100"><i data-lucide="check" class="w-12 h-12 mx-auto mb-2 text-blue-200"></i><p>Nada consta.</p></div>`;
-                if(typeof lucide !== 'undefined') lucide.createIcons();
-                return;
+            let driverDisplay = escapeHtml(driverName);
+            if (driverObj && driverObj.phone) { driverDisplay += `<br><span style="font-size:11px;font-weight:normal;">${escapeHtml(driverObj.phone)}</span>`; }
+            let itemsHtml = '<li style="padding:10px;text-align:center;color:#999;">Sem detalhes de itens no histórico</li>';
+            if (itemsText) {
+                itemsHtml = itemsText.split(', ').map(itemStr => {
+                    const match = itemStr.match(/^(\d+)([uf])\s+(.*)$/);
+                    if (match) {
+                        const qtd = match[1];
+                        const unit = match[2] === 'f' ? ' Fd' : ' Un';
+                        const name = match[3];
+                        return `<li style="padding:8px 0;border-bottom:1px solid #e0f2fe;display:flex;align-items:center;font-size:14px;"><span style="display:inline-block;width:16px;height:16px;border:1px solid #1e40af;margin-right:12px;border-radius:2px;"></span><span style="font-weight:bold;margin-right:6px;background-color:#eff6ff;padding:2px 6px;border-radius:4px;border:1px solid #bfdbfe;">${qtd}${unit}</span> ${escapeHtml(name)}</li>`;
+                    } else { return `<li style="padding:8px 0;border-bottom:1px solid #e0f2fe;display:flex;align-items:center;font-size:14px;"><span style="display:inline-block;width:16px;height:16px;border:1px solid #1e40af;margin-right:12px;border-radius:2px;"></span>${escapeHtml(itemStr)}</li>`; }
+                }).join('');
             }
-            container.innerHTML = `
-            <div class="bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden pb-10">
-                <div class="p-6 border-b border-blue-100 flex justify-between items-center">
-                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2"><i data-lucide="alert-triangle" class="text-orange-500"></i> Faltas</h2>
-                    <button onclick="printMissingItems()" class="flex items-center gap-2 text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors text-sm font-medium border border-blue-200 shadow-sm">
-                        <i data-lucide="printer" class="w-4 h-4"></i> Imprimir
-                    </button>
-                </div>
-                <div class="overflow-x-auto"><table class="w-full text-left text-sm text-slate-600"><thead class="bg-blue-50 font-semibold uppercase text-xs text-blue-800"><tr><th class="p-4">Data</th><th class="p-4">Caixa</th><th class="p-4">Item</th><th class="p-4">Motivo</th><th class="p-4">Status</th><th class="p-4 text-center">Ações</th></tr></thead>
-                <tbody class="divide-y divide-blue-50">
-                    ${state.missingItems.map((m, idx) => `
-                        <tr class="hover:bg-blue-50/30 group">
-                            <td class="p-4 text-blue-900">${new Date(m.date).toLocaleDateString()}</td>
-                            <td class="p-4">${escapeHtml(m.boxName)}<br><span class="text-xs text-blue-400">${escapeHtml(m.destination)}</span></td>
-                            <td class="p-4 font-medium text-red-600">${m.quantity}x ${escapeHtml(m.itemName)}</td>
-                            <td class="p-4 italic text-slate-500">${escapeHtml(m.reason)}</td>
-                            <td class="p-4"><span class="px-2 py-1 rounded-full text-xs font-bold ${m.status==='resolved'?'bg-green-100 text-green-700 border border-green-200':'bg-red-100 text-red-700 border border-red-200'}">${m.status==='resolved'?'Resolvido':'Pendente'}</span></td>
-                            <td class="p-4">
-                                <div class="flex items-center justify-center gap-2">
-                                    ${m.status==='pending' ? `<button onclick="resolveMissingItem(${m.id})" class="text-blue-600 hover:bg-blue-50 p-1.5 rounded border border-blue-200 text-xs font-medium" title="Resolver">Resolver</button>` : ''}
-                                    <button onclick="openModal('editMissing', null, ${idx})" class="text-blue-400 hover:text-blue-600 p-1.5 rounded hover:bg-blue-50 transition-colors" title="Editar"><i data-lucide="pencil" class="w-4 h-4"></i></button>
-                                    <button onclick="openModal('deleteMissing', null, ${idx})" class="text-red-300 hover:text-red-600 p-1.5 rounded hover:bg-red-50 transition-colors" title="Excluir"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                    `).join('')}
-                </tbody></table></div>
-            </div>`;
-            if(typeof lucide !== 'undefined') lucide.createIcons();
+            const html = `<html><head><title>Cópia de Manifesto</title><style>body { font-family: sans-serif; padding: 20px; color: #1e3a8a; } .header { border-bottom: 2px solid #1e3a8a; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; } .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; background: #eff6ff; padding: 20px; border-radius: 8px; border: 1px solid #bfdbfe; } .label { font-size: 11px; text-transform: uppercase; font-weight: bold; color: #60a5fa; margin-bottom: 2px; } .value { font-size: 16px; font-weight: 600; color: #1e3a8a; } h2 { font-size: 18px; border-bottom: 2px solid #bfdbfe; padding-bottom: 5px; margin-top: 25px; color: #1e40af; } ul { list-style: none; padding: 0; } .sign-line { border-top: 1px solid #1e3a8a; flex: 1; padding-top: 5px; text-align: center; margin-top: 50px; font-size: 12px; color: #1e3a8a; } .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 100px; color: rgba(30, 58, 138, 0.05); pointer-events: none; z-index: -1; border: 5px solid rgba(30, 58, 138, 0.05); padding: 20px; border-radius: 20px; text-transform: uppercase; } @media print { .info-grid { background: none; border: 1px solid #bfdbfe; } h2 { border-bottom: 2px solid #bfdbfe; } body { -webkit-print-color-adjust: exact; } }</style></head><body><div class="watermark">CÓPIA</div><div class="header"><div><h1 style="margin:0;color:#1e3a8a;font-size:28px;">${escapeHtml(destinationName)}</h1><div style="color:#3b82f6;">Controle de Entrega (Histórico)</div></div><div style="text-align:right;"><div class="value" style="font-size:24px;">${escapeHtml(log.boxName)}</div><div style="font-size:12px;color:#666;">ID Log: ${log.id}</div></div></div><div class="info-grid"><div><div class="label">Destino</div>${addressStr}</div><div><div class="label">Data Original</div><div class="value">${new Date(log.timestamp).toLocaleDateString('pt-BR')} ${new Date(log.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div></div><div><div class="label">Status no Registro</div><div class="value">Enviado</div></div><div><div class="label">Motorista</div><div class="value">${driverDisplay}</div></div></div><h2>Conteúdo Registrado</h2><ul>${itemsHtml}</ul><div style="display:flex;gap:40px;margin-top:60px;"><div class="sign-line">Responsável Expedição</div><div class="sign-line">Conferência Recebimento</div></div><script>window.onload=function(){window.print();} <\/script></body></html>`;
+            const win = window.open('', '_blank');
+            if(win) { win.document.write(html); win.document.close(); }
+            else { showToast("Pop-up bloqueado.", 'error'); }
         }
 
         function renderHistory() {
@@ -1480,7 +805,6 @@
             const search = state.historyFilter.search.toLowerCase();
             const dateFilter = state.historyFilter.date;
             
-            // 1. Filter global history
             const filtered = state.history.filter(l => {
                 const txt = (l.action + l.details + l.boxName + l.user).toLowerCase();
                 const logDate = getLocalDateString(l.timestamp);
@@ -1488,607 +812,136 @@
             });
             
             const todayPT = getLocalDateString(new Date().toISOString());
-            
-            // Helper to render a single log card
-            const renderLogCard = (l) => {
-                let icon = 'circle';
-                let color = 'text-slate-400 bg-slate-100';
-                let borderLeft = 'border-l-4 border-l-transparent';
-                
-                if(l.action === 'Saída') { 
-                    icon = 'truck'; 
-                    color = 'text-yellow-600 bg-yellow-50'; 
-                    borderLeft = 'border-l-4 border-l-yellow-400 bg-yellow-50/10';
-                } else if(l.action === 'Entrega') {
-                    icon = 'check-circle';
-                    color = 'text-green-600 bg-green-50';
-                    borderLeft = 'border-l-4 border-l-green-400';
-                } else if(l.action === 'Falta') {
-                    icon = 'alert-triangle';
-                    color = 'text-red-600 bg-red-50';
-                    borderLeft = 'border-l-4 border-l-red-400';
-                } else if(l.action === 'Adição') {
-                    icon = 'plus';
-                    color = 'text-blue-600 bg-blue-50';
-                } else if(l.action === 'Criação') {
-                    icon = 'box';
-                    color = 'text-blue-600 bg-blue-50';
-                } else if(l.action === 'Exclusão') {
-                    icon = 'trash-2';
-                    color = 'text-red-600 bg-red-50';
-                    borderLeft = 'border-l-4 border-l-red-400';
-                } else if(l.action === 'Alteração') {
-                    icon = 'pencil';
-                    color = 'text-blue-400 bg-blue-50';
-                }
-
-                let mainDetails = escapeHtml(l.details || '');
-                let itemsContent = '';
-                
-                if (mainDetails.includes('Conteúdo:')) {
-                    const parts = mainDetails.split('Conteúdo:');
-                    mainDetails = parts[0];
-                    itemsContent = parts[1] ? `<div class="mt-2 p-2 bg-white/60 border border-slate-200 rounded text-xs text-slate-600 font-mono leading-relaxed"><strong class="text-slate-400 uppercase text-[10px] tracking-wider block mb-1">Itens do Pedido:</strong>${parts[1]}</div>` : '';
-                }
-
-                let printButton = '';
-                if (l.action === 'Saída') {
-                    printButton = `
-                        <button onclick="printHistoryManifest(${l.id})" class="ml-2 p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Reimprimir Manifesto">
-                            <i data-lucide="printer" class="w-4 h-4"></i>
-                        </button>
-                    `;
-                }
-
-                return `
-                <div class="p-4 hover:bg-slate-50 transition-colors ${borderLeft} border-b border-slate-100 last:border-0">
-                    <div class="flex items-start gap-3">
-                        <div class="p-2 rounded-lg ${color} shrink-0 mt-0.5">
-                            <i data-lucide="${icon}" class="w-4 h-4"></i>
-                        </div>
-                        <div class="flex-grow min-w-0">
-                            <div class="flex justify-between items-start">
-                                <h4 class="text-sm font-bold text-slate-800 flex items-center">${escapeHtml(l.action)} <span class="font-normal text-slate-500 text-xs ml-1">em ${escapeHtml(l.boxName || 'Caixa')}</span>${printButton}</h4>
-                                <span class="text-[10px] text-slate-400 font-mono whitespace-nowrap ml-2">${new Date(l.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>
-                            </div>
-                            <p class="text-sm text-slate-600 mt-0.5 leading-snug">${mainDetails}</p>
-                            ${itemsContent}
-                            <div class="mt-1 flex items-center gap-1 text-[10px] text-slate-400">
-                                <i data-lucide="user" class="w-3 h-3"></i> ${escapeHtml(l.user)}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                `;
+            const renderTimelineItem = (l) => {
+                let icon='circle', color='bg-slate-100 text-slate-500 border-slate-200';
+                if(l.action === 'Saída') { icon='truck'; color='bg-yellow-50 text-yellow-600 border-yellow-200'; }
+                else if(l.action === 'Entrega') { icon='check'; color='bg-green-50 text-green-600 border-green-200'; }
+                else if(l.action === 'Falta') { icon='alert-triangle'; color='bg-red-50 text-red-600 border-red-200'; }
+                else if(l.action === 'Adição') { icon='plus'; color='bg-blue-50 text-blue-600 border-blue-200'; }
+                else if(l.action === 'Exclusão') { icon='trash-2'; color='bg-red-50 text-red-600 border-red-200'; }
+                else if(l.action === 'Alteração') { icon='pencil'; color='bg-indigo-50 text-indigo-600 border-indigo-200'; }
+                let printBtn = l.action === 'Saída' ? `<button onclick="printHistoryManifest(${l.id})" class="ml-auto text-xs flex items-center gap-1 text-slate-400 hover:text-blue-600 bg-white border border-slate-200 hover:border-blue-300 px-2 py-1 rounded-md transition-colors"><i data-lucide="printer" class="w-3 h-3"></i> Imprimir</button>` : '';
+                const time = new Date(l.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+                return `<div class="timeline-item relative pl-14 py-2 group"><div class="timeline-line group-last:hidden"></div><div class="absolute left-0 top-2 w-12 h-12 flex items-center justify-center z-10"><div class="w-10 h-10 rounded-full border-2 ${color} flex items-center justify-center shadow-sm bg-white"><i data-lucide="${icon}" class="w-5 h-5"></i></div></div><div class="bg-white border border-slate-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-all hover:border-blue-100"><div class="flex justify-between items-start mb-1"><div class="flex flex-col"><span class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-0.5">${time} • ${escapeHtml(l.user)}</span><h4 class="text-base font-bold text-slate-800 flex items-center gap-2">${escapeHtml(l.action)} <span class="font-normal text-slate-500">em</span> <span class="text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded text-sm">${escapeHtml(l.boxName)}</span></h4></div>${printBtn}</div><div class="text-sm text-slate-600 mt-2 p-3 bg-slate-50/50 rounded-lg border border-slate-50 whitespace-pre-wrap leading-relaxed">${escapeHtml(l.details)}</div></div></div>`;
             };
 
-            // Layout Container
             let contentHtml = '';
-
             if (state.historyView === 'today') {
-                // TODAY VIEW (Expanded List)
                 const todaysLogs = filtered.filter(l => getLocalDateString(l.timestamp) === todayPT);
-                const displayDate = new Date().toLocaleDateString('pt-BR');
-                
-                contentHtml = `
-                <div class="bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden flex flex-col flex-grow">
-                    <div class="p-4 border-b border-blue-50 bg-blue-50/30">
-                        <h2 class="text-lg font-bold text-blue-900 flex items-center gap-2"><i data-lucide="clock" class="text-blue-500"></i> Hoje (${displayDate})</h2>
-                    </div>
-                    <div class="flex-grow overflow-y-auto p-0 bg-white">
-                        ${todaysLogs.length === 0 
-                            ? `<div class="flex flex-col items-center justify-center h-48 text-slate-400"><i data-lucide="sun" class="w-8 h-8 mb-2 opacity-30"></i><p>Nenhuma atividade hoje.</p></div>`
-                            : `<div class="divide-y divide-slate-100">${todaysLogs.map(renderLogCard).join('')}</div>`
-                        }
-                    </div>
-                </div>`;
-
+                contentHtml = `<div class="flex-grow overflow-hidden flex flex-col bg-white rounded-xl shadow-sm border border-blue-100"><div class="p-4 border-b border-blue-50 bg-blue-50/30 flex justify-between items-center"><span class="font-bold text-blue-900 flex items-center gap-2"><i data-lucide="calendar" class="w-4 h-4"></i> Hoje (${new Date().toLocaleDateString()})</span><span class="text-xs font-medium bg-blue-100 text-blue-700 px-2 py-1 rounded-full">${todaysLogs.length} Registos</span></div><div class="overflow-y-auto flex-grow p-6 bg-slate-50/30 scroll-smooth"><div class="max-w-3xl mx-auto space-y-1">${todaysLogs.length ? todaysLogs.map(renderTimelineItem).join('') : `<div class="flex flex-col items-center justify-center h-64 text-slate-400"><div class="bg-slate-100 p-4 rounded-full mb-3"><i data-lucide="clock" class="w-8 h-8 opacity-50"></i></div><p>Nenhuma atividade registada hoje.</p></div>`}</div></div></div>`;
             } else {
-                // ARCHIVE VIEW (Accordion List)
                 const archiveLogs = filtered.filter(l => getLocalDateString(l.timestamp) !== todayPT);
-                
-                // Group by date
                 const grouped = {};
                 archiveLogs.forEach(l => {
-                    // Use local date string for grouping key (DD/MM/YYYY)
                     const d = new Date(l.timestamp).toLocaleDateString('pt-BR');
                     if(!grouped[d]) grouped[d] = [];
                     grouped[d].push(l);
                 });
-
-                // Sort dates descending
                 const dates = Object.keys(grouped).sort((a,b) => {
-                    const [da, ma, ya] = a.split('/');
-                    const [db, mb, yb] = b.split('/');
+                    const [da, ma, ya] = a.split('/'); const [db, mb, yb] = b.split('/');
                     return new Date(yb, mb-1, db) - new Date(ya, ma-1, da);
                 });
+                
+                // --- AQUI ESTAVA O PROBLEMA: Simplificando a lógica de template literal ---
+                const listHtml = dates.map(date => {
+                    const isExpanded = state.expandedDate === date;
+                    const chevron = isExpanded ? 'chevron-up' : 'chevron-down';
+                    const expandedContent = isExpanded ? 
+                        `<div class="border-t border-slate-100 bg-slate-50/50 p-6">
+                            <div class="max-w-3xl mx-auto">${grouped[date].map(renderTimelineItem).join('')}</div>
+                         </div>` : '';
+                         
+                    return `
+                    <div class="bg-white border border-blue-100 rounded-xl overflow-hidden shadow-sm transition-all hover:shadow-md">
+                        <button onclick="toggleDateAccordion('${date}')" class="w-full px-5 py-4 flex justify-between items-center bg-white hover:bg-slate-50 transition-colors group">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-blue-100 text-blue-600 p-2 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                    <i data-lucide="calendar-days" class="w-5 h-5"></i>
+                                </div>
+                                <span class="font-bold text-slate-700 text-lg">${date}</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="text-xs font-bold bg-slate-100 text-slate-500 px-2.5 py-1 rounded-full">${grouped[date].length} eventos</span>
+                                <i data-lucide="${chevron}" class="w-5 h-5 text-slate-400"></i>
+                            </div>
+                        </button>
+                        ${expandedContent}
+                    </div>`;
+                }).join('');
+
+                const emptyState = !dates.length ? 
+                    `<div class="flex flex-col items-center justify-center h-64 text-slate-400">
+                        <i data-lucide="archive-restore" class="w-12 h-12 mb-3 opacity-20"></i>
+                        <p>Nenhum registo anterior encontrado.</p>
+                     </div>` : '';
 
                 contentHtml = `
-                <div class="bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden flex flex-col flex-grow">
-                    <div class="p-4 border-b border-blue-50 bg-blue-50/30 flex justify-between items-center">
-                         <h2 class="text-lg font-bold text-blue-900 flex items-center gap-2"><i data-lucide="archive" class="text-blue-500"></i> Arquivo Anterior</h2>
-                         <div class="text-xs text-blue-400 font-medium">${archiveLogs.length} registros</div>
+                <div class="flex-grow overflow-hidden flex flex-col bg-white rounded-xl shadow-sm border border-blue-100">
+                    <div class="p-4 border-b border-blue-50 bg-blue-50/30 font-bold text-blue-900 flex items-center gap-2">
+                        <i data-lucide="archive" class="w-4 h-4"></i> Arquivo Histórico
                     </div>
-                    <div class="overflow-y-auto p-4 space-y-3 bg-slate-50 flex-grow">
-                        ${dates.length === 0 ? 
-                            `<div class="flex flex-col items-center justify-center h-48 text-slate-400">
-                                <i data-lucide="filter" class="w-8 h-8 mb-2 opacity-30"></i>
-                                <p>Nenhum registro anterior encontrado.</p>
-                            </div>` : 
-                            dates.map(date => {
-                                const isExpanded = state.expandedDate === date;
-                                return `
-                                <div class="border border-blue-100 rounded-lg overflow-hidden bg-white shadow-sm transition-all">
-                                    <button onclick="toggleDateAccordion('${date}')" class="w-full p-4 flex justify-between items-center hover:bg-blue-50/50 transition-colors">
-                                        <div class="flex items-center gap-3">
-                                            <div class="bg-blue-100 text-blue-600 p-2 rounded-lg"><i data-lucide="calendar" class="w-5 h-5"></i></div>
-                                            <div class="text-left">
-                                                <div class="font-bold text-slate-700">${date}</div>
-                                                <div class="text-xs text-slate-400">${grouped[date].length} atividades</div>
-                                            </div>
-                                        </div>
-                                        <i data-lucide="${isExpanded ? 'chevron-up' : 'chevron-down'}" class="w-5 h-5 text-slate-400"></i>
-                                    </button>
-                                    ${isExpanded ? `<div class="border-t border-slate-100 bg-slate-50/30">${grouped[date].map(renderLogCard).join('')}</div>` : ''}
-                                </div>`;
-                            }).join('')
-                        }
+                    <div class="overflow-y-auto flex-grow p-4 space-y-4 bg-slate-50">
+                        ${listHtml}
+                        ${emptyState}
                     </div>
                 </div>`;
             }
 
-            // Wrapper with Tabs and Search
-            container.innerHTML = `
-            <div class="flex flex-col h-full overflow-hidden pb-10">
-                <div class="flex flex-col md:flex-row gap-4 mb-4 shrink-0 px-1 justify-between items-start md:items-center">
-                    <div class="flex gap-2 bg-white p-1 rounded-lg border border-blue-100 shadow-sm">
-                        <button onclick="setHistoryView('today')" class="px-4 py-2 ${state.historyView==='today'?'bg-blue-600 text-white shadow-sm':'text-slate-600 hover:bg-blue-50'} rounded-md text-sm font-medium transition-all">Hoje</button>
-                        <button onclick="setHistoryView('archive')" class="px-4 py-2 ${state.historyView==='archive'?'bg-blue-600 text-white shadow-sm':'text-slate-600 hover:bg-blue-50'} rounded-md text-sm font-medium transition-all">Arquivo</button>
-                    </div>
-                    
-                    <div class="flex gap-2 w-full md:w-auto">
-                        <div class="relative flex-grow md:flex-grow-0">
-                            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-blue-300"></i>
-                            <input id="history-search-input" type="text" placeholder="Pesquisar..." value="${escapeHtml(state.historyFilter.search)}" oninput="handleHistoryFilter('search', this.value)" class="w-full md:w-48 pl-9 pr-3 py-2 text-sm border border-blue-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white">
-                        </div>
-                        <input type="date" value="${state.historyFilter.date}" onchange="handleHistoryFilter('date', this.value)" class="border border-blue-200 rounded-lg px-3 py-2 text-sm text-slate-600 outline-none focus:ring-2 focus:ring-blue-500 bg-white">
-                        ${(state.historyFilter.search || state.historyFilter.date) ? `<button onclick="clearHistoryFilters()" class="px-3 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg border border-red-100 transition-colors bg-white"><i data-lucide="x" class="w-4 h-4"></i></button>` : ''}
-                    </div>
-                </div>
-                ${contentHtml}
-            </div>`;
-
-            // Restore focus
-            const searchInput = document.getElementById('history-search-input');
-            if (searchInput && state.historyFilter.search !== '') {
-                searchInput.focus();
-                const len = searchInput.value.length;
-                searchInput.setSelectionRange(len, len);
-            }
-            if(typeof lucide !== 'undefined') lucide.createIcons();
+            container.innerHTML = `<div class="flex flex-col h-full overflow-hidden pb-4"><div class="flex flex-col md:flex-row gap-4 mb-6 shrink-0 justify-between items-center"><div class="bg-slate-200/50 p-1 rounded-xl flex gap-1 w-full md:w-auto"><button onclick="setHistoryView('today')" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2 rounded-lg text-sm font-bold transition-all ${state.historyView==='today'?'bg-white text-blue-700 shadow-sm ring-1 ring-black/5':'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'}"><i data-lucide="sun" class="w-4 h-4"></i> Hoje</button><button onclick="setHistoryView('archive')" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2 rounded-lg text-sm font-bold transition-all ${state.historyView==='archive'?'bg-white text-blue-700 shadow-sm ring-1 ring-black/5':'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'}"><i data-lucide="history" class="w-4 h-4"></i> Arquivo</button></div><div class="flex gap-2 w-full md:w-auto bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm"><div class="relative flex-grow md:w-64"><i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i><input type="text" placeholder="Filtrar eventos..." value="${escapeHtml(state.historyFilter.search)}" oninput="handleHistoryFilter('search', this.value)" class="w-full pl-9 pr-3 py-2 text-sm bg-transparent outline-none text-slate-700 placeholder:text-slate-400"></div><div class="w-px bg-slate-200 my-1"></div><input type="date" value="${state.historyFilter.date}" onchange="handleHistoryFilter('date', this.value)" class="bg-transparent text-sm text-slate-600 px-2 outline-none font-medium cursor-pointer hover:text-blue-600">${(state.historyFilter.search || state.historyFilter.date) ? `<button onclick="clearHistoryFilters()" class="text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-colors border border-transparent hover:border-red-100 flex items-center gap-1"><i data-lucide="x" class="w-3 h-3"></i></button>` : ''}</div></div>${contentHtml}</div>`;
+            lucide.createIcons();
         }
 
-        // --- Renderização de Modais ---
-        function renderModal() {
-            const container = document.getElementById('modal-container');
-            if (!state.modal.type) { container.innerHTML = ''; return; }
-
-            const { type, boxId, data } = state.modal;
-            const box = boxId ? state.boxes.find(b => b.id === boxId) : null;
-            let content = '', title = '';
-
-            // Construção do conteúdo do modal
-            if (type === 'add') {
-                title = `Adicionar Item - ${escapeHtml(box.name)}`;
-                content = `
-                <form onsubmit="handleAddItem(event)" class="space-y-4">
-                    <div class="grid grid-cols-4 gap-3">
-                        <div class="col-span-3"><label class="text-sm font-medium block mb-1 text-slate-700">Item</label><input name="itemName" required class="w-full border border-blue-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ex: Luvas" autofocus></div>
-                        <div><label class="text-sm font-medium block mb-1 text-slate-700">Qtd</label><input name="quantity" type="number" min="1" value="1" required class="w-full border border-blue-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"></div>
-                    </div>
-                    <div class="flex gap-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                        <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="radio" name="unitType" value="un" checked class="text-blue-600 focus:ring-blue-500"> Unidade</label>
-                        <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="radio" name="unitType" value="fd" class="text-blue-600 focus:ring-blue-500"> Fardo</label>
-                    </div>
-                    <label class="flex items-center gap-2 bg-slate-50 p-3 rounded-lg border border-slate-200 text-sm cursor-pointer hover:bg-slate-100 transition-colors"><input type="checkbox" name="isExternal" class="text-blue-600 rounded focus:ring-blue-500"> Item fora da caixa (Anexo)</label>
-                    <button type="submit" class="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 flex items-center justify-center gap-2 transition-colors shadow-sm shadow-blue-200">
-                        <i data-lucide="plus" class="w-4 h-4"></i> Adicionar Item
-                    </button>
-                    <p class="text-xs text-center text-slate-400">Janela permanece aberta para mais itens.</p>
-                </form>`;
-            } else if (type === 'addBox') {
-                title = 'Nova Caixa';
-                content = `
-                <form onsubmit="handleAddBox(event)" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium mb-1 text-slate-700">Nome da Caixa</label>
-                        <input name="boxName" required class="w-full border border-blue-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ex: Caixa 5" autofocus>
-                    </div>
-                    <button type="submit" class="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 flex items-center justify-center gap-2 shadow-sm">
-                        <i data-lucide="plus-square" class="w-4 h-4"></i> Criar Caixa
-                    </button>
-                </form>`;
-            } else if (type === 'changeDriver') {
-                title = `Motorista - ${escapeHtml(box.name)}`;
-                const driversOpts = state.drivers.map(d => `<option value="${escapeHtml(d.name)}" ${box.driver === d.name ? 'selected' : ''}>${escapeHtml(d.name)}</option>`).join('');
-                content = `
-                <form onsubmit="handleChangeDriver(event)" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium mb-1 text-slate-700">Selecione o Motorista</label>
-                        <select name="newDriver" class="w-full border border-blue-200 rounded px-3 py-2 bg-white outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="">Sem motorista</option>
-                            ${driversOpts}
-                        </select>
-                    </div>
-                    <button type="submit" class="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 flex items-center justify-center gap-2 shadow-sm">
-                        Salvar Alteração
-                    </button>
-                </form>`;
-            } else if (type === 'deliver') {
-                title = `Entrega - ${escapeHtml(box.name)}`;
-                const opts = state.destinations.map(d => `<option value="${escapeHtml(d.name)}">${escapeHtml(d.name)}</option>`).join('');
-                const driversOpts = state.drivers.map(d => `<option value="${escapeHtml(d.name)}">${escapeHtml(d.name)}</option>`).join('');
-                const today = getLocalDateString(new Date().toISOString());
-                
-                content = `
-                <form onsubmit="handleDelivery(event)" class="space-y-4">
-                    <div class="bg-yellow-50 p-3 rounded border border-yellow-200 text-sm text-yellow-800 flex items-start gap-2">
-                        <i data-lucide="info" class="w-4 h-4 mt-0.5 shrink-0"></i>
-                        Esta ação mudará o status da caixa para "Em Entrega".
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1 text-slate-700">Destino</label>
-                        <div id="dest-select-group" class="flex gap-2">
-                            <select name="destination" class="flex-1 border border-blue-200 rounded px-3 py-2 bg-white outline-none focus:ring-2 focus:ring-blue-500"><option value="">Selecione...</option>${opts}</select>
-                            <button type="button" onclick="toggleDestInput(true)" class="bg-blue-50 border border-blue-200 text-blue-600 px-3 rounded hover:bg-blue-100 text-sm whitespace-nowrap font-medium">+ Novo</button>
-                        </div>
-                        <div id="dest-input-group" class="hidden space-y-3 bg-slate-50 p-4 rounded-lg border border-slate-200 mt-2">
-                            <div class="flex justify-between items-center border-b border-slate-200 pb-2"><span class="text-xs font-bold uppercase text-slate-500">Novo Local</span><button type="button" onclick="toggleDestInput(false)" class="text-xs text-blue-600 hover:text-blue-800">Cancelar</button></div>
-                            <input name="customName" placeholder="Nome do Local" class="w-full border border-slate-300 rounded px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500">
-                            <input name="customStreet" placeholder="Rua" class="w-full border border-slate-300 rounded px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500">
-                            <div class="flex gap-2"><input name="customNumber" placeholder="Nº" class="w-1/3 border border-slate-300 rounded px-3 py-2 text-sm outline-none"><input name="customNeighborhood" placeholder="Bairro" class="w-2/3 border border-slate-300 rounded px-3 py-2 text-sm outline-none"></div>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1 text-slate-700">Motorista</label>
-                        <select name="driver" class="w-full border border-blue-200 rounded px-3 py-2 bg-white outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="">Selecione...</option>
-                            ${driversOpts}
-                        </select>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium mb-1 text-slate-700">Data</label>
-                            <input name="deliveryDate" type="date" value="${today}" required class="w-full border border-blue-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium mb-1 text-slate-700">Responsável</label>
-                            <input name="responsible" value="${escapeHtml(state.currentUser)}" class="w-full border border-blue-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500">
-                        </div>
-                    </div>
-                    <button type="submit" class="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 flex items-center justify-center gap-2 shadow-sm shadow-blue-200"><i data-lucide="truck" class="w-4 h-4"></i> Enviar</button>
-                </form>`;
-            } else if (type === 'complete') {
-                title = 'Confirmar Entrega';
-                content = `<p class="text-center text-slate-600 mb-6 text-lg">Confirmar recebimento em <br><strong class="text-blue-900">${escapeHtml(box.destination)}</strong>?</p>
-                           <div class="flex gap-3"><button onclick="closeModal()" class="flex-1 border border-slate-300 py-2.5 rounded-lg hover:bg-slate-50 font-medium text-slate-600">Cancelar</button><button onclick="handleCompleteDelivery()" class="flex-1 bg-green-600 text-white py-2.5 rounded-lg hover:bg-green-700 font-medium shadow-sm shadow-green-200">Confirmar</button></div>`;
-            } else if (type === 'reset') {
-                title = 'Reiniciar Caixa';
-                content = `<p class="text-center text-slate-600 mb-6">Deseja tornar <strong>${escapeHtml(box.name)}</strong> disponível novamente?<br><span class="text-sm text-red-500 font-medium bg-red-50 px-2 py-1 rounded mt-2 inline-block">Isso esvaziará a lista de materiais.</span></p>
-                           <div class="flex gap-3"><button onclick="closeModal()" class="flex-1 border border-slate-300 py-2.5 rounded-lg hover:bg-slate-50 font-medium text-slate-600">Cancelar</button><button onclick="handleResetBox()" class="flex-1 bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 font-medium shadow-sm shadow-blue-200">Confirmar</button></div>`;
-            } else if (type === 'deleteItem') {
-                title = 'Excluir Item';
-                // data is index
-                content = `<p class="text-center text-slate-600 mb-6">Tem certeza que deseja remover:<br><strong class="text-red-600 text-lg">${escapeHtml(box.items[data].name)}</strong>?</p>
-                           <div class="flex gap-3"><button onclick="closeModal()" class="flex-1 border border-slate-300 py-2.5 rounded-lg hover:bg-slate-50 font-medium text-slate-600">Cancelar</button><button onclick="confirmDeleteItem()" class="flex-1 bg-red-600 text-white py-2.5 rounded-lg hover:bg-red-700 font-medium shadow-sm shadow-red-200">Excluir</button></div>`;
-            } else if (type === 'deleteLocation') {
-                title = 'Excluir Endereço';
-                content = `<p class="text-center text-slate-600 mb-6">Tem certeza que deseja remover:<br><strong class="text-red-600 text-lg">${escapeHtml(state.destinations[data].name)}</strong>?</p>
-                           <div class="flex gap-3"><button onclick="closeModal()" class="flex-1 border border-slate-300 py-2.5 rounded-lg hover:bg-slate-50 font-medium text-slate-600">Cancelar</button><button onclick="confirmDeleteLocation()" class="flex-1 bg-red-600 text-white py-2.5 rounded-lg hover:bg-red-700 font-medium shadow-sm shadow-red-200">Excluir</button></div>`;
-            } else if (type === 'deleteDriver') {
-                const driver = state.drivers[data];
-                title = 'Excluir Motorista';
-                content = `<p class="text-center text-slate-600 mb-6">Tem certeza que deseja remover:<br><strong class="text-red-600 text-lg">${escapeHtml(driver.name)}</strong>?</p>
-                           <div class="flex gap-3"><button onclick="closeModal()" class="flex-1 border border-slate-300 py-2.5 rounded-lg hover:bg-slate-50 font-medium text-slate-600">Cancelar</button><button onclick="confirmDeleteDriver()" class="flex-1 bg-red-600 text-white py-2.5 rounded-lg hover:bg-red-700 font-medium shadow-sm shadow-red-200">Excluir</button></div>`;
-            } else if (type === 'missing') {
-                title = 'Reportar Falta';
-                content = `
-                <form onsubmit="handleReportMissing(event)" class="space-y-4">
-                    <div class="bg-red-50 p-3 rounded-lg border border-red-100 text-sm text-red-800 flex gap-2">
-                        <i data-lucide="alert-triangle" class="w-5 h-5 shrink-0"></i>
-                        <span class="text-xs">Registre itens que deveriam estar na caixa mas não foram entregues ou chegaram danificados.</span>
-                    </div>
-                    <div><label class="block text-sm font-medium text-slate-700 mb-1">Item Faltante</label><input name="itemName" required class="w-full border border-red-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-red-500" autofocus placeholder="Ex: Gaze"></div>
-                    <div><label class="block text-sm font-medium text-slate-700 mb-1">Quantidade</label><input name="quantity" type="number" min="1" required class="w-full border border-red-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-red-500"></div>
-                    <div><label class="block text-sm font-medium text-slate-700 mb-1">Motivo</label><textarea name="reason" rows="2" required class="w-full border border-red-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-red-500"></textarea></div>
-                    <button type="submit" class="w-full bg-red-600 text-white py-2.5 rounded-lg font-medium hover:bg-red-700 shadow-sm shadow-red-200">Registrar Falta</button>
-                    <p class="text-xs text-center text-slate-400">Janela permanece aberta para registrar múltiplas faltas.</p>
-                </form>`;
-            } else if (type === 'editMissing') {
-                const item = state.missingItems[data];
-                title = 'Editar Falta';
-                content = `
-                <form onsubmit="handleEditMissing(event)" class="space-y-4">
-                    <div><label class="block text-sm font-medium text-slate-700 mb-1">Item</label><input name="editItemName" value="${escapeHtml(item.itemName)}" required class="w-full border border-blue-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"></div>
-                    <div><label class="block text-sm font-medium text-slate-700 mb-1">Quantidade</label><input name="editQuantity" type="number" value="${item.quantity}" min="1" required class="w-full border border-blue-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"></div>
-                    <div><label class="block text-sm font-medium text-slate-700 mb-1">Motivo</label><textarea name="editReason" rows="2" required class="w-full border border-blue-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500">${escapeHtml(item.reason)}</textarea></div>
-                    <button type="submit" class="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 shadow-sm">Salvar Alterações</button>
-                </form>`;
-            } else if (type === 'deleteMissing') {
-                const item = state.missingItems[data];
-                title = 'Excluir Falta';
-                content = `<p class="text-center text-slate-600 mb-6">Tem certeza que deseja remover este registro de falta:<br><strong class="text-red-600 text-lg">${escapeHtml(item.itemName)}</strong>?</p>
-                           <div class="flex gap-3"><button onclick="closeModal()" class="flex-1 border border-slate-300 py-2.5 rounded-lg hover:bg-slate-50 font-medium text-slate-600">Cancelar</button><button onclick="confirmDeleteMissing()" class="flex-1 bg-red-600 text-white py-2.5 rounded-lg hover:bg-red-700 font-medium shadow-sm shadow-red-200">Excluir</button></div>`;
-            } else if (type === 'editLocation') {
-                const loc = state.destinations[data];
-                title = 'Editar Endereço';
-                content = `
-                <form onsubmit="handleEditDestination(event)" class="space-y-3">
-                    <div><label class="text-sm font-medium block mb-1">Nome</label><input name="editName" value="${escapeHtml(loc.name)}" required class="w-full border border-blue-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"></div>
-                    <div class="grid grid-cols-3 gap-3">
-                        <div class="col-span-2"><label class="text-sm font-medium block mb-1">Rua</label><input name="editStreet" value="${escapeHtml(loc.street)}" class="w-full border border-blue-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"></div>
-                        <div><label class="text-sm font-medium block mb-1">Nº</label><input name="editNumber" value="${escapeHtml(loc.number)}" class="w-full border border-blue-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"></div>
-                    </div>
-                    <div><label class="text-sm font-medium block mb-1">Bairro</label><input name="editNeighborhood" value="${escapeHtml(loc.neighborhood)}" class="w-full border border-blue-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"></div>
-                    <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-blue-700 flex items-center justify-center gap-2 mt-2 shadow-sm">Salvar Alterações</button>
-                </form>`;
-            } else if (type === 'editDriver') {
-                const driver = state.drivers[data];
-                title = 'Editar Motorista';
-                content = `
-                <form onsubmit="handleEditDriver(event)" class="space-y-3">
-                    <div><label class="text-sm font-medium block mb-1">Nome</label><input name="editDriverName" value="${escapeHtml(driver.name)}" required class="w-full border border-blue-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"></div>
-                    <div><label class="text-sm font-medium block mb-1">Telefone</label><input name="editDriverPhone" value="${escapeHtml(driver.phone || '')}" placeholder="(XX) 9XXXX-XXXX" class="w-full border border-blue-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"></div>
-                    <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-blue-700 flex items-center justify-center gap-2 mt-2 shadow-sm">Salvar</button>
-                </form>`;
-            } else if (type === 'editBox') {
-                title = 'Editar Nome da Caixa';
-                content = `
-                <form onsubmit="handleEditBox(event)" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium mb-1 text-slate-700">Nome da Caixa</label>
-                        <input name="boxName" value="${escapeHtml(box.name)}" required class="w-full border border-blue-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500" autofocus>
-                    </div>
-                    <button type="submit" class="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 flex items-center justify-center gap-2 shadow-sm shadow-blue-200">
-                        Salvar Alterações
-                    </button>
-                </form>`;
-            } else if (type === 'deleteBox') {
-                title = 'Excluir Caixa';
-                content = `
-                <div class="text-center">
-                    <div class="bg-red-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100">
-                        <i data-lucide="trash-2" class="w-8 h-8 text-red-500"></i>
-                    </div>
-                    <p class="text-slate-600 mb-6">Tem certeza que deseja excluir a caixa <strong class="text-slate-900">${escapeHtml(box.name)}</strong>?<br><br><span class="text-xs text-red-500 bg-red-50 px-3 py-1 rounded-full font-bold">Todo o conteúdo da caixa será perdido.</span></p>
-                    <div class="flex gap-3">
-                        <button onclick="closeModal()" class="flex-1 border border-slate-300 py-2.5 rounded-lg hover:bg-slate-50 font-medium text-slate-600">Cancelar</button>
-                        <button onclick="confirmDeleteBox()" class="flex-1 bg-red-600 text-white py-2.5 rounded-lg hover:bg-red-700 font-medium shadow-sm shadow-red-200">Excluir Definitivamente</button>
-                    </div>
-                </div>`;
-            } else if (type === 'confirmImport') {
-                const data = state.pendingImport;
-                title = 'Restaurar Backup';
-                content = `
-                <div class="text-center space-y-4">
-                    <div class="bg-orange-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto border border-orange-100">
-                        <i data-lucide="refresh-cw" class="w-8 h-8 text-orange-500"></i>
-                    </div>
-                    <div>
-                        <h3 class="font-bold text-slate-800">Deseja restaurar este backup?</h3>
-                        <p class="text-sm text-slate-500 mt-2">Isto substituirá todos os dados atuais pelos dados do arquivo.</p>
-                    </div>
-                    
-                    <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm text-slate-600 text-left space-y-1">
-                        <div class="flex justify-between"><span>Caixas:</span> <span class="font-bold">${data.boxes.length}</span></div>
-                        <div class="flex justify-between"><span>Histórico:</span> <span class="font-bold">${data.history.length}</span></div>
-                        <div class="flex justify-between"><span>Locais:</span> <span class="font-bold">${data.destinations.length}</span></div>
-                        <div class="flex justify-between"><span>Motoristas:</span> <span class="font-bold">${data.drivers.length}</span></div>
-                    </div>
-                    
-                    <div class="flex gap-3 pt-2">
-                        <button onclick="closeModal(); state.pendingImport=null;" class="flex-1 border border-slate-300 py-2.5 rounded-lg hover:bg-slate-50 font-medium text-slate-600">Cancelar</button>
-                        <button onclick="executeImport()" class="flex-1 bg-orange-600 text-white py-2.5 rounded-lg hover:bg-orange-700 font-medium shadow-sm shadow-orange-200">Confirmar Restauração</button>
-                    </div>
-                </div>`;
-            }
-
-            container.innerHTML = `
-            <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in">
-                <div class="bg-white rounded-xl shadow-2xl w-full max-w-md animate-zoom-in flex flex-col max-h-[90vh] relative border border-slate-100">
-                    <div class="p-4 border-b flex justify-between items-center bg-slate-50/50 rounded-t-xl">
-                        <h3 class="font-bold text-lg text-slate-800">${title}</h3>
-                        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1 rounded-full transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
-                    </div>
-                    <div class="p-6 overflow-y-auto" id="modal-content-area">${content}</div>
-                </div>
-            </div>`;
-            
-            // Auto-focus no primeiro input
-            setTimeout(() => {
-               const firstInput = container.querySelector('input');
-               if(firstInput) firstInput.focus();
-            }, 50);
-
-            if(typeof lucide !== 'undefined') lucide.createIcons();
+        function renderLocationsPanel() {
+            const container = document.getElementById('app-content');
+            container.innerHTML = `<div class="max-w-2xl mx-auto space-y-6 pb-10"><div class="bg-white rounded-xl shadow-sm border border-blue-100 p-6"><h2 class="text-xl font-bold text-blue-900 flex items-center gap-2"><i data-lucide="map-pin" class="text-blue-500"></i> Cadastrar Endereço</h2><form onsubmit="handleAddDestination(event)" class="space-y-3"><input name="newName" type="text" required placeholder="Nome do Local" class="w-full border border-blue-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"><div class="grid grid-cols-3 gap-3"><div class="col-span-2"><input name="newStreet" type="text" placeholder="Rua" class="w-full border border-blue-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"></div><div><input name="newNumber" type="text" placeholder="Nº" class="w-full border border-blue-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"></div></div><input name="newNeighborhood" type="text" placeholder="Bairro" class="w-full border border-blue-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"><button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex justify-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i> Cadastrar</button></form></div><div class="bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden"><div class="p-4 border-b border-blue-50 bg-blue-50/50 font-semibold text-blue-800">Locais Cadastrados (${state.destinations.length})</div><div class="divide-y divide-blue-50">${state.destinations.length ? state.destinations.map((d, i) => `<div class="p-4 flex justify-between items-start group hover:bg-blue-50/30"><div class="flex gap-3"><div class="bg-blue-100 p-2 rounded-full text-blue-600 mt-1"><i data-lucide="building-2" class="w-4 h-4"></i></div><div><div class="font-medium text-slate-700">${escapeHtml(d.name)}</div><div class="text-xs text-blue-400">${escapeHtml(d.street)||''} ${escapeHtml(d.number)||''} ${escapeHtml(d.neighborhood)||''}</div></div></div><div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity"><button onclick="openModal('editLocation',null,${i})" class="text-blue-300 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button><button onclick="openModal('deleteLocation',null,${i})" class="text-blue-300 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div>`).join('') : '<p class="p-6 text-center text-blue-300">Nenhum local cadastrado.</p>'}</div></div></div>`;
+            lucide.createIcons();
         }
 
-        function printHistoryManifest(logId) {
-            const log = state.history.find(l => l.id === logId);
-            if (!log) return;
-
-            let destination = "Desconhecido";
-            let driver = "Desconhecido";
-            let itemsText = "";
-
-            const destMatch = log.details.match(/Saiu para entrega em: (.*?) \(Mot:/);
-            if (destMatch) destination = destMatch[1];
-
-            const driverMatch = log.details.match(/\(Mot: (.*?)\)/);
-            if (driverMatch) driver = driverMatch[1];
-
-            if (log.details.includes("Conteúdo: ")) {
-                itemsText = log.details.split("Conteúdo: ")[1];
-            }
-
-            let itemsHtml = '';
-            if (itemsText) {
-                const itemsList = itemsText.split(', ');
-                itemsHtml = itemsList.map(itemStr => {
-                    const match = itemStr.match(/^(\d+)([fu])\s+(.+)$/);
-                    if (match) {
-                        const qty = match[1];
-                        const unit = match[2] === 'f' ? ' Fd' : ' Un';
-                        const name = match[3];
-                        return `<li style="padding:8px 0;border-bottom:1px solid #e0f2fe;display:flex;align-items:center;font-size:14px;">
-                                    <span style="display:inline-block;width:16px;height:16px;border:1px solid #1e40af;margin-right:12px;border-radius:2px;"></span>
-                                    <span style="font-weight:bold;margin-right:6px;background-color:#eff6ff;padding:2px 6px;border-radius:4px;border:1px solid #bfdbfe;">${qty}${unit}</span> ${escapeHtml(name)}
-                                </li>`;
-                    }
-                    return `<li style="padding:8px 0;">${escapeHtml(itemStr)}</li>`;
-                }).join('');
-            } else {
-                itemsHtml = '<p style="text-align:center;color:#93c5fd;margin-top:20px;">Vazio (Histórico não detalhado)</p>';
-            }
-
-            const dateStr = new Date(log.timestamp).toLocaleDateString('pt-BR');
-            const destObj = state.destinations.find(d => d.name === destination);
-            let addressStr = escapeHtml(destination);
-            if (destObj && (destObj.street || destObj.neighborhood)) {
-                addressStr += `<br><span style="font-size:12px;font-weight:normal;color:#555;">${escapeHtml(destObj.street||'')} ${escapeHtml(destObj.number?','+destObj.number:'')} ${escapeHtml(destObj.neighborhood?' - '+destObj.neighborhood:'')}</span>`;
-            }
-
-            const driverObj = state.drivers.find(d => d.name === driver);
-            const driverPhone = driverObj ? driverObj.phone : '';
-            const driverDisplay = driverPhone ? `${escapeHtml(driver)}<br><span style="font-size:11px;font-weight:normal;">${escapeHtml(driverPhone)}</span>` : escapeHtml(driver);
-
-            const html = `
-            <html><head><title>Manifesto (Arquivo) - ${escapeHtml(log.boxName)}</title>
-            <style>
-                body { font-family: sans-serif; padding: 20px; color: #1e3a8a; }
-                .header { border-bottom: 2px solid #1e3a8a; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
-                .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; background: #eff6ff; padding: 20px; border-radius: 8px; border: 1px solid #bfdbfe; }
-                .label { font-size: 11px; text-transform: uppercase; font-weight: bold; color: #60a5fa; }
-                .value { font-size: 16px; font-weight: 600; color: #1e3a8a; }
-                h2 { font-size: 18px; border-bottom: 2px solid #bfdbfe; padding-bottom: 5px; margin-top: 25px; color: #1e40af; }
-                ul { list-style: none; padding: 0; }
-                .sign-line { border-top: 1px solid #1e3a8a; flex: 1; padding-top: 5px; text-align: center; margin-top: 50px; font-size: 12px; color: #1e3a8a; }
-                .watermark { position:absolute; top:20%; left:20%; font-size:100px; color:rgba(0,0,0,0.05); transform:rotate(-45deg); z-index:-1; font-weight:bold; }
-                @media print { 
-                    .info-grid { background: none; border: 1px solid #bfdbfe; } 
-                    h2 { border-bottom: 2px solid #bfdbfe; }
-                    body { -webkit-print-color-adjust: exact; }
-                }
-            </style></head><body>
-                <div class="watermark">ARQUIVO</div>
-                <div class="header">
-                    <div><h1 style="margin:0;color:#1e3a8a;">${escapeHtml(destination)}</h1><div style="color:#3b82f6;">Cópia de Arquivo</div></div>
-                    <div style="text-align:right;"><div class="value" style="font-size:24px;">${escapeHtml(log.boxName)}</div></div>
-                </div>
-                <div class="info-grid">
-                    <div><div class="label">Destino</div><div class="value">${addressStr}</div></div>
-                    <div><div class="label">Data de Saída</div><div class="value">${dateStr}</div></div>
-                    <div><div class="label">Status</div><div class="value">Histórico</div></div>
-                    <div><div class="label">Motorista</div><div class="value">${driverDisplay}</div></div>
-                </div>
-                <h2>Conteúdo Registrado</h2>
-                <ul>${itemsHtml}</ul>
-                <div style="display:flex;gap:40px;margin-top:60px;">
-                    <div class="sign-line">Assinatura Expedição</div><div class="sign-line">Assinatura Recebimento</div>
-                </div>
-                <script>window.onload=function(){window.print();} <\/script>
-            </body></html>`;
-
-            const win = window.open('', '_blank');
-            if(win) {
-                win.document.write(html);
-                win.document.close();
-            } else {
-                showToast("Pop-up bloqueado. Permita pop-ups para imprimir.", 'error');
-            }
+        function renderDriversPanel() {
+            const container = document.getElementById('app-content');
+            container.innerHTML = `<div class="max-w-2xl mx-auto space-y-6 pb-10"><div class="bg-white rounded-xl shadow-sm border border-blue-100 p-6"><h2 class="text-xl font-bold text-blue-900 flex items-center gap-2"><i data-lucide="users" class="text-blue-500"></i> Cadastrar Motorista</h2><form onsubmit="handleAddDriver(event)" class="space-y-3"><div class="flex flex-col gap-2"><input name="newDriverName" type="text" required placeholder="Nome do Motorista" class="w-full border border-blue-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"><div class="flex gap-2"><input name="newDriverPhone" type="text" placeholder="Telefone" class="flex-1 border border-blue-200 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center justify-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i> Cadastrar</button></div></div></form></div><div class="bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden"><div class="p-4 border-b border-blue-50 bg-blue-50/50 font-semibold text-blue-800">Motoristas Cadastrados (${state.drivers.length})</div><div class="divide-y divide-blue-50">${state.drivers.length ? state.drivers.map((d, i) => `<div class="p-4 flex justify-between items-center group hover:bg-blue-50/30"><div class="flex gap-3 items-center"><div class="bg-blue-100 p-2 rounded-full text-blue-600"><i data-lucide="user" class="w-4 h-4"></i></div><div><div class="font-medium text-slate-700">${escapeHtml(d.name)}</div><div class="text-xs text-blue-400">${escapeHtml(d.phone) || 'Sem telefone'}</div></div></div><div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity"><button onclick="openModal('editDriver',null,${i})" class="text-blue-300 hover:text-blue-600"><i data-lucide="pencil" class="w-4 h-4"></i></button><button onclick="openModal('deleteDriver',null,${i})" class="text-blue-300 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div>`).join('') : '<p class="p-6 text-center text-blue-300">Nenhum motorista cadastrado.</p>'}</div></div></div>`;
+            lucide.createIcons();
         }
 
-        // --- Controle Principal ---
-        function switchTab(tab) {
-            state.activeTab = tab;
-            saveData(); 
+        function renderMissingPanel() {
+            const container = document.getElementById('app-content');
+            if(!state.missingItems.length) { container.innerHTML = `<div class="bg-white rounded-xl p-8 text-center text-blue-300 border border-blue-100"><i data-lucide="check" class="w-12 h-12 mx-auto mb-2 text-blue-200"></i><p>Nada consta.</p></div>`; lucide.createIcons(); return; }
+            container.innerHTML = `<div class="bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden pb-10"><div class="p-6 border-b border-blue-100 flex justify-between items-center"><h2 class="text-xl font-bold text-slate-800 flex items-center gap-2"><i data-lucide="alert-triangle" class="text-orange-500"></i> Faltas</h2><button onclick="printMissingItems()" class="text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-lg text-sm border border-blue-200"><i data-lucide="printer" class="w-4 h-4 inline"></i> Imprimir</button></div><div class="overflow-x-auto"><table class="w-full text-left text-sm text-slate-600"><thead class="bg-blue-50 font-semibold uppercase text-xs text-blue-800"><tr><th class="p-4">Data</th><th class="p-4">Caixa</th><th class="p-4">Item</th><th class="p-4">Motivo</th><th class="p-4">Status</th><th class="p-4 text-center">Ações</th></tr></thead><tbody class="divide-y divide-blue-50">${state.missingItems.map((m, idx) => `<tr class="hover:bg-blue-50/30 group"><td class="p-4 text-blue-900">${new Date(m.date).toLocaleDateString()}</td><td class="p-4">${escapeHtml(m.boxName)}<br><span class="text-xs text-blue-400">${escapeHtml(m.destination)}</span></td><td class="p-4 font-medium text-red-600">${m.quantity}x ${escapeHtml(m.itemName)}</td><td class="p-4 italic text-slate-500">${escapeHtml(m.reason)}</td><td class="p-4"><span class="px-2 py-1 rounded-full text-xs font-bold ${m.status==='resolved'?'bg-green-100 text-green-700':'bg-red-100 text-red-700'}">${m.status==='resolved'?'Resolvido':'Pendente'}</span></td><td class="p-4 flex gap-2 justify-center">${m.status==='pending' ? `<button onclick="resolveMissingItem(${m.id})" class="text-blue-600 border border-blue-200 p-1 rounded text-xs">Resolver</button>` : ''}<button onclick="openModal('editMissing', null, ${idx})" class="text-blue-400 hover:text-blue-600 p-1"><i data-lucide="pencil" class="w-4 h-4"></i></button><button onclick="openModal('deleteMissing', null, ${idx})" class="text-red-300 hover:text-red-600 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td></tr>`).join('')}</tbody></table></div></div>`;
+            lucide.createIcons();
         }
 
-        function openModal(type, boxId, data = null) {
-            state.modal = { type, boxId, data };
-            renderModal();
-        }
+        // --- Inicialização ---
 
-        function closeModal() {
-            state.modal = { type: null, boxId: null, data: null };
-            document.getElementById('modal-container').innerHTML = ''; 
-            renderApp();
-        }
+        function switchTab(tab) { state.activeTab = tab; saveData(); }
+        function openModal(type, boxId, data = null) { state.modal = { type, boxId, data }; renderModal(); }
+        function closeModal() { state.modal = { type: null, boxId: null, data: null }; document.getElementById('modal-container').innerHTML = ''; renderApp(); }
 
         function renderApp() {
-            if (!state.isLoggedIn) {
-                renderLogin();
-                return;
-            }
-
-            // Ensure app layout is visible
+            if (!state.isLoggedIn) { renderLogin(); return; }
             document.getElementById('login-container').classList.add('hidden');
             const appLayout = document.getElementById('app-layout');
             appLayout.classList.remove('hidden');
-            setTimeout(() => appLayout.classList.add('opacity-100'), 50); // Fade in
+            setTimeout(() => appLayout.classList.add('opacity-100'), 50);
 
-            // Update Sidebar State
             const sidebar = document.getElementById('main-sidebar');
             const logoContent = document.getElementById('sidebar-logo-content');
-            
             if (sidebar) {
-                if (state.sidebarCollapsed) {
-                    sidebar.classList.remove('w-64');
-                    sidebar.classList.add('w-20');
-                    if(logoContent) logoContent.classList.add('opacity-0', 'w-0');
-                } else {
-                    sidebar.classList.remove('w-20');
-                    sidebar.classList.add('w-64');
-                    if(logoContent) logoContent.classList.remove('opacity-0', 'w-0');
-                }
+                if (state.sidebarCollapsed) { sidebar.classList.remove('w-64'); sidebar.classList.add('w-20'); if(logoContent) logoContent.classList.add('opacity-0', 'w-0'); } 
+                else { sidebar.classList.remove('w-20'); sidebar.classList.add('w-64'); if(logoContent) logoContent.classList.remove('opacity-0', 'w-0'); }
             }
 
             renderNav();
-            
-            // Render specific tab content
             if (state.activeTab === 'dashboard') renderDashboard();
             else if (state.activeTab === 'locations') renderLocationsPanel();
             else if (state.activeTab === 'drivers') renderDriversPanel();
             else if (state.activeTab === 'missing') renderMissingPanel();
             else if (state.activeTab === 'history') renderHistory();
             else if (state.activeTab === 'settings') renderSettingsPanel();
-            
-            if(typeof lucide !== 'undefined') {
-                lucide.createIcons();
-            }
+            lucide.createIcons();
         }
 
-        // Listener Global para fechar modal com ESC
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && state.modal.type) {
-                closeModal();
-            }
-        });
-
-        // Init with safe loading check
-        window.addEventListener('load', () => {
-            if(typeof lucide !== 'undefined') {
-                renderApp();
-            } else {
-                // Retry mechanism if script loads slowly
-                const interval = setInterval(() => {
-                    if(typeof lucide !== 'undefined') {
-                        clearInterval(interval);
-                        renderApp();
-                    }
-                }, 100);
-            }
-        });
+        window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && state.modal.type) closeModal(); });
+        window.addEventListener('load', () => { if(typeof lucide !== 'undefined') renderApp(); else { const interval = setInterval(() => { if(typeof lucide !== 'undefined') { clearInterval(interval); renderApp(); } }, 100); } });
     </script>
 </body>
 </html>
