@@ -572,6 +572,95 @@
             return `<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold ${styles[status]}">${labels[status]}</span>`;
         }
 
+        // --- Funções de Controle de Interface (Restauradas) ---
+        function setHistoryView(view) { state.historyView = view; renderApp(); }
+        
+        function handleHistoryFilter(key, value) { state.historyFilter[key] = value; renderHistory(); lucide.createIcons(); }
+        
+        function clearHistoryFilters() { state.historyFilter = { search: '', date: '' }; renderHistory(); lucide.createIcons(); }
+        
+        function toggleSidebar() { state.sidebarCollapsed = !state.sidebarCollapsed; saveData(true); renderApp(); }
+
+        function toggleDateAccordion(date) { 
+            state.expandedDate = state.expandedDate === date ? null : date; 
+            renderApp(); 
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('app-content');
+            const search = state.historyFilter.search.toLowerCase();
+            const dateFilter = state.historyFilter.date;
+            
+            const filtered = state.history.filter(l => {
+                const txt = (l.action + l.details + l.boxName + l.user).toLowerCase();
+                const logDate = getLocalDateString(l.timestamp);
+                return (!search || txt.includes(search)) && (!dateFilter || logDate === dateFilter);
+            });
+            
+            const todayPT = getLocalDateString(new Date().toISOString());
+            const renderTimelineItem = (l) => {
+                let icon='circle', color='bg-slate-100 text-slate-500 border-slate-200';
+                if(l.action === 'Saída') { icon='truck'; color='bg-yellow-50 text-yellow-600 border-yellow-200'; }
+                else if(l.action === 'Entrega') { icon='check'; color='bg-green-50 text-green-600 border-green-200'; }
+                else if(l.action === 'Falta') { icon='alert-triangle'; color='bg-red-50 text-red-600 border-red-200'; }
+                else if(l.action === 'Adição') { icon='plus'; color='bg-blue-50 text-blue-600 border-blue-200'; }
+                else if(l.action === 'Exclusão') { icon='trash-2'; color='bg-red-50 text-red-600 border-red-200'; }
+                else if(l.action === 'Alteração') { icon='pencil'; color='bg-indigo-50 text-indigo-600 border-indigo-200'; }
+                let printBtn = l.action === 'Saída' ? `<button onclick="printHistoryManifest(${l.id})" class="ml-auto text-xs flex items-center gap-1 text-slate-400 hover:text-blue-600 bg-white border border-slate-200 hover:border-blue-300 px-2 py-1 rounded-md transition-colors"><i data-lucide="printer" class="w-3 h-3"></i> Imprimir</button>` : '';
+                const time = new Date(l.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+                return `<div class="timeline-item relative pl-14 py-2 group"><div class="timeline-line group-last:hidden"></div><div class="absolute left-0 top-2 w-12 h-12 flex items-center justify-center z-10"><div class="w-10 h-10 rounded-full border-2 ${color} flex items-center justify-center shadow-sm bg-white"><i data-lucide="${icon}" class="w-5 h-5"></i></div></div><div class="bg-white border border-slate-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-all hover:border-blue-100"><div class="flex justify-between items-start mb-1"><div class="flex flex-col"><span class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-0.5">${time} • ${escapeHtml(l.user)}</span><h4 class="text-base font-bold text-slate-800 flex items-center gap-2">${escapeHtml(l.action)} <span class="font-normal text-slate-500">em</span> <span class="text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded text-sm">${escapeHtml(l.boxName)}</span></h4></div>${printBtn}</div><div class="text-sm text-slate-600 mt-2 p-3 bg-slate-50/50 rounded-lg border border-slate-50 whitespace-pre-wrap leading-relaxed">${escapeHtml(l.details)}</div></div></div>`;
+            };
+
+            let contentHtml = '';
+            if (state.historyView === 'today') {
+                const todaysLogs = filtered.filter(l => getLocalDateString(l.timestamp) === todayPT);
+                contentHtml = `<div class="flex-grow overflow-hidden flex flex-col bg-white rounded-xl shadow-sm border border-blue-100"><div class="p-4 border-b border-blue-50 bg-blue-50/30 flex justify-between items-center"><span class="font-bold text-blue-900 flex items-center gap-2"><i data-lucide="calendar" class="w-4 h-4"></i> Hoje (${new Date().toLocaleDateString()})</span><span class="text-xs font-medium bg-blue-100 text-blue-700 px-2 py-1 rounded-full">${todaysLogs.length} Registos</span></div><div class="overflow-y-auto flex-grow p-6 bg-slate-50/30 scroll-smooth"><div class="max-w-3xl mx-auto space-y-1">${todaysLogs.length ? todaysLogs.map(renderTimelineItem).join('') : `<div class="flex flex-col items-center justify-center h-64 text-slate-400"><div class="bg-slate-100 p-4 rounded-full mb-3"><i data-lucide="clock" class="w-8 h-8 opacity-50"></i></div><p>Nenhuma atividade registada hoje.</p></div>`}</div></div></div>`;
+            } else {
+                const archiveLogs = filtered.filter(l => getLocalDateString(l.timestamp) !== todayPT);
+                const grouped = {};
+                archiveLogs.forEach(l => {
+                    const d = new Date(l.timestamp).toLocaleDateString('pt-BR');
+                    if(!grouped[d]) grouped[d] = [];
+                    grouped[d].push(l);
+                });
+                const dates = Object.keys(grouped).sort((a,b) => {
+                    const [da, ma, ya] = a.split('/'); const [db, mb, yb] = b.split('/');
+                    return new Date(yb, mb-1, db) - new Date(ya, ma-1, da);
+                });
+                
+                const listHtml = dates.map(date => {
+                    const isExpanded = state.expandedDate === date;
+                    const chevron = isExpanded ? 'chevron-up' : 'chevron-down';
+                    let expandedContent = '';
+                    if (isExpanded) {
+                        expandedContent = `<div class="border-t border-slate-100 bg-slate-50/50 p-6"><div class="max-w-3xl mx-auto">${grouped[date].map(renderTimelineItem).join('')}</div></div>`;
+                    }
+                         
+                    return `<div class="bg-white border border-blue-100 rounded-xl overflow-hidden shadow-sm transition-all hover:shadow-md"><button onclick="toggleDateAccordion('${date}')" class="w-full px-5 py-4 flex justify-between items-center bg-white hover:bg-slate-50 transition-colors group"><div class="flex items-center gap-3"><div class="bg-blue-100 text-blue-600 p-2 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors"><i data-lucide="calendar-days" class="w-5 h-5"></i></div><span class="font-bold text-slate-700 text-lg">${date}</span></div><div class="flex items-center gap-3"><span class="text-xs font-bold bg-slate-100 text-slate-500 px-2.5 py-1 rounded-full">${grouped[date].length} eventos</span><i data-lucide="${chevron}" class="w-5 h-5 text-slate-400"></i></div></button>${expandedContent}</div>`;
+                }).join('');
+
+                const emptyState = !dates.length ? 
+                    `<div class="flex flex-col items-center justify-center h-64 text-slate-400">
+                        <i data-lucide="archive-restore" class="w-12 h-12 mb-3 opacity-20"></i>
+                        <p>Nenhum registo anterior encontrado.</p>
+                     </div>` : '';
+
+                contentHtml = `
+                <div class="flex-grow overflow-hidden flex flex-col bg-white rounded-xl shadow-sm border border-blue-100">
+                    <div class="p-4 border-b border-blue-50 bg-blue-50/30 font-bold text-blue-900 flex items-center gap-2">
+                        <i data-lucide="archive" class="w-4 h-4"></i> Arquivo Histórico
+                    </div>
+                    <div class="overflow-y-auto flex-grow p-4 space-y-4 bg-slate-50">
+                        ${listHtml}
+                        ${emptyState}
+                    </div>
+                </div>`;
+            }
+
+            container.innerHTML = `<div class="flex flex-col h-full overflow-hidden pb-4"><div class="flex flex-col md:flex-row gap-4 mb-6 shrink-0 justify-between items-center"><div class="bg-slate-200/50 p-1 rounded-xl flex gap-1 w-full md:w-auto"><button onclick="setHistoryView('today')" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2 rounded-lg text-sm font-bold transition-all ${state.historyView==='today'?'bg-white text-blue-700 shadow-sm ring-1 ring-black/5':'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'}"><i data-lucide="sun" class="w-4 h-4"></i> Hoje</button><button onclick="setHistoryView('archive')" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2 rounded-lg text-sm font-bold transition-all ${state.historyView==='archive'?'bg-white text-blue-700 shadow-sm ring-1 ring-black/5':'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'}"><i data-lucide="history" class="w-4 h-4"></i> Arquivo</button></div><div class="flex gap-2 w-full md:w-auto bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm"><div class="relative flex-grow md:w-64"><i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i><input type="text" placeholder="Filtrar eventos..." value="${escapeHtml(state.historyFilter.search)}" oninput="handleHistoryFilter('search', this.value)" class="w-full pl-9 pr-3 py-2 text-sm bg-transparent outline-none text-slate-700 placeholder:text-slate-400"></div><div class="w-px bg-slate-200 my-1"></div><input type="date" value="${state.historyFilter.date}" onchange="handleHistoryFilter('date', this.value)" class="bg-transparent text-sm text-slate-600 px-2 outline-none font-medium cursor-pointer hover:text-blue-600">${(state.historyFilter.search || state.historyFilter.date) ? `<button onclick="clearHistoryFilters()" class="text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-colors border border-transparent hover:border-red-100 flex items-center gap-1"><i data-lucide="x" class="w-3 h-3"></i></button>` : ''}</div></div>${contentHtml}</div>`;
+            lucide.createIcons();
+        }
+
         function renderNav() {
             const pending = state.missingItems.filter(m => m.status === 'pending').length;
             const navItems = [{ id: 'dashboard', label: 'Caixas', icon: 'box' }, { id: 'locations', label: 'Endereços', icon: 'map-pin' }, { id: 'drivers', label: 'Motoristas', icon: 'users' }, { id: 'missing', label: 'Faltas', icon: 'alert-triangle', badge: pending }, { id: 'history', label: 'Histórico', icon: 'clock' }, { id: 'settings', label: 'Configurações', icon: 'settings' }];
@@ -842,31 +931,15 @@
                     return new Date(yb, mb-1, db) - new Date(ya, ma-1, da);
                 });
                 
-                // --- AQUI ESTAVA O PROBLEMA: Simplificando a lógica de template literal ---
                 const listHtml = dates.map(date => {
                     const isExpanded = state.expandedDate === date;
                     const chevron = isExpanded ? 'chevron-up' : 'chevron-down';
-                    const expandedContent = isExpanded ? 
-                        `<div class="border-t border-slate-100 bg-slate-50/50 p-6">
-                            <div class="max-w-3xl mx-auto">${grouped[date].map(renderTimelineItem).join('')}</div>
-                         </div>` : '';
+                    let expandedContent = '';
+                    if (isExpanded) {
+                        expandedContent = `<div class="border-t border-slate-100 bg-slate-50/50 p-6"><div class="max-w-3xl mx-auto">${grouped[date].map(renderTimelineItem).join('')}</div></div>`;
+                    }
                          
-                    return `
-                    <div class="bg-white border border-blue-100 rounded-xl overflow-hidden shadow-sm transition-all hover:shadow-md">
-                        <button onclick="toggleDateAccordion('${date}')" class="w-full px-5 py-4 flex justify-between items-center bg-white hover:bg-slate-50 transition-colors group">
-                            <div class="flex items-center gap-3">
-                                <div class="bg-blue-100 text-blue-600 p-2 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                                    <i data-lucide="calendar-days" class="w-5 h-5"></i>
-                                </div>
-                                <span class="font-bold text-slate-700 text-lg">${date}</span>
-                            </div>
-                            <div class="flex items-center gap-3">
-                                <span class="text-xs font-bold bg-slate-100 text-slate-500 px-2.5 py-1 rounded-full">${grouped[date].length} eventos</span>
-                                <i data-lucide="${chevron}" class="w-5 h-5 text-slate-400"></i>
-                            </div>
-                        </button>
-                        ${expandedContent}
-                    </div>`;
+                    return `<div class="bg-white border border-blue-100 rounded-xl overflow-hidden shadow-sm transition-all hover:shadow-md"><button onclick="toggleDateAccordion('${date}')" class="w-full px-5 py-4 flex justify-between items-center bg-white hover:bg-slate-50 transition-colors group"><div class="flex items-center gap-3"><div class="bg-blue-100 text-blue-600 p-2 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors"><i data-lucide="calendar-days" class="w-5 h-5"></i></div><span class="font-bold text-slate-700 text-lg">${date}</span></div><div class="flex items-center gap-3"><span class="text-xs font-bold bg-slate-100 text-slate-500 px-2.5 py-1 rounded-full">${grouped[date].length} eventos</span><i data-lucide="${chevron}" class="w-5 h-5 text-slate-400"></i></div></button>${expandedContent}</div>`;
                 }).join('');
 
                 const emptyState = !dates.length ? 
