@@ -134,8 +134,46 @@
             { name: "CAMU", street: "Praça Central", number: "1", neighborhood: "Centro" }
         ];
         const DEFAULT_DRIVERS = [{ name: "João Silva", phone: "" }, { name: "Maria Oliveira", phone: "" }, { name: "Carlos Santos", phone: "" }];
-        const DEFAULT_CATALOG = ["Seringa 10ml", "Luva de Procedimento M", "Gaze Estéril", "Álcool 70%", "Atadura Crepom", "Fita Micropore", "Agulha 25x7", "Cateter 20G", "Soro Fisiológico 500ml", "Máscara Descartável"];
+        
+        const DEFAULT_CATALOG = [
+            "AÇUCAR SACHET UNIÃO", "AÇUCAR UNIÃO REFINADO", "ADOÇANTE ZERO CAL 100ML", "AGENDA DIARIA ESPIRAL", 
+            "AGUA SANITARIA 2L", "ALCOOL 1L", "ALCOOL GEL 70% 800ML", "ALMOFADAP/CARIMBO Nº3 AZUL", 
+            "ALMOFADAP/CARIMBO Nº3 PRETA", "ALMOFADAP/CARIMBO Nº3 VERMELHA", "APONTADOR COM LIXEIRA", "BOBINA SENHA ATENDIMENTO PAPEL TERMICO 80 MM", 
+            "BOM AR 500ML", "BORRACHA TK PLASTICA PEQUENA", "CADERNO 1/4 BROC. C/DURA 96F", "CADERNO 1/4 BROC. INDICE A/Z 96F", 
+            "CADERNO 1/4 BROC. PROTOCOLO 96F", "CADERNO UNIVERSITARIO 1X1 96F", "CAIXA ARQUIVO MORTO PAPELÃO", "CALCULADORA", 
+            "CANETA BIC CRISTAL 1.6MM", "CANETA ESFEROGRAFICA AZUL", "CANETA ESFEROGRAFICA PILOT", "CANETA ESFEROGRAFICA PRETA", 
+            "CANETA ESFEROGRAFICA VERMELHA", "CANETA MARCA TEXTO AMARELO", "CANETA MARCA TEXTO AZUL", "CANETA PARA QUADRO BRANCO AZUL", 
+            "CANETA PARA QUADRO BRANCO PRETA", "CANETA PARA QUADRO BRANCO VERMELHA", "CANETA RETROPROJETOR 2.0 MM AZUL", "CANETA RETROPROJETOR 2.0 MM PRETA", 
+            "CANETA RETROPROJETOR 2.0 MM VERMELHA", "CAPA P/ ENCADERNAÇÃO A4 PRETA", "CAPA P/ ENCADERNAÇÃO TRANSPARENTE", "CARTÃO PONTO MENSAL", 
+            "CERA BRILHO FÁCIL 750 ML", "CHÁ MATTE", "CLIPS Nº 3", "CLIPS Nº 4", "CLIPS Nº8", "COLA BASTÃO 10G", "COLA TENAZ LIQ 40G", 
+            "COPO DESCARTÁVEL 180 ML", "COPO DESCARTAVEL 50ML", "CORRETIVO FITA", "CORRETIVO PINCEL", "CORRETIVO TIPO CANETA", 
+            "DECLARAÇÃO ATENDENTE CAMU BL 50F", "DECLARAÇÃO SESSÃO TERAPIA - ENDEREÇO MULTI", "DESINFETANTE 2L", "DETERGENTE LIQUIDO 500ML", 
+            "ELASTICO SUPER RESISTENTE 1KG", "ENVELOPE A4 26X36", "ENVELOPE COMERCIAL JANELA 22X15,7CM PAPEL OFFSET", "ENVELOPE OFICIO C/JANELA", 
+            "ENVELOPE OFICIO S/JANELA", "ENVELOPE PARDO 18,5X25", "ENVELOPE PARDO 31X41", "ESPONJA MAGICA", "ESPONJA SCOTH BRITE", 
+            "EXTRATOR DE GRAMPOS", "FIBRA LIMPEZA LEVE", "FIBRA LIMPEZA USO GERAL", "FICHA C/PAUTA 5X8 100 FLS", "FILTRO DE PAPEL N°103", 
+            "FILTRO REFIL ECO IBBL SPECIALE", "FITA ADESIVA PEQUENA", "FITA CREPE BRANCA", "FITA DUPLA FACE", "FITA LARGA TRANSPARENTE", 
+            "FITA P/ MAQUINA DE CALCULAR", "FLANELA", "FLANELA BRANCA 38X58 GRANDE", "FOSFORO EXTRA LONGO", "GRAFITE 2B 0.5", 
+            "GRAFITE 2B 0.7", "GRAMPEADOR MÉDIO", "GRAMPO 106/6 CX 5000UN", "GRAMPO 26/6 GALVANIZADO CX 5000 UM", "GRAMPO TRUNFO Nº2 CX COM 50 UM", 
+            "GUIA DE COMPROVANTE PRESENCIAL", "INSETICIDA AEROSOL 300ML", "LAPIS PRETO FABER", "LAPISEIRA 0.5", "LAPISEIRA 0.7", 
+            "LEITE SEMI DESNATADO", "LIMPADOR MULTIUSO DESTAC", "LIMPADOR SAPOLIO 300ML", "LIMPADOR VEJA MULTI USO 500ML", "LIVRO ATA 100 FLS", 
+            "LIXEIRA DE ESCRITORIO", "LUSTRA MOVEIS 500ML", "LUVA LIMPEZA SANRO TOP M", "MARGARINA 500G", "MEXEDOR PARA CAFÉ 500UN", 
+            "OLEO DE PEROBA 100ML", "PANO DE CHÃO SACO ALVEJADO", "PANO PERFEX", "PAPEL CARBONO FILME PRETO", "PAPEL HIGIÊNICO 300MT", 
+            "PAPEL HIGIÊNICO 4ROLOS", "PAPEL INTERFOLHAS C/700", "PAPEL OPALINE 180G PCT 50 UM", "PAPEL SULFITE A4 BRANCO 500 FLS", 
+            "PASTA A/Z LOMBO ESTREITO", "PASTA A/Z LOMBO LARGO", "PASTA A4 PLÁSTICA C/PRESILHA TRANSPARENTE", "PASTA CATÁLOGO C/100 PLASTICO", 
+            "PASTA GRANDE COM ABA E ELASTICO TRANSPARENTE", "PASTA L A4 TRANSPARENTE", "PASTA POLIONDAS LOMBADA VERDE", "PASTA SANF. PLASTICA OFICIO 31DIV", 
+            "PASTA SUSPENSA PLAST. MARM. COMPL", "PERCEVEJO C/100", "PILHA AAA", "PILHA GRANDE D", "PILHA PEQUENA AA", "PLASTICO RESISTENTE PASTA 04 FUROS", 
+            "PO DE CAFÉ", "POST IT 100 FLS", "PROTOCOLO DE ENTREGA DE GUIAS", "RECIBO COMERCIAL BLOCO 50 FLS", "REFRESCO TANG", 
+            "REGUA ACRILICA 30 CM", "RELATÓRIO TERAPEUTICO - LOGO UNIMED - SEM ENDEREÇO", "REMOVEDOR DE CERA 1L", "RODO COM CABO", "SABÃO EM PÓ", 
+            "SABÃO EM PEDRA 5UN", "SABONETE LIQUIDO ERVA DOCE 800ML", "SACO DE LIXO 100L", "SACO DE LIXO 200L", "SACO DE LIXO 20L", "SACO DE LIXO 40L", 
+            "SADT BLOCO 100 FOLHAS", "TELEFONE COM FIO PRETO", "TESOURA ESCOLAR 20CM", "TINTA P/CARIMBO AZUL", "TINTA P/CARIMBO PRETA", 
+            "TINTA P/CARIMBO VERMELHA", "TOALHA DE PAPEL snog", "TONER 83A", "TONER 85A", "VASSOURA"
+        ].sort();
+
         const INITIAL_BOXES = [1,2,3,4].map(id => ({ id, name: `Caixa ${id}`, status: 'available', items: [], destination: null, driver: null }));
+
+        // Lógica de Inicialização: Se o catálogo estiver vazio no localStorage, usa o DEFAULT_CATALOG
+        const storedCatalog = safeParse('logistica_catalog', []);
+        const initialCatalog = (storedCatalog.length > 0) ? storedCatalog : DEFAULT_CATALOG;
 
         let state = {
             isLoggedIn: localStorage.getItem('logistica_auth') === 'true',
@@ -144,7 +182,7 @@
             missingItems: safeParse('logistica_missing', []),
             destinations: safeParse('logistica_destinations', DEFAULT_DESTINOS),
             drivers: safeParse('logistica_drivers', DEFAULT_DRIVERS),
-            catalog: safeParse('logistica_catalog', DEFAULT_CATALOG),
+            catalog: initialCatalog,
             activeTab: localStorage.getItem('logistica_activeTab') || 'dashboard',
             currentUser: localStorage.getItem('logistica_currentUser') || "Logistica",
             modal: { type: null, boxId: null, data: null },
@@ -241,7 +279,6 @@
 
         // --- 6. Handlers de Negócio (Caixas e Itens) ---
         
-        // Novo: Função para autocomplete de itens
         function handleInputSearch(input) {
             const val = input.value.toLowerCase();
             const list = document.getElementById('suggestions-list');
@@ -466,6 +503,25 @@
             saveData(); closeModal(); showToast("Item removido do catálogo!", "success");
         }
 
+        function handleEditCatalogItem(e) {
+            e.preventDefault();
+            const idx = state.modal.data;
+            const newName = e.target.newItemName.value.trim();
+            if (!newName) return;
+            
+            // Check for duplicates (excluding self)
+            if (state.catalog.some((item, i) => i !== idx && item.toLowerCase() === newName.toLowerCase())) {
+                showToast("Este item já existe no catálogo.", "error");
+                return;
+            }
+
+            state.catalog[idx] = newName;
+            state.catalog.sort((a, b) => a.localeCompare(b));
+            saveData();
+            closeModal();
+            showToast("Item atualizado!", "success");
+        }
+
         function handleEditDestination(e) {
             e.preventDefault();
             const idx = state.modal.data;
@@ -638,6 +694,9 @@
                 } else {
                     content = `<h3 class="font-bold text-red-600">Excluir Motorista</h3><p>${drv.name}</p><div class="flex gap-2 mt-4"><button onclick="confirmDeleteDriver()" class="bg-red-500 text-white px-4 py-2 rounded">Confirmar</button><button onclick="closeModal()" class="border px-4 py-2 rounded">Cancelar</button></div>`;
                 }
+            } else if (type === 'editCatalogItem') {
+                const item = state.catalog[data];
+                content = `<h3 class="font-bold mb-4">Editar Item do Catálogo</h3><form onsubmit="handleEditCatalogItem(event)" class="space-y-3"><input name="newItemName" value="${escapeHtml(item)}" class="w-full border p-2 rounded outline-none focus:ring-2 focus:ring-blue-500" required><button class="w-full bg-blue-600 text-white p-2 rounded mt-2 hover:bg-blue-700">Salvar</button></form>`;
             } else if (type === 'deleteCatalogItem') {
                 const item = state.catalog[data];
                 content = `<h3 class="font-bold text-red-600">Excluir Item do Catálogo</h3><p>${item}</p><div class="flex gap-2 mt-4"><button onclick="confirmDeleteCatalogItem()" class="bg-red-500 text-white px-4 py-2 rounded">Confirmar</button><button onclick="closeModal()" class="border px-4 py-2 rounded">Cancelar</button></div>`;
@@ -704,9 +763,14 @@
                                         </div>
                                         <div class="font-medium text-slate-700">${escapeHtml(item)}</div>
                                     </div>
-                                    <button onclick="openModal('deleteCatalogItem', null, ${i})" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded hover:bg-red-50" title="Remover do Catálogo">
-                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                    </button>
+                                    <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button onclick="openModal('editCatalogItem', null, ${i})" class="text-blue-300 hover:text-blue-600 p-2 rounded hover:bg-blue-50 transition-colors" title="Editar">
+                                            <i data-lucide="pencil" class="w-4 h-4"></i>
+                                        </button>
+                                        <button onclick="openModal('deleteCatalogItem', null, ${i})" class="text-slate-300 hover:text-red-500 p-2 rounded hover:bg-red-50 transition-colors" title="Remover">
+                                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             `).join('') : '<p class="p-8 text-center text-slate-400 italic">O catálogo está vazio.</p>'}
                         </div>
@@ -1081,7 +1145,41 @@
 
         function renderSettingsPanel() {
             const container = document.getElementById('app-content');
-            container.innerHTML = `<div class="max-w-4xl mx-auto space-y-8 animate-fade-in pb-10"><div class="text-center space-y-2 mb-8"><h2 class="text-2xl font-bold text-slate-800">Backup e Restauração</h2><p class="text-slate-500 max-w-lg mx-auto">Gerencie seus dados com segurança.</p></div><div class="grid md:grid-cols-2 gap-6"><div class="bg-white rounded-xl shadow-sm border border-blue-100 p-8 flex flex-col items-center text-center hover:shadow-md transition-shadow relative overflow-hidden group"><div class="absolute top-0 left-0 w-full h-1 bg-blue-500"></div><div class="bg-blue-50 p-5 rounded-full mb-6 group-hover:scale-110 transition-transform duration-300"><i data-lucide="download-cloud" class="w-10 h-10 text-blue-600"></i></div><h3 class="text-lg font-bold text-slate-800 mb-2">Exportar Dados</h3><p class="text-sm text-slate-500 mb-8 flex-grow leading-relaxed">Cria um arquivo de segurança (JSON).</p><button onclick="handleExportBackup()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-lg font-bold flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 shadow-blue-200"><i data-lucide="download" class="w-5 h-5"></i> Baixar Backup</button></div><div class="bg-white rounded-xl shadow-sm border border-orange-100 p-8 flex flex-col items-center text-center hover:shadow-md transition-shadow relative overflow-hidden group"><div class="absolute top-0 left-0 w-full h-1 bg-orange-500"></div><div class="bg-orange-50 p-5 rounded-full mb-6 group-hover:scale-110 transition-transform duration-300"><i data-lucide="upload-cloud" class="w-10 h-10 text-orange-600"></i></div><h3 class="text-lg font-bold text-slate-800 mb-2">Restaurar Dados</h3><p class="text-sm text-slate-500 mb-4 flex-grow leading-relaxed">Recupere o sistema a partir de um arquivo salvo.</p><label class="w-full bg-white border-2 border-dashed border-slate-300 hover:border-orange-400 hover:bg-orange-50/30 text-slate-600 hover:text-orange-700 py-3.5 rounded-lg font-medium flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95 group/btn"><i data-lucide="file-up" class="w-5 h-5 text-slate-400 group-hover/btn:text-orange-500 transition-colors"></i><span>Selecionar Arquivo</span><input type="file" id="import-file" accept=".json" style="display:none;" onchange="handleImportBackup(event)"></label></div></div></div>`;
+            container.innerHTML = `
+            <div class="max-w-4xl mx-auto space-y-8 animate-fade-in pb-10">
+                <div class="text-center space-y-2 mb-8">
+                    <h2 class="text-2xl font-bold text-slate-800">Backup e Restauração</h2>
+                    <p class="text-slate-500 max-w-lg mx-auto">Gerencie seus dados com segurança.</p>
+                </div>
+                
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-xl shadow-sm border border-blue-100 p-8 flex flex-col items-center text-center hover:shadow-md transition-shadow relative overflow-hidden group">
+                        <div class="absolute top-0 left-0 w-full h-1 bg-blue-500"></div>
+                        <div class="bg-blue-50 p-5 rounded-full mb-6 group-hover:scale-110 transition-transform duration-300">
+                            <i data-lucide="download-cloud" class="w-10 h-10 text-blue-600"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-800 mb-2">Exportar Dados</h3>
+                        <p class="text-sm text-slate-500 mb-8 flex-grow leading-relaxed">Cria um arquivo de segurança (JSON).</p>
+                        <button onclick="handleExportBackup()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-lg font-bold flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 shadow-blue-200">
+                            <i data-lucide="download" class="w-5 h-5"></i> Baixar Backup
+                        </button>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl shadow-sm border border-orange-100 p-8 flex flex-col items-center text-center hover:shadow-md transition-shadow relative overflow-hidden group">
+                        <div class="absolute top-0 left-0 w-full h-1 bg-orange-500"></div>
+                        <div class="bg-orange-50 p-5 rounded-full mb-6 group-hover:scale-110 transition-transform duration-300">
+                            <i data-lucide="upload-cloud" class="w-10 h-10 text-orange-600"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-800 mb-2">Restaurar Dados</h3>
+                        <p class="text-sm text-slate-500 mb-4 flex-grow leading-relaxed">Recupere o sistema a partir de um arquivo salvo.</p>
+                        <label class="w-full bg-white border-2 border-dashed border-slate-300 hover:border-orange-400 hover:bg-orange-50/30 text-slate-600 hover:text-orange-700 py-3.5 rounded-lg font-medium flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95 group/btn">
+                            <i data-lucide="file-up" class="w-5 h-5 text-slate-400 group-hover/btn:text-orange-500 transition-colors"></i>
+                            <span>Selecionar Arquivo</span>
+                            <input type="file" id="import-file" accept=".json" style="display:none;" onchange="handleImportBackup(event)">
+                        </label>
+                    </div>
+                </div>
+            </div>`;
             lucide.createIcons();
         }
 
