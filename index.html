@@ -348,6 +348,36 @@
             }
         }
 
+        // --- NOVO: Handler para Atualizar Item ---
+        function handleUpdateItem(e) {
+            e.preventDefault();
+            const form = e.target;
+            const box = state.boxes.find(b => b.id === state.modal.boxId);
+            const itemIndex = state.modal.data;
+            const item = box.items[itemIndex];
+
+            if (!box || !item) return;
+
+            const newName = form.itemName.value.trim();
+            const newQuantity = parseInt(form.quantity.value);
+            const newUnit = form.unitType.value;
+            const newIsExternal = form.isExternal.checked;
+
+            if (!newName) { showToast("Nome inválido.", "error"); return; }
+            if (newQuantity < 1) { showToast("Quantidade inválida.", "error"); return; }
+
+            // Atualiza o item
+            item.name = newName;
+            item.quantity = newQuantity;
+            item.unitType = newUnit;
+            item.isExternal = newIsExternal;
+
+            addHistoryLog('Alteração', `Item editado: ${newName} (${newQuantity}${newUnit})`, box.name);
+            saveData();
+            closeModal();
+            showToast("Item atualizado com sucesso!", "success");
+        }
+
         function handleDelivery(e) {
             e.preventDefault();
             const form = e.target;
@@ -575,6 +605,19 @@
             }
         }
 
+        // --- NOVO: Resetar Sistema ---
+        function handleResetSystem() {
+            state.boxes = INITIAL_BOXES;
+            state.history = [];
+            state.missingItems = [];
+            state.destinations = DEFAULT_DESTINOS;
+            state.drivers = DEFAULT_DRIVERS;
+            state.catalog = DEFAULT_CATALOG;
+            saveData();
+            closeModal();
+            showToast("Sistema reiniciado!", "success");
+        }
+
         function handleEditDestination(e) {
             e.preventDefault();
             const idx = state.modal.data;
@@ -735,6 +778,61 @@
                             <i data-lucide="plus-circle" class="w-5 h-5"></i> Adicionar Item
                         </button>
                     </form>`;
+            } else if (type === 'editItem') {
+                const itemToEdit = box.items[data];
+                content = `
+                    <h3 class="text-lg font-bold mb-4">Editar Item</h3>
+                    <form onsubmit="handleUpdateItem(event)" class="space-y-5">
+                        <div class="space-y-1">
+                            <label class="block text-sm font-medium text-slate-700">Nome do Item</label>
+                            <div class="relative group">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i data-lucide="pencil" class="h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors"></i>
+                                </div>
+                                <input 
+                                    name="itemName" 
+                                    type="text" 
+                                    value="${escapeHtml(itemToEdit.name)}"
+                                    class="pl-10 block w-full rounded-lg border-slate-300 border focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-sm p-2.5 transition-all outline-none" 
+                                    required
+                                >
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Quantidade</label>
+                                <div class="relative group">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <i data-lucide="hash" class="h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors"></i>
+                                    </div>
+                                    <input type="number" name="quantity" value="${itemToEdit.quantity}" min="1" class="pl-10 block w-full rounded-lg border-slate-300 border focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-sm p-2.5 transition-all outline-none">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Unidade</label>
+                                <div class="relative group">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <i data-lucide="scale" class="h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors"></i>
+                                    </div>
+                                    <select name="unitType" class="pl-10 block w-full rounded-lg border-slate-300 border focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-sm p-2.5 transition-all outline-none bg-white">
+                                        <option value="un" ${itemToEdit.unitType === 'un' ? 'selected' : ''}>Unidade</option>
+                                        <option value="fd" ${itemToEdit.unitType === 'fd' ? 'selected' : ''}>Fardo</option>
+                                        <option value="cx" ${itemToEdit.unitType === 'cx' ? 'selected' : ''}>Caixa</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100">
+                            <input type="checkbox" name="isExternal" id="isExtEdit" ${itemToEdit.isExternal ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
+                            <label for="isExtEdit" class="text-sm font-medium text-slate-700 cursor-pointer flex items-center gap-2">
+                                <i data-lucide="package-open" class="w-4 h-4 text-slate-400"></i>
+                                Item fora da caixa (Externo)
+                            </label>
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-bold shadow-md shadow-blue-100 transition-all active:scale-95 flex items-center justify-center gap-2">
+                            <i data-lucide="save" class="w-5 h-5"></i> Salvar Alterações
+                        </button>
+                    </form>`;
             } else if (type === 'deliver') {
                 content = `
                     <h3 class="text-lg font-bold mb-4">Registrar Saída: ${box.name}</h3>
@@ -881,6 +979,13 @@
                  }
             } else if (type === 'confirmImport') {
                  content = `<h3 class="font-bold text-lg mb-2 text-orange-600">Restaurar Backup?</h3><p class="text-sm text-slate-600 mb-4">Isso substituirá todos os dados atuais pelos do arquivo. Tem certeza?</p><div class="flex gap-2"><button onclick="executeImport()" class="flex-1 bg-orange-600 text-white p-2 rounded">Sim, Restaurar</button><button onclick="closeModal()" class="flex-1 border p-2 rounded">Cancelar</button></div>`;
+            } else if (type === 'resetSystem') {
+                content = `<h3 class="font-bold text-lg mb-2 text-red-600">Resetar Sistema?</h3>
+                           <p class="text-sm text-slate-600 mb-4">Isto irá apagar <b>TUDO</b>: Caixas, Histórico, Motoristas e Endereços. Os dados voltarão ao estado inicial.</p>
+                           <div class="flex gap-2">
+                               <button onclick="handleResetSystem()" class="flex-1 bg-red-600 text-white p-2 rounded hover:bg-red-700 font-bold">RESETAR TUDO</button>
+                               <button onclick="closeModal()" class="flex-1 border p-2 rounded hover:bg-slate-50">Cancelar</button>
+                           </div>`;
             }
 
             container.innerHTML = `
@@ -918,18 +1023,29 @@
                     </div>
                     
                     <div class="bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden">
-                        <div class="p-4 border-b border-blue-50 bg-blue-50/50 font-semibold text-blue-800 flex justify-between items-center">
-                            <span>Itens Disponíveis (${state.catalog.length})</span>
-                            <span class="text-xs font-normal text-blue-400 bg-white px-2 py-1 rounded border border-blue-100">Ordenado A-Z</span>
+                        <div class="p-4 border-b border-blue-50 bg-blue-50/50 font-semibold text-blue-800 flex flex-col sm:flex-row justify-between items-center gap-3">
+                            <div class="flex items-center gap-2 w-full sm:w-auto">
+                                <span>Itens Disponíveis (${state.catalog.length})</span>
+                                <span class="text-xs font-normal text-blue-400 bg-white px-2 py-1 rounded border border-blue-100">Ordenado A-Z</span>
+                            </div>
+                            
+                            <!-- Search Input -->
+                            <div class="relative w-full sm:w-64">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i data-lucide="search" class="h-4 w-4 text-slate-400"></i>
+                                </div>
+                                <input type="text" id="catalog-search" oninput="filterCatalog()" placeholder="Pesquisar no catálogo..." class="pl-9 block w-full rounded-lg border-slate-200 bg-white border focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-xs p-2 transition-all outline-none">
+                            </div>
                         </div>
-                        <div class="divide-y divide-blue-50 max-h-[60vh] overflow-y-auto">
+
+                        <div id="catalog-list-container" class="divide-y divide-blue-50 max-h-[60vh] overflow-y-auto">
                             ${state.catalog.length ? state.catalog.map((item, i) => `
-                                <div class="p-4 flex justify-between items-center group hover:bg-blue-50/30 transition-colors">
+                                <div class="catalog-item p-4 flex justify-between items-center group hover:bg-blue-50/30 transition-colors" data-name="${escapeHtml(item)}">
                                     <div class="flex gap-3 items-center">
                                         <div class="bg-slate-100 p-2 rounded-full text-slate-500">
                                             <i data-lucide="tag" class="w-4 h-4"></i>
                                         </div>
-                                        <div class="font-medium text-slate-700">${escapeHtml(item)}</div>
+                                        <div class="font-medium text-slate-700 item-name-text">${escapeHtml(item)}</div>
                                     </div>
                                     <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button onclick="openModal('editCatalogItem', null, ${i})" class="text-blue-300 hover:text-blue-600 p-2 rounded hover:bg-blue-50 transition-colors" title="Editar">
@@ -941,10 +1057,39 @@
                                     </div>
                                 </div>
                             `).join('') : '<p class="p-8 text-center text-slate-400 italic">O catálogo está vazio.</p>'}
+                            
+                            <!-- No results message (hidden by default) -->
+                            <div id="no-results-msg" class="hidden p-8 text-center text-slate-400 italic">Nenhum item encontrado.</div>
                         </div>
                     </div>
                 </div>`;
             lucide.createIcons();
+        }
+
+        // Add filter function logic
+        function filterCatalog() {
+            const input = document.getElementById('catalog-search');
+            const filter = input.value.toLowerCase();
+            const items = document.querySelectorAll('.catalog-item');
+            let hasVisible = false;
+
+            items.forEach(item => {
+                const name = item.getAttribute('data-name').toLowerCase();
+                if (name.includes(filter)) {
+                    item.classList.remove('hidden');
+                    item.classList.add('flex');
+                    hasVisible = true;
+                } else {
+                    item.classList.add('hidden');
+                    item.classList.remove('flex');
+                }
+            });
+
+            const noResults = document.getElementById('no-results-msg');
+            if(noResults) {
+                if(!hasVisible && items.length > 0) noResults.classList.remove('hidden');
+                else noResults.classList.add('hidden');
+            }
         }
 
         // --- 9. Renderização Geral e Dashboards ---
@@ -1003,7 +1148,29 @@
                 const mappedItems = box.items.map((item, index) => ({...item, originalIndex: index}));
                 const internalItems = mappedItems.filter(i => !i.isExternal);
                 const externalItems = mappedItems.filter(i => i.isExternal);
-                const renderList = (items, title, isExt) => items.length ? `<div class="mb-4"><p class="text-[10px] font-bold uppercase tracking-wider text-blue-400 mb-2 flex items-center gap-1.5 border-b border-blue-50 pb-1"><i data-lucide="${isExt?'package-open':'box'}" class="w-3 h-3"></i> ${title}</p>${items.map((it) => `<div class="flex justify-between items-center text-sm py-1.5 group hover:bg-blue-50 rounded px-1 -mx-1 transition-colors"><div class="truncate pr-2 flex-grow flex items-center"><span class="font-bold text-slate-700 mr-1.5 min-w-[1.5rem] text-right">${it.quantity}</span><span class="text-[9px] font-bold bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded uppercase tracking-wide mr-2.5 shadow-sm border border-slate-300">${it.unitType==='fd'?'FD':it.unitType==='cx'?'CX':'UN'}</span><span class="text-slate-700 truncate ${isExt?'italic text-slate-500':''}">${escapeHtml(it.name)}</span></div><button onclick="openModal('deleteItem', ${box.id}, ${it.originalIndex})" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-0.5"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button></div>`).join('')}</div>` : '';
+                const renderList = (items, title, isExt) => items.length ? `
+                    <div class="mb-4">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-blue-400 mb-2 flex items-center gap-1.5 border-b border-blue-50 pb-1">
+                            <i data-lucide="${isExt?'package-open':'box'}" class="w-3 h-3"></i> ${title}
+                        </p>
+                        ${items.map((it) => `
+                            <div class="flex justify-between items-center text-sm py-1.5 group hover:bg-blue-50 rounded px-1 -mx-1 transition-colors">
+                                <div class="truncate pr-2 flex-grow flex items-center">
+                                    <span class="font-bold text-slate-700 mr-1.5 min-w-[1.5rem] text-right">${it.quantity}</span>
+                                    <span class="text-[9px] font-bold bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded uppercase tracking-wide mr-2.5 shadow-sm border border-slate-300">${it.unitType==='fd'?'FD':it.unitType==='cx'?'CX':'UN'}</span>
+                                    <span class="text-slate-700 truncate ${isExt?'italic text-slate-500':''}">${escapeHtml(it.name)}</span>
+                                </div>
+                                <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button onclick="openModal('editItem', ${box.id}, ${it.originalIndex})" class="text-slate-300 hover:text-blue-500 p-0.5" title="Editar">
+                                        <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                                    </button>
+                                    <button onclick="openModal('deleteItem', ${box.id}, ${it.originalIndex})" class="text-slate-300 hover:text-red-500 p-0.5" title="Excluir">
+                                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>` : '';
                 let mainAction = '';
                 if (box.status === 'available') mainAction = `<button onclick="openModal('deliver',${box.id})" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2 transition-colors shadow-sm"><i data-lucide="truck" class="w-4 h-4"></i> Entregar</button>`;
                 else if (box.status === 'in_delivery') mainAction = `<button onclick="openModal('complete',${box.id})" class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2 transition-colors shadow-sm"><i data-lucide="check-circle" class="w-4 h-4"></i> Receber</button>`;
@@ -1560,6 +1727,20 @@
                         </label>
                     </div>
                 </div>
+
+                <div class="border-t border-slate-200 pt-8 mt-8">
+                    <div class="bg-red-50 rounded-xl border border-red-100 p-6 flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div>
+                            <h3 class="text-lg font-bold text-red-900 flex items-center gap-2">
+                                <i data-lucide="alert-octagon" class="w-5 h-5"></i> Zona de Perigo
+                            </h3>
+                            <p class="text-sm text-red-700 mt-1">Apagar todos os dados e restaurar configurações de fábrica.</p>
+                        </div>
+                        <button onclick="openModal('resetSystem')" class="bg-white border border-red-200 text-red-600 hover:bg-red-600 hover:text-white px-6 py-2.5 rounded-lg font-bold transition-all shadow-sm">
+                            Resetar Sistema
+                        </button>
+                    </div>
+                </div>
             </div>`;
             lucide.createIcons();
         }
@@ -1603,51 +1784,6 @@
                 list.classList.add('hidden');
             }
         });
-
-        function printSingleBoxMissing(boxId) {
-             const items = state.missingItems.filter(m => m.boxId === boxId);
-             if (!items.length) {
-                 showToast("Não há faltas para esta caixa.", "error");
-                 return;
-             }
-
-             const boxName = items[0].boxName;
-             const destination = items[0].destination;
-             
-             const rows = items.map(m => `
-                <tr>
-                    <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #334155;">${new Date(m.date).toLocaleDateString('pt-BR')}</td>
-                    <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #c0392b;">${m.quantity}x ${escapeHtml(m.itemName)}</td>
-                    <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; font-style: italic; color: #64748b;">${escapeHtml(m.reason || '-')}</td>
-                    <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; font-size: 11px;">${m.status === 'resolved' ? '<span style="color:green">Resolvido</span>' : '<span style="color:red">Pendente</span>'}</td>
-                </tr>
-             `).join('');
-
-             const contentHtml = `
-                <div style="border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden;">
-                    <div style="background-color: #f1f5f9; padding: 15px; border-bottom: 1px solid #cbd5e1;">
-                        <h2 style="margin:0; font-size: 18px; color: #0f172a;">${escapeHtml(boxName)}</h2>
-                        <p style="margin:5px 0 0 0; font-size: 14px; color: #475569;">Destino: <strong>${escapeHtml(destination)}</strong></p>
-                    </div>
-                    <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-                        <thead>
-                            <tr style="background-color: #ffffff; text-align: left; border-bottom: 1px solid #e2e8f0;">
-                                <th style="padding: 10px; width: 90px; color: #64748b;">Data</th>
-                                <th style="padding: 10px; color: #64748b;">Item Faltante</th>
-                                <th style="padding: 10px; color: #64748b;">Motivo/Obs</th>
-                                <th style="padding: 10px; width: 80px; color: #64748b;">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>${rows}</tbody>
-                    </table>
-                </div>`;
-
-             const html = `<html><head><title>Faltas - ${escapeHtml(boxName)}</title><style>body{font-family:sans-serif;padding:30px;color:#1e293b;} @media print{.no-print{display:none}}</style></head><body><h1>Relatório de Faltas - Caixa Individual</h1>${contentHtml}<script>window.onload=()=>{window.print()}<\/script></body></html>`;
-             
-             const win = window.open('', '_blank');
-             if(win) { win.document.write(html); win.document.close(); }
-             else { showToast("Pop-up bloqueado.", "error"); }
-        }
 
         window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && state.modal.type) closeModal(); });
         window.addEventListener('load', () => { if(typeof lucide !== 'undefined') renderApp(); else { const interval = setInterval(() => { if(typeof lucide !== 'undefined') { clearInterval(interval); renderApp(); } }, 100); } });
