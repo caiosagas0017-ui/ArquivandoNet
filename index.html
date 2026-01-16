@@ -190,7 +190,9 @@
             historyView: 'today',
             expandedDate: null,
             sidebarCollapsed: safeParse('logistica_sidebar_collapsed', false),
-            dragSourceIndex: null
+            dragSourceIndex: null,
+            missingTab: 'pending',
+            missingDateFilter: '' // Novo filtro de data para faltas
         };
 
         // --- 3. Autenticação & Persistência ---
@@ -325,6 +327,14 @@
             const box = state.boxes.find(b => b.id === state.modal.boxId);
             
             if (!itemName) { showToast("Digite o nome do item.", "error"); return; }
+
+            // VALIDAÇÃO DE CATÁLOGO: Impede criação de novos itens aqui
+            const itemExistsInCatalog = state.catalog.some(c => c.toLowerCase() === itemName.toLowerCase());
+            if (!itemExistsInCatalog) {
+                showToast("Item não encontrado no catálogo. Cadastre-o primeiro na aba Catálogo.", "error");
+                return;
+            }
+
             if (quantity < 1) { showToast("Quantidade inválida.", "error"); return; }
 
             if (box) {
@@ -463,13 +473,22 @@
             e.preventDefault();
             const form = e.target;
             const box = state.boxes.find(b => b.id === state.modal.boxId);
+            const itemName = form.itemName.value.trim();
+
+            // VALIDAÇÃO DE CATÁLOGO: Impede registro de itens fora do catálogo
+            const itemExistsInCatalog = state.catalog.some(c => c.toLowerCase() === itemName.toLowerCase());
+            if (!itemExistsInCatalog) {
+                showToast("Item não encontrado no catálogo. Selecione um item válido.", "error");
+                return;
+            }
+
             state.missingItems.unshift({ 
                 id: Date.now(), boxId: box.id, boxName: box.name, destination: box.destination || "N/A", 
-                itemName: form.itemName.value, quantity: form.quantity.value, 
+                itemName: itemName, quantity: form.quantity.value, 
                 reason: form.reason.value, status: 'pending', date: new Date().toISOString() 
             });
             if (box.status === 'delivered') box.status = 'issue';
-            addHistoryLog('Falta', `Falta: ${form.itemName.value}`, box.name);
+            addHistoryLog('Falta', `Falta: ${itemName}`, box.name);
             
             // Salvar sem fechar o modal
             saveData(); 
@@ -557,67 +576,6 @@
             saveData(); closeModal(); showToast("Item removido do catálogo!", "success");
         }
 
-        function handleEditCatalogItem(e) {
-            e.preventDefault();
-            const idx = state.modal.data;
-            const oldName = state.catalog[idx]; // Guardar o nome antigo para procurar
-            const newName = e.target.newItemName.value.trim();
-            if (!newName) return;
-            
-            // Check for duplicates (excluding self)
-            if (state.catalog.some((item, i) => i !== idx && item.toLowerCase() === newName.toLowerCase())) {
-                showToast("Este item já existe no catálogo.", "error");
-                return;
-            }
-
-            // 1. Atualizar no Catálogo
-            state.catalog[idx] = newName;
-            state.catalog.sort((a, b) => a.localeCompare(b));
-
-            // 2. Atualizar automaticamente em todas as Caixas
-            let boxesUpdated = 0;
-            state.boxes.forEach(box => {
-                box.items.forEach(item => {
-                    if (item.name === oldName) {
-                        item.name = newName;
-                        boxesUpdated++;
-                    }
-                });
-            });
-
-            // 3. Atualizar automaticamente nas Faltas/Pendências
-            let missingUpdated = 0;
-            state.missingItems.forEach(item => {
-                if (item.itemName === oldName) {
-                    item.itemName = newName;
-                    missingUpdated++;
-                }
-            });
-
-            saveData();
-            closeModal();
-            
-            // Feedback detalhado
-            if (boxesUpdated > 0 || missingUpdated > 0) {
-                showToast(`Item atualizado! (${boxesUpdated + missingUpdated} registros corrigidos)`, "success");
-            } else {
-                showToast("Item do catálogo atualizado!", "success");
-            }
-        }
-
-        // --- NOVO: Resetar Sistema ---
-        function handleResetSystem() {
-            state.boxes = INITIAL_BOXES;
-            state.history = [];
-            state.missingItems = [];
-            state.destinations = DEFAULT_DESTINOS;
-            state.drivers = DEFAULT_DRIVERS;
-            state.catalog = DEFAULT_CATALOG;
-            saveData();
-            closeModal();
-            showToast("Sistema reiniciado!", "success");
-        }
-
         function handleEditDestination(e) {
             e.preventDefault();
             const idx = state.modal.data;
@@ -660,7 +618,22 @@
 
         function resolveMissingItem(id) {
             const item = state.missingItems.find(i => i.id === id);
-            if(item) { item.status = 'resolved'; saveData(); showToast("Pendência resolvida!", "success"); }
+            if(item) { 
+                item.status = 'resolved'; 
+                saveData(); 
+                showToast("Item resolvido e arquivado!", "success"); 
+            }
+        }
+        
+        function setMissingTab(tab) {
+            state.missingTab = tab;
+            state.missingDateFilter = ''; // Limpar filtro ao mudar de aba
+            renderApp();
+        }
+
+        function setMissingDateFilter(date) {
+            state.missingDateFilter = date;
+            renderApp();
         }
 
         function printSingleBoxMissing(boxId) {
@@ -741,7 +714,7 @@
                                 >
                                 <ul id="suggestions-list" class="absolute z-50 w-full bg-white border border-slate-100 rounded-lg shadow-xl mt-1 max-h-48 overflow-y-auto hidden divide-y divide-slate-50"></ul>
                             </div>
-                            <p class="text-[10px] text-slate-400">Selecione da lista ou digite um novo nome.</p>
+                            <p class="text-[10px] text-slate-400">Obrigatório selecionar um item existente no catálogo.</p>
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
@@ -901,6 +874,7 @@
                                 >
                                 <ul id="suggestions-list" class="absolute z-50 w-full bg-white border border-slate-100 rounded-lg shadow-xl mt-1 max-h-48 overflow-y-auto hidden divide-y divide-slate-50"></ul>
                             </div>
+                            <p class="text-[10px] text-slate-400">Obrigatório selecionar um item existente no catálogo.</p>
                         </div>
 
                         <!-- Quantity -->
@@ -979,13 +953,6 @@
                  }
             } else if (type === 'confirmImport') {
                  content = `<h3 class="font-bold text-lg mb-2 text-orange-600">Restaurar Backup?</h3><p class="text-sm text-slate-600 mb-4">Isso substituirá todos os dados atuais pelos do arquivo. Tem certeza?</p><div class="flex gap-2"><button onclick="executeImport()" class="flex-1 bg-orange-600 text-white p-2 rounded">Sim, Restaurar</button><button onclick="closeModal()" class="flex-1 border p-2 rounded">Cancelar</button></div>`;
-            } else if (type === 'resetSystem') {
-                content = `<h3 class="font-bold text-lg mb-2 text-red-600">Resetar Sistema?</h3>
-                           <p class="text-sm text-slate-600 mb-4">Isto irá apagar <b>TUDO</b>: Caixas, Histórico, Motoristas e Endereços. Os dados voltarão ao estado inicial.</p>
-                           <div class="flex gap-2">
-                               <button onclick="handleResetSystem()" class="flex-1 bg-red-600 text-white p-2 rounded hover:bg-red-700 font-bold">RESETAR TUDO</button>
-                               <button onclick="closeModal()" class="flex-1 border p-2 rounded hover:bg-slate-50">Cancelar</button>
-                           </div>`;
             }
 
             container.innerHTML = `
@@ -1514,25 +1481,26 @@
             
             // Estatísticas
             const total = state.missingItems.length;
-            const pending = state.missingItems.filter(i => i.status === 'pending').length;
-            const resolved = total - pending;
+            const pendingList = state.missingItems.filter(i => i.status === 'pending');
+            const resolvedList = state.missingItems.filter(i => i.status === 'resolved');
+            const pendingCount = pendingList.length;
+            const resolvedCount = resolvedList.length;
 
-            if (total === 0) {
-                container.innerHTML = `
-                    <div class="flex flex-col items-center justify-center h-96 text-slate-400 animate-fade-in">
-                        <div class="bg-emerald-50 p-6 rounded-full mb-4 ring-1 ring-emerald-100 shadow-sm">
-                            <i data-lucide="check-circle" class="w-12 h-12 text-emerald-400"></i>
-                        </div>
-                        <h3 class="text-lg font-bold text-slate-700">Tudo em Ordem!</h3>
-                        <p class="text-sm">Nenhuma falta registrada no momento.</p>
-                    </div>`;
-                lucide.createIcons();
-                return;
+            // Determinar qual lista mostrar com base na aba ativa
+            let activeList = state.missingTab === 'resolved' ? resolvedList : pendingList;
+            const isPendingTab = state.missingTab !== 'resolved';
+
+            // Filtrar por data se estiver no arquivo e houver data selecionada
+            if (!isPendingTab && state.missingDateFilter) {
+                activeList = activeList.filter(item => getLocalDateString(item.date) === state.missingDateFilter);
             }
 
             // Agrupar itens por boxId
             const grouped = {};
-            state.missingItems.forEach((item, index) => {
+            activeList.forEach((item, index) => {
+                // Encontrar o índice real na lista original para edição/exclusão corretas
+                const realIndex = state.missingItems.findIndex(i => i === item);
+                
                 if (!grouped[item.boxId]) {
                     grouped[item.boxId] = {
                         boxName: item.boxName,
@@ -1540,111 +1508,139 @@
                         items: []
                     };
                 }
-                // Guardamos o índice original para as ações funcionarem corretamente
-                grouped[item.boxId].items.push({ ...item, originalIndex: index });
+                grouped[item.boxId].items.push({ ...item, originalIndex: realIndex });
             });
 
             // Converter objeto em array para renderizar
-            const groupsHtml = Object.values(grouped).map(group => {
-                const groupItemsHtml = group.items.map(m => {
-                    const isResolved = m.status === 'resolved';
-                    const statusColor = isResolved ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700';
-                    const statusLabel = isResolved ? 'Resolvido' : 'Pendente';
-                    const iconColor = isResolved ? 'text-emerald-500' : 'text-rose-500';
+            let contentHtml = '';
+            
+            if (activeList.length === 0) {
+                const emptyMessage = !isPendingTab && state.missingDateFilter 
+                    ? `Nenhum registo encontrado para a data ${state.missingDateFilter.split('-').reverse().join('/')}.`
+                    : (isPendingTab ? 'Nenhuma pendência registrada.' : 'Nenhum item resolvido ainda.');
+
+                contentHtml = `
+                    <div class="flex flex-col items-center justify-center h-64 text-slate-400 animate-fade-in bg-white rounded-xl border border-slate-100 mt-6">
+                        <div class="bg-slate-50 p-4 rounded-full mb-3 ring-1 ring-slate-100">
+                            <i data-lucide="${isPendingTab ? 'check-circle' : 'archive'}" class="w-10 h-10 ${isPendingTab ? 'text-emerald-400' : 'text-slate-300'}"></i>
+                        </div>
+                        <h3 class="text-base font-bold text-slate-700">${isPendingTab ? 'Tudo em Ordem!' : 'Arquivo Vazio'}</h3>
+                        <p class="text-sm">${emptyMessage}</p>
+                        ${!isPendingTab && state.missingDateFilter ? `<button onclick="setMissingDateFilter('')" class="mt-4 text-blue-600 hover:text-blue-800 text-sm font-medium">Limpar Filtro</button>` : ''}
+                    </div>`;
+            } else {
+                contentHtml = Object.values(grouped).map(group => {
+                    const groupItemsHtml = group.items.map(m => {
+                        const isResolved = m.status === 'resolved';
+                        const statusColor = isResolved ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700';
+                        const statusLabel = isResolved ? 'Resolvido' : 'Pendente';
+
+                        return `
+                            <div class="p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center hover:bg-slate-50 transition-colors border-l-4 ${isResolved ? 'border-l-emerald-400' : 'border-l-rose-400'}">
+                                <div class="flex-grow">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">${new Date(m.date).toLocaleDateString()}</span>
+                                        <span class="font-bold text-slate-700">${m.quantity}x ${escapeHtml(m.itemName)}</span>
+                                    </div>
+                                    ${m.reason ? `<p class="text-sm text-slate-500 italic flex items-start gap-1"><i data-lucide="message-square" class="w-3 h-3 mt-1 shrink-0 opacity-50"></i> ${escapeHtml(m.reason)}</p>` : ''}
+                                </div>
+                                
+                                <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                                    <span class="px-2.5 py-1 rounded-full text-xs font-bold ${statusColor}">
+                                        ${statusLabel}
+                                    </span>
+
+                                    <div class="flex items-center gap-1">
+                                        ${!isResolved ? `
+                                            <button onclick="resolveMissingItem(${m.id})" class="p-1.5 text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-all active:scale-95" title="Resolver">
+                                                <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+                                            </button>
+                                        ` : ''}
+                                        <button onclick="openModal('editMissing', null, ${m.originalIndex})" class="p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Editar">
+                                            <i data-lucide="pencil" class="w-4 h-4"></i>
+                                        </button>
+                                        <button onclick="openModal('deleteMissing', null, ${m.originalIndex})" class="p-1.5 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="Excluir">
+                                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
 
                     return `
-                        <div class="p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center hover:bg-slate-50 transition-colors border-l-4 ${isResolved ? 'border-l-emerald-400' : 'border-l-rose-400'}">
-                            <div class="flex-grow">
-                                <div class="flex items-center gap-2 mb-1">
-                                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">${new Date(m.date).toLocaleDateString()}</span>
-                                    <span class="font-bold text-slate-700">${m.quantity}x ${escapeHtml(m.itemName)}</span>
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-6 animate-fade-in">
+                            <div class="bg-slate-50/80 border-b border-slate-200 p-4 flex justify-between items-center">
+                                <div class="flex items-center gap-3">
+                                    <div class="bg-white p-2 rounded-lg border border-slate-200 shadow-sm text-blue-600">
+                                        <i data-lucide="package" class="w-5 h-5"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-bold text-slate-800 text-lg leading-tight">${escapeHtml(group.boxName)}</h3>
+                                        <p class="text-xs text-slate-500 flex items-center gap-1">
+                                            <i data-lucide="map-pin" class="w-3 h-3"></i> ${escapeHtml(group.destination)}
+                                        </p>
+                                    </div>
                                 </div>
-                                ${m.reason ? `<p class="text-sm text-slate-500 italic flex items-start gap-1"><i data-lucide="message-square" class="w-3 h-3 mt-1 shrink-0 opacity-50"></i> ${escapeHtml(m.reason)}</p>` : ''}
+                                <button onclick="printSingleBoxMissing(${group.items[0].boxId})" class="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-transparent hover:border-blue-200" title="Imprimir esta caixa">
+                                    <i data-lucide="printer" class="w-5 h-5"></i>
+                                </button>
                             </div>
-                            
-                            <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-                                <span class="px-2.5 py-1 rounded-full text-xs font-bold ${statusColor}">
-                                    ${statusLabel}
-                                </span>
-
-                                <div class="flex items-center gap-1">
-                                    ${!isResolved ? `
-                                        <button onclick="resolveMissingItem(${m.id})" class="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Resolver">
-                                            <i data-lucide="check-circle-2" class="w-5 h-5"></i>
-                                        </button>
-                                    ` : ''}
-                                    <button onclick="openModal('editMissing', null, ${m.originalIndex})" class="p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Editar">
-                                        <i data-lucide="pencil" class="w-4 h-4"></i>
-                                    </button>
-                                    <button onclick="openModal('deleteMissing', null, ${m.originalIndex})" class="p-1.5 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="Excluir">
-                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                    </button>
-                                </div>
+                            <div class="divide-y divide-slate-100">
+                                ${groupItemsHtml}
                             </div>
                         </div>
                     `;
                 }).join('');
-
-                // Adicionei um botão de impressão ao header de cada caixa
-                return `
-                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-6">
-                        <div class="bg-slate-50/80 border-b border-slate-200 p-4 flex justify-between items-center">
-                            <div class="flex items-center gap-3">
-                                <div class="bg-white p-2 rounded-lg border border-slate-200 shadow-sm text-blue-600">
-                                    <i data-lucide="package" class="w-5 h-5"></i>
-                                </div>
-                                <div>
-                                    <h3 class="font-bold text-slate-800 text-lg leading-tight">${escapeHtml(group.boxName)}</h3>
-                                    <p class="text-xs text-slate-500 flex items-center gap-1">
-                                        <i data-lucide="map-pin" class="w-3 h-3"></i> ${escapeHtml(group.destination)}
-                                    </p>
-                                </div>
-                            </div>
-                            <button onclick="printSingleBoxMissing(${group.items[0].boxId})" class="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-transparent hover:border-blue-200" title="Imprimir esta caixa">
-                                <i data-lucide="printer" class="w-5 h-5"></i>
-                            </button>
-                        </div>
-                        <div class="divide-y divide-slate-100">
-                            ${groupItemsHtml}
-                        </div>
-                    </div>
-                `;
-            }).join('');
+            }
 
             container.innerHTML = `
-                <div class="max-w-4xl mx-auto pb-10 space-y-8 animate-fade-in">
-                    <!-- Cards de Estatísticas -->
+                <div class="max-w-4xl mx-auto pb-10 space-y-6 animate-fade-in">
+                    <!-- Cards de Estatísticas e Filtros -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 relative overflow-hidden">
                             <div class="absolute right-0 top-0 w-24 h-full bg-gradient-to-l from-blue-50 to-transparent opacity-50"></div>
                             <div class="p-3 bg-blue-100 text-blue-600 rounded-xl"><i data-lucide="list" class="w-6 h-6"></i></div>
                             <div><div class="text-3xl font-bold text-slate-800 tracking-tight">${total}</div><div class="text-xs text-slate-500 font-bold uppercase tracking-wider">Total Registros</div></div>
                         </div>
-                        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 relative overflow-hidden">
+                        <button onclick="setMissingTab('pending')" class="text-left bg-white p-5 rounded-2xl border ${isPendingTab ? 'border-rose-300 ring-2 ring-rose-100' : 'border-slate-100'} shadow-sm flex items-center gap-4 relative overflow-hidden transition-all hover:shadow-md group">
                             <div class="absolute right-0 top-0 w-24 h-full bg-gradient-to-l from-rose-50 to-transparent opacity-50"></div>
-                            <div class="p-3 bg-rose-100 text-rose-600 rounded-xl"><i data-lucide="alert-octagon" class="w-6 h-6"></i></div>
-                            <div><div class="text-3xl font-bold text-rose-600 tracking-tight">${pending}</div><div class="text-xs text-rose-400 font-bold uppercase tracking-wider">Pendentes</div></div>
-                        </div>
-                        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 relative overflow-hidden">
+                            <div class="p-3 ${isPendingTab ? 'bg-rose-100 text-rose-600' : 'bg-slate-100 text-slate-400 group-hover:bg-rose-50 group-hover:text-rose-500'} rounded-xl transition-colors"><i data-lucide="alert-octagon" class="w-6 h-6"></i></div>
+                            <div><div class="text-3xl font-bold ${isPendingTab ? 'text-rose-600' : 'text-slate-600'} tracking-tight">${pendingCount}</div><div class="text-xs ${isPendingTab ? 'text-rose-500' : 'text-slate-400'} font-bold uppercase tracking-wider">Pendentes (Ativos)</div></div>
+                        </button>
+                        <button onclick="setMissingTab('resolved')" class="text-left bg-white p-5 rounded-2xl border ${!isPendingTab ? 'border-emerald-300 ring-2 ring-emerald-100' : 'border-slate-100'} shadow-sm flex items-center gap-4 relative overflow-hidden transition-all hover:shadow-md group">
                             <div class="absolute right-0 top-0 w-24 h-full bg-gradient-to-l from-emerald-50 to-transparent opacity-50"></div>
-                            <div class="p-3 bg-emerald-100 text-emerald-600 rounded-xl"><i data-lucide="check-circle-2" class="w-6 h-6"></i></div>
-                            <div><div class="text-3xl font-bold text-emerald-600 tracking-tight">${resolved}</div><div class="text-xs text-emerald-400 font-bold uppercase tracking-wider">Resolvidos</div></div>
-                        </div>
+                            <div class="p-3 ${!isPendingTab ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400 group-hover:bg-emerald-50 group-hover:text-emerald-500'} rounded-xl transition-colors"><i data-lucide="archive" class="w-6 h-6"></i></div>
+                            <div><div class="text-3xl font-bold ${!isPendingTab ? 'text-emerald-600' : 'text-slate-600'} tracking-tight">${resolvedCount}</div><div class="text-xs ${!isPendingTab ? 'text-emerald-500' : 'text-slate-400'} font-bold uppercase tracking-wider">Resolvidos (Arquivo)</div></div>
+                        </button>
                     </div>
 
                     <!-- Toolbar -->
-                    <div class="flex flex-col sm:flex-row justify-between items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm gap-4">
-                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-                            <i data-lucide="clipboard-list" class="text-orange-500"></i> Relatório de Faltas
-                        </h2>
-                        <button onclick="printMissingItems()" class="w-full sm:w-auto flex items-center justify-center gap-2 text-sm font-bold text-slate-600 hover:text-blue-700 bg-slate-50 hover:bg-blue-50 px-5 py-2.5 rounded-lg transition-all border border-slate-200 hover:border-blue-200 shadow-sm hover:shadow active:scale-95">
-                            <i data-lucide="printer" class="w-4 h-4"></i> Imprimir Relatório Geral
+                    <div class="flex flex-col sm:flex-row justify-between items-center bg-white p-2 rounded-xl border border-slate-200 shadow-sm gap-4 sticky top-0 z-20">
+                        <div class="flex items-center gap-3 w-full sm:w-auto">
+                            <div class="flex gap-1 bg-slate-100 p-1 rounded-lg w-full sm:w-auto">
+                                <button onclick="setMissingTab('pending')" class="flex-1 sm:flex-none px-4 py-2 rounded-md text-sm font-bold transition-all ${isPendingTab ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}">Pendências</button>
+                                <button onclick="setMissingTab('resolved')" class="flex-1 sm:flex-none px-4 py-2 rounded-md text-sm font-bold transition-all ${!isPendingTab ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}">Arquivo</button>
+                            </div>
+
+                            <!-- Filtro de Data (Apenas no Arquivo) -->
+                            ${!isPendingTab ? `
+                                <div class="relative flex items-center group">
+                                    <div class="absolute left-3 pointer-events-none text-slate-400"><i data-lucide="calendar" class="w-4 h-4"></i></div>
+                                    <input type="date" value="${state.missingDateFilter}" onchange="setMissingDateFilter(this.value)" class="pl-9 pr-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all cursor-pointer hover:border-emerald-300" title="Filtrar por data">
+                                    ${state.missingDateFilter ? `<button onclick="setMissingDateFilter('')" class="ml-2 text-slate-400 hover:text-red-500" title="Limpar filtro"><i data-lucide="x" class="w-4 h-4"></i></button>` : ''}
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <button onclick="printMissingItems()" class="w-full sm:w-auto flex items-center justify-center gap-2 text-sm font-bold text-slate-600 hover:text-blue-700 bg-white hover:bg-blue-50 px-4 py-2 rounded-lg transition-all border border-transparent hover:border-blue-200">
+                            <i data-lucide="printer" class="w-4 h-4"></i> Imprimir Relatório
                         </button>
                     </div>
 
                     <!-- Lista de Itens Agrupada -->
                     <div class="space-y-6">
-                        ${groupsHtml}
+                        ${contentHtml}
                     </div>
                 </div>
             `;
@@ -1725,20 +1721,6 @@
                             <span>Selecionar Arquivo</span>
                             <input type="file" id="import-file" accept=".json" style="display:none;" onchange="handleImportBackup(event)">
                         </label>
-                    </div>
-                </div>
-
-                <div class="border-t border-slate-200 pt-8 mt-8">
-                    <div class="bg-red-50 rounded-xl border border-red-100 p-6 flex flex-col md:flex-row items-center justify-between gap-4">
-                        <div>
-                            <h3 class="text-lg font-bold text-red-900 flex items-center gap-2">
-                                <i data-lucide="alert-octagon" class="w-5 h-5"></i> Zona de Perigo
-                            </h3>
-                            <p class="text-sm text-red-700 mt-1">Apagar todos os dados e restaurar configurações de fábrica.</p>
-                        </div>
-                        <button onclick="openModal('resetSystem')" class="bg-white border border-red-200 text-red-600 hover:bg-red-600 hover:text-white px-6 py-2.5 rounded-lg font-bold transition-all shadow-sm">
-                            Resetar Sistema
-                        </button>
                     </div>
                 </div>
             </div>`;
