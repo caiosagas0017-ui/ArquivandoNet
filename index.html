@@ -18,11 +18,12 @@
 
     <script>
         tailwind.config = {
+            darkMode: 'class', // Ativa modo noturno via classe 'dark'
             theme: {
                 extend: {
                     fontFamily: { sans: ['Inter', 'sans-serif'] },
                     colors: {
-                        slate: { 850: '#1e293b' } 
+                        slate: { 850: '#1e293b', 900: '#0f172a', 950: '#020617' } 
                     },
                     boxShadow: {
                         'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
@@ -35,7 +36,7 @@
 
     <style>
         /* --- Animações e Estilos Globais --- */
-        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; background-color: #f8fafc; }
+        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
         
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes zoomIn { from { transform: scale(0.98); opacity: 0; } to { transform: scale(1); opacity: 1; } }
@@ -59,6 +60,10 @@
         ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; } 
         ::-webkit-scrollbar-thumb:hover { background: #64748b; }
         
+        /* Dark Mode Scrollbar */
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        .dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
@@ -66,62 +71,65 @@
         .cursor-grab { cursor: grab; }
         .cursor-grabbing { cursor: grabbing; }
         .dragging { opacity: 0.6; transform: scale(0.99); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
-        .drop-target { border-color: #6366f1; background-color: #eef2ff; } /* Indigo-500 */
+        .drop-target { border-color: #6366f1; background-color: #eef2ff; } 
+        .dark .drop-target { border-color: #818cf8; background-color: #1e1b4b; }
 
         /* Timeline */
         .timeline-line { position: absolute; left: 23px; top: 36px; bottom: -20px; width: 2px; background-color: #e2e8f0; z-index: 0; }
+        .dark .timeline-line { background-color: #334155; }
         .timeline-item:last-child .timeline-line { display: none; }
 
         /* Glass effect for modals */
         .glass-panel { background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(12px); border: 1px solid rgba(226, 232, 240, 0.8); }
+        .dark .glass-panel { background: rgba(30, 41, 59, 0.98); border: 1px solid rgba(71, 85, 105, 0.5); }
     </style>
 </head>
-<body class="text-slate-900 h-screen overflow-hidden selection:bg-indigo-100 selection:text-indigo-900">
+<body class="bg-[#f8fafc] text-slate-900 dark:bg-slate-950 dark:text-slate-100 h-screen overflow-hidden selection:bg-indigo-100 selection:text-indigo-900 dark:selection:bg-indigo-900 dark:selection:text-indigo-100">
 
     <!-- Loading Fallback -->
-    <div id="loading-screen" class="fixed inset-0 bg-slate-50 z-50 flex items-center justify-center">
+    <div id="loading-screen" class="fixed inset-0 bg-slate-50 dark:bg-slate-950 z-50 flex items-center justify-center">
         <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
     </div>
 
     <!-- Login -->
-    <div id="login-container" class="hidden h-full w-full bg-slate-50 flex items-center justify-center z-50 absolute top-0 left-0"></div>
+    <div id="login-container" class="hidden h-full w-full bg-slate-50 dark:bg-slate-950 flex items-center justify-center z-50 absolute top-0 left-0"></div>
 
     <!-- App Layout -->
     <div id="app-layout" class="flex h-screen w-full overflow-hidden hidden opacity-0 transition-opacity duration-300">
         
         <!-- SIDEBAR -->
-        <aside id="main-sidebar" class="hidden md:flex flex-col bg-white border-r border-slate-200 h-full z-20 shrink-0 sidebar-transition w-64 shadow-soft">
-            <div class="p-5 border-b border-slate-100 flex items-center justify-between h-16">
+        <aside id="main-sidebar" class="hidden md:flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 h-full z-20 shrink-0 sidebar-transition w-64 shadow-soft">
+            <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between h-16">
                 <div id="sidebar-logo-content" class="flex items-center gap-3 overflow-hidden whitespace-nowrap transition-opacity duration-200">
-                    <div class="bg-indigo-600 p-1.5 rounded-lg text-white shrink-0 shadow-md shadow-indigo-200">
+                    <div class="bg-indigo-600 p-1.5 rounded-lg text-white shrink-0 shadow-md shadow-indigo-500/30">
                         <i data-lucide="package" class="w-5 h-5"></i>
                     </div>
                     <div>
-                        <h1 class="text-sm font-bold tracking-tight text-slate-900 leading-none">Logística</h1>
-                        <p class="text-[10px] text-indigo-600 font-bold uppercase tracking-wider mt-0.5">Painel Central</p>
+                        <h1 class="text-sm font-bold tracking-tight text-slate-900 dark:text-white leading-none">Logística</h1>
+                        <p class="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-wider mt-0.5">Painel Central</p>
                     </div>
                 </div>
-                <button onclick="toggleSidebar()" class="p-1.5 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors">
+                <button onclick="toggleSidebar()" class="p-1.5 rounded-md text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-slate-800 transition-colors">
                     <i data-lucide="menu" class="w-6 h-6"></i>
                 </button>
             </div>
             
             <div class="flex-1 overflow-y-auto overflow-x-hidden py-4 px-3">
-                <p id="nav-label" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-3">Navegação</p>
+                <p id="nav-label" class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 mb-3">Navegação</p>
                 <nav class="space-y-1" id="sidebar-nav"></nav>
             </div>
 
-            <div class="p-4 border-t border-slate-100 bg-slate-50/50" id="sidebar-footer"></div>
+            <div class="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50" id="sidebar-footer"></div>
         </aside>
 
         <!-- Main Content -->
-        <div class="flex-1 flex flex-col h-full overflow-hidden relative bg-[#f8fafc]">
+        <div class="flex-1 flex flex-col h-full overflow-hidden relative bg-[#f8fafc] dark:bg-slate-950">
             <!-- Mobile Header -->
-            <header class="md:hidden bg-white border-b border-slate-200 flex-shrink-0 z-30 shadow-sm">
+            <header class="md:hidden bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex-shrink-0 z-30 shadow-sm">
                 <div class="px-4 py-3 flex justify-between items-center">
                     <div class="flex items-center gap-2">
                         <div class="bg-indigo-600 p-1.5 rounded-lg text-white"><i data-lucide="package" class="w-5 h-5"></i></div>
-                        <span class="font-bold text-slate-900">Logística</span>
+                        <span class="font-bold text-slate-900 dark:text-white">Logística</span>
                     </div>
                     <button onclick="logout()" class="text-slate-400 hover:text-red-600"><i data-lucide="log-out" class="w-5 h-5"></i></button>
                 </div>
@@ -152,7 +160,7 @@
         }
 
         function showToast(message, type = 'success') {
-            const styles = type === 'success' ? 'bg-indigo-900 text-white' : 'bg-red-600 text-white';
+            const styles = type === 'success' ? 'bg-indigo-900 text-white shadow-indigo-900/20' : 'bg-red-600 text-white shadow-red-900/20';
             const icon = type === 'success' ? 'check' : 'alert-circle';
             const toast = document.createElement('div');
             toast.className = `toast-msg ${styles} text-sm font-medium py-3 px-5 rounded-lg shadow-lg flex items-center gap-3 pointer-events-none transform transition-all border border-white/10`;
@@ -171,39 +179,7 @@
         ];
         const DEFAULT_DRIVERS = [{ name: "João Silva", phone: "" }, { name: "Maria Oliveira", phone: "" }, { name: "Carlos Santos", phone: "" }];
         
-        const DEFAULT_CATALOG = [
-            "AÇUCAR SACHET UNIÃO", "AÇUCAR UNIÃO REFINADO", "ADOÇANTE ZERO CAL 100ML", "AGENDA DIARIA ESPIRAL", 
-            "AGUA SANITARIA 2L", "ALCOOL 1L", "ALCOOL GEL 70% 800ML", "ALMOFADAP/CARIMBO Nº3 AZUL", 
-            "ALMOFADAP/CARIMBO Nº3 PRETA", "ALMOFADAP/CARIMBO Nº3 VERMELHA", "APONTADOR COM LIXEIRA", "BOBINA SENHA ATENDIMENTO PAPEL TERMICO 80 MM", 
-            "BOM AR 500ML", "BORRACHA TK PLASTICA PEQUENA", "CADERNO 1/4 BROC. C/DURA 96F", "CADERNO 1/4 BROC. INDICE A/Z 96F", 
-            "CADERNO 1/4 BROC. PROTOCOLO 96F", "CADERNO UNIVERSITARIO 1X1 96F", "CAIXA ARQUIVO MORTO PAPELÃO", "CALCULADORA", 
-            "CANETA BIC CRISTAL 1.6MM", "CANETA ESFEROGRAFICA AZUL", "CANETA ESFEROGRAFICA PILOT", "CANETA ESFEROGRAFICA PRETA", 
-            "CANETA ESFEROGRAFICA VERMELHA", "CANETA MARCA TEXTO AMARELO", "CANETA MARCA TEXTO AZUL", "CANETA PARA QUADRO BRANCO AZUL", 
-            "CANETA PARA QUADRO BRANCO PRETA", "CANETA PARA QUADRO BRANCO VERMELHA", "CANETA RETROPROJETOR 2.0 MM AZUL", "CANETA RETROPROJETOR 2.0 MM PRETA", 
-            "CANETA RETROPROJETOR 2.0 MM VERMELHA", "CAPA P/ ENCADERNAÇÃO A4 PRETA", "CAPA P/ ENCADERNAÇÃO TRANSPARENTE", "CARTÃO PONTO MENSAL", 
-            "CERA BRILHO FÁCIL 750 ML", "CHÁ MATTE", "CLIPS Nº 3", "CLIPS Nº 4", "CLIPS Nº8", "COLA BASTÃO 10G", "COLA TENAZ LIQ 40G", 
-            "COPO DESCARTÁVEL 180 ML", "COPO DESCARTAVEL 50ML", "CORRETIVO FITA", "CORRETIVO PINCEL", "CORRETIVO TIPO CANETA", 
-            "DECLARAÇÃO ATENDENTE CAMU BL 50F", "DECLARAÇÃO SESSÃO TERAPIA - ENDEREÇO MULTI", "DESINFETANTE 2L", "DETERGENTE LIQUIDO 500ML", 
-            "ELASTICO SUPER RESISTENTE 1KG", "ENVELOPE A4 26X36", "ENVELOPE COMERCIAL JANELA 22X15,7CM PAPEL OFFSET", "ENVELOPE OFICIO C/JANELA", 
-            "ENVELOPE OFICIO S/JANELA", "ENVELOPE PARDO 18,5X25", "ENVELOPE PARDO 31X41", "ESPONJA MAGICA", "ESPONJA SCOTH BRITE", 
-            "EXTRATOR DE GRAMPOS", "FIBRA LIMPEZA LEVE", "FIBRA LIMPEZA USO GERAL", "FICHA C/PAUTA 5X8 100 FLS", "FILTRO DE PAPEL N°103", 
-            "FILTRO REFIL ECO IBBL SPECIALE", "FITA ADESIVA PEQUENA", "FITA CREPE BRANCA", "FITA DUPLA FACE", "FITA LARGA TRANSPARENTE", 
-            "FITA P/ MAQUINA DE CALCULAR", "FLANELA", "FLANELA BRANCA 38X58 GRANDE", "FOSFORO EXTRA LONGO", "GRAFITE 2B 0.5", 
-            "GRAFITE 2B 0.7", "GRAMPEADOR MÉDIO", "GRAMPO 106/6 CX 5000UN", "GRAMPO 26/6 GALVANIZADO CX 5000 UM", "GRAMPO TRUNFO Nº2 CX COM 50 UM", 
-            "GUIA DE COMPROVANTE PRESENCIAL", "INSETICIDA AEROSOL 300ML", "LAPIS PRETO FABER", "LAPISEIRA 0.5", "LAPISEIRA 0.7", 
-            "LEITE SEMI DESNATADO", "LIMPADOR MULTIUSO DESTAC", "LIMPADOR SAPOLIO 300ML", "LIMPADOR VEJA MULTI USO 500ML", "LIVRO ATA 100 FLS", 
-            "LIXEIRA DE ESCRITORIO", "LUSTRA MOVEIS 500ML", "LUVA LIMPEZA SANRO TOP M", "MARGARINA 500G", "MEXEDOR PARA CAFÉ 500UN", 
-            "OLEO DE PEROBA 100ML", "PANO DE CHÃO SACO ALVEJADO", "PANO PERFEX", "PAPEL CARBONO FILME PRETO", "PAPEL HIGIÊNICO 300MT", 
-            "PAPEL HIGIÊNICO 4ROLOS", "PAPEL INTERFOLHAS C/700", "PAPEL OPALINE 180G PCT 50 UM", "PAPEL SULFITE A4 BRANCO 500 FLS", 
-            "PASTA A/Z LOMBO ESTREITO", "PASTA A/Z LOMBO LARGO", "PASTA A4 PLÁSTICA C/PRESILHA TRANSPARENTE", "PASTA CATÁLOGO C/100 PLASTICO", 
-            "PASTA GRANDE COM ABA E ELASTICO TRANSPARENTE", "PASTA L A4 TRANSPARENTE", "PASTA POLIONDAS LOMBADA VERDE", "PASTA SANF. PLASTICA OFICIO 31DIV", 
-            "PASTA SUSPENSA PLAST. MARM. COMPL", "PERCEVEJO C/100", "PILHA AAA", "PILHA GRANDE D", "PILHA PEQUENA AA", "PLASTICO RESISTENTE PASTA 04 FUROS", 
-            "PO DE CAFÉ", "POST IT 100 FLS", "PROTOCOLO DE ENTREGA DE GUIAS", "RECIBO COMERCIAL BLOCO 50 FLS", "REFRESCO TANG", 
-            "REGUA ACRILICA 30 CM", "RELATÓRIO TERAPEUTICO - LOGO UNIMED - SEM ENDEREÇO", "REMOVEDOR DE CERA 1L", "RODO COM CABO", "SABÃO EM PÓ", 
-            "SABÃO EM PEDRA 5UN", "SABONETE LIQUIDO ERVA DOCE 800ML", "SACO DE LIXO 100L", "SACO DE LIXO 200L", "SACO DE LIXO 20L", "SACO DE LIXO 40L", 
-            "SADT BLOCO 100 FOLHAS", "TELEFONE COM FIO PRETO", "TESOURA ESCOLAR 20CM", "TINTA P/CARIMBO AZUL", "TINTA P/CARIMBO PRETA", 
-            "TINTA P/CARIMBO VERMELHA", "TOALHA DE PAPEL snog", "TONER 83A", "TONER 85A", "VASSOURA"
-        ].sort();
+        const DEFAULT_CATALOG = [ "AÇUCAR SACHET UNIÃO", "AÇUCAR UNIÃO REFINADO", "ADOÇANTE ZERO CAL 100ML", "AGENDA DIARIA ESPIRAL", "AGUA SANITARIA 2L", "ALCOOL 1L", "ALCOOL GEL 70% 800ML", "ALMOFADAP/CARIMBO Nº3 AZUL", "ALMOFADAP/CARIMBO Nº3 PRETA", "ALMOFADAP/CARIMBO Nº3 VERMELHA", "APONTADOR COM LIXEIRA", "BOBINA SENHA ATENDIMENTO PAPEL TERMICO 80 MM", "BOM AR 500ML", "BORRACHA TK PLASTICA PEQUENA", "CADERNO 1/4 BROC. C/DURA 96F", "CADERNO 1/4 BROC. INDICE A/Z 96F", "CADERNO 1/4 BROC. PROTOCOLO 96F", "CADERNO UNIVERSITARIO 1X1 96F", "CAIXA ARQUIVO MORTO PAPELÃO", "CALCULADORA", "CANETA BIC CRISTAL 1.6MM", "CANETA ESFEROGRAFICA AZUL", "CANETA ESFEROGRAFICA PILOT", "CANETA ESFEROGRAFICA PRETA", "CANETA ESFEROGRAFICA VERMELHA", "CANETA MARCA TEXTO AMARELO", "CANETA MARCA TEXTO AZUL", "CANETA PARA QUADRO BRANCO AZUL", "CANETA PARA QUADRO BRANCO PRETA", "CANETA PARA QUADRO BRANCO VERMELHA", "CANETA RETROPROJETOR 2.0 MM AZUL", "CANETA RETROPROJETOR 2.0 MM PRETA", "CANETA RETROPROJETOR 2.0 MM VERMELHA", "CAPA P/ ENCADERNAÇÃO A4 PRETA", "CAPA P/ ENCADERNAÇÃO TRANSPARENTE", "CARTÃO PONTO MENSAL", "CERA BRILHO FÁCIL 750 ML", "CHÁ MATTE", "CLIPS Nº 3", "CLIPS Nº 4", "CLIPS Nº8", "COLA BASTÃO 10G", "COLA TENAZ LIQ 40G", "COPO DESCARTÁVEL 180 ML", "COPO DESCARTAVEL 50ML", "CORRETIVO FITA", "CORRETIVO PINCEL", "CORRETIVO TIPO CANETA", "DECLARAÇÃO ATENDENTE CAMU BL 50F", "DECLARAÇÃO SESSÃO TERAPIA - ENDEREÇO MULTI", "DESINFETANTE 2L", "DETERGENTE LIQUIDO 500ML", "ELASTICO SUPER RESISTENTE 1KG", "ENVELOPE A4 26X36", "ENVELOPE COMERCIAL JANELA 22X15,7CM PAPEL OFFSET", "ENVELOPE OFICIO C/JANELA", "ENVELOPE OFICIO S/JANELA", "ENVELOPE PARDO 18,5X25", "ENVELOPE PARDO 31X41", "ESPONJA MAGICA", "ESPONJA SCOTH BRITE", "EXTRATOR DE GRAMPOS", "FIBRA LIMPEZA LEVE", "FIBRA LIMPEZA USO GERAL", "FICHA C/PAUTA 5X8 100 FLS", "FILTRO DE PAPEL N°103", "FILTRO REFIL ECO IBBL SPECIALE", "FITA ADESIVA PEQUENA", "FITA CREPE BRANCA", "FITA DUPLA FACE", "FITA LARGA TRANSPARENTE", "FITA P/ MAQUINA DE CALCULAR", "FLANELA", "FLANELA BRANCA 38X58 GRANDE", "FOSFORO EXTRA LONGO", "GRAFITE 2B 0.5", "GRAFITE 2B 0.7", "GRAMPEADOR MÉDIO", "GRAMPO 106/6 CX 5000UN", "GRAMPO 26/6 GALVANIZADO CX 5000 UM", "GRAMPO TRUNFO Nº2 CX COM 50 UM", "GUIA DE COMPROVANTE PRESENCIAL", "INSETICIDA AEROSOL 300ML", "LAPIS PRETO FABER", "LAPISEIRA 0.5", "LAPISEIRA 0.7", "LEITE SEMI DESNATADO", "LIMPADOR MULTIUSO DESTAC", "LIMPADOR SAPOLIO 300ML", "LIMPADOR VEJA MULTI USO 500ML", "LIVRO ATA 100 FLS", "LIXEIRA DE ESCRITORIO", "LUSTRA MOVEIS 500ML", "LUVA LIMPEZA SANRO TOP M", "MARGARINA 500G", "MEXEDOR PARA CAFÉ 500UN", "OLEO DE PEROBA 100ML", "PANO DE CHÃO SACO ALVEJADO", "PANO PERFEX", "PAPEL CARBONO FILME PRETO", "PAPEL HIGIÊNICO 300MT", "PAPEL HIGIÊNICO 4ROLOS", "PAPEL INTERFOLHAS C/700", "PAPEL OPALINE 180G PCT 50 UM", "PAPEL SULFITE A4 BRANCO 500 FLS", "PASTA A/Z LOMBO ESTREITO", "PASTA A/Z LOMBO LARGO", "PASTA A4 PLÁSTICA C/PRESILHA TRANSPARENTE", "PASTA CATÁLOGO C/100 PLASTICO", "PASTA GRANDE COM ABA E ELASTICO TRANSPARENTE", "PASTA L A4 TRANSPARENTE", "PASTA POLIONDAS LOMBADA VERDE", "PASTA SANF. PLASTICA OFICIO 31DIV", "PASTA SUSPENSA PLAST. MARM. COMPL", "PERCEVEJO C/100", "PILHA AAA", "PILHA GRANDE D", "PILHA PEQUENA AA", "PLASTICO RESISTENTE PASTA 04 FUROS", "PO DE CAFÉ", "POST IT 100 FLS", "PROTOCOLO DE ENTREGA DE GUIAS", "RECIBO COMERCIAL BLOCO 50 FLS", "REFRESCO TANG", "REGUA ACRILICA 30 CM", "RELATÓRIO TERAPEUTICO - LOGO UNIMED - SEM ENDEREÇO", "REMOVEDOR DE CERA 1L", "RODO COM CABO", "SABÃO EM PÓ", "SABÃO EM PEDRA 5UN", "SABONETE LIQUIDO ERVA DOCE 800ML", "SACO DE LIXO 100L", "SACO DE LIXO 200L", "SACO DE LIXO 20L", "SACO DE LIXO 40L", "SADT BLOCO 100 FOLHAS", "TELEFONE COM FIO PRETO", "TESOURA ESCOLAR 20CM", "TINTA P/CARIMBO AZUL", "TINTA P/CARIMBO PRETA", "TINTA P/CARIMBO VERMELHA", "TOALHA DE PAPEL snog", "TONER 83A", "TONER 85A", "VASSOURA" ].sort();
 
         const INITIAL_BOXES = [1,2,3,4].map(id => ({ id, name: `Caixa ${id}`, status: 'available', items: [], destination: null, driver: null }));
 
@@ -220,6 +196,7 @@
             catalog: initialCatalog,
             activeTab: localStorage.getItem('logistica_activeTab') || 'dashboard',
             currentUser: localStorage.getItem('logistica_currentUser') || "Logistica",
+            darkMode: safeParse('logistica_darkMode', false), // New state for Dark Mode
             modal: { type: null, boxId: null, data: null },
             historyFilter: { search: '', date: '' },
             historyView: 'today',
@@ -248,6 +225,8 @@
             localStorage.setItem('logistica_catalog', JSON.stringify(state.catalog));
             localStorage.setItem('logistica_activeTab', state.activeTab);
             localStorage.setItem('logistica_sidebar_collapsed', JSON.stringify(state.sidebarCollapsed));
+            localStorage.setItem('logistica_darkMode', JSON.stringify(state.darkMode));
+            localStorage.setItem('logistica_currentUser', state.currentUser);
             if (!skipRender) renderApp();
         }
 
@@ -255,7 +234,7 @@
             state.history.unshift({ id: Date.now(), timestamp: new Date().toISOString(), action, details, boxName, user: state.currentUser });
         }
 
-        // --- 4. Ações de Backup ---
+        // --- 4. Config & Backup Actions ---
         function handleExportBackup() {
             const dataStr = JSON.stringify(state);
             const blob = new Blob([dataStr], { type: "application/json" });
@@ -280,15 +259,6 @@
             reader.readAsText(file);
         }
 
-        function toggleMenu(e, id) {
-            e.stopPropagation();
-            const menu = document.getElementById(`menu-${id}`);
-            document.querySelectorAll('[id^="menu-"]').forEach(el => {
-                if (el.id !== `menu-${id}`) el.classList.add('hidden');
-            });
-            if (menu) menu.classList.toggle('hidden');
-        }
-
         function executeImport() {
             if (state.pendingImport) {
                 state = { ...state, ...state.pendingImport, isLoggedIn: true };
@@ -299,7 +269,35 @@
             }
         }
 
-        // --- 5. Drag & Drop ---
+        // --- New Settings Logic ---
+        function toggleDarkMode() {
+            state.darkMode = !state.darkMode;
+            saveData(true); // Don't full render yet
+            if (state.darkMode) document.documentElement.classList.add('dark');
+            else document.documentElement.classList.remove('dark');
+            renderApp(); // Re-render UI
+        }
+
+        function handleUpdateUsername(e) {
+            e.preventDefault();
+            const newName = e.target.username.value.trim();
+            if (newName) {
+                state.currentUser = newName;
+                saveData();
+                showToast("Nome de usuário atualizado!", "success");
+            }
+        }
+
+        // --- 5. UI Helpers (Menu & Drag) ---
+        function toggleMenu(e, id) {
+            e.stopPropagation();
+            const menu = document.getElementById(`menu-${id}`);
+            document.querySelectorAll('[id^="menu-"]').forEach(el => {
+                if (el.id !== `menu-${id}`) el.classList.add('hidden');
+            });
+            if (menu) menu.classList.toggle('hidden');
+        }
+
         function enableDrag(e, idx) { document.getElementById(`card-${idx}`).setAttribute('draggable', 'true'); }
         function disableDrag(e, idx) { document.getElementById(`card-${idx}`).setAttribute('draggable', 'false'); }
         function handleDragStart(e, idx) { state.dragSourceIndex = idx; e.target.classList.add('dragging'); }
@@ -332,7 +330,7 @@
             if (!val) { list.classList.add('hidden'); return; }
             const matches = state.catalog.filter(item => item.toLowerCase().includes(val));
             if (matches.length === 0) { list.classList.add('hidden'); return; }
-            list.innerHTML = matches.map(item => `<li onclick="selectItem('${escapeHtml(item)}')" class="px-4 py-2.5 hover:bg-indigo-50 cursor-pointer text-sm text-slate-700 transition-colors flex items-center gap-2 border-b border-indigo-50 last:border-0"><i data-lucide="package" class="w-3.5 h-3.5 text-indigo-400"></i> ${escapeHtml(item)}</li>`).join('');
+            list.innerHTML = matches.map(item => `<li onclick="selectItem('${escapeHtml(item)}')" class="px-4 py-2.5 hover:bg-indigo-50 dark:hover:bg-slate-700 cursor-pointer text-sm text-slate-700 dark:text-slate-200 transition-colors flex items-center gap-2 border-b border-indigo-50 dark:border-slate-700 last:border-0"><i data-lucide="package" class="w-3.5 h-3.5 text-indigo-400"></i> ${escapeHtml(item)}</li>`).join('');
             list.classList.remove('hidden');
             if(typeof lucide !== 'undefined') lucide.createIcons();
         }
@@ -498,7 +496,6 @@
         }
 
         // --- 7. Handlers Adicionais ---
-        
         function handleChangeDestination(e) {
             e.preventDefault();
             const form = e.target;
@@ -562,50 +559,23 @@
             e.preventDefault();
             const idx = state.modal.data;
             const newName = e.target.newItemName.value.trim();
-            const oldName = state.catalog[idx]; // Captura o nome antigo antes de mudar
-            
-            if (!newName) {
-                showToast("O nome não pode estar vazio.", "error");
-                return;
-            }
-
+            const oldName = state.catalog[idx];
+            if (!newName) { showToast("O nome não pode estar vazio.", "error"); return; }
             const exists = state.catalog.some((item, i) => i !== idx && item.toLowerCase() === newName.toLowerCase());
-            if (exists) {
-                showToast("Este item já existe no catálogo.", "error");
-                return;
-            }
-
-            // 1. Atualiza no Catálogo
+            if (exists) { showToast("Este item já existe no catálogo.", "error"); return; }
             state.catalog[idx] = newName;
             state.catalog.sort((a, b) => a.localeCompare(b)); 
 
-            // 2. Atualiza em todas as Caixas (Correção Solicitada)
             let boxUpdates = 0;
             state.boxes.forEach(box => {
                 box.items.forEach(item => {
-                    if (item.name === oldName) {
-                        item.name = newName;
-                        boxUpdates++;
-                    }
+                    if (item.name === oldName) { item.name = newName; boxUpdates++; }
                 });
             });
-
-            // 3. Atualiza em Pendências de Falta (Opcional, mas recomendado para consistência)
             state.missingItems.forEach(missing => {
-                if (missing.itemName === oldName && missing.status === 'pending') {
-                    missing.itemName = newName;
-                }
+                if (missing.itemName === oldName && missing.status === 'pending') { missing.itemName = newName; }
             });
-
-            saveData();
-            closeModal();
-            
-            if (boxUpdates > 0) {
-                showToast(`Item atualizado no catálogo e em ${boxUpdates} itens nas caixas!`, "success");
-            } else {
-                showToast("Item do catálogo atualizado!", "success");
-            }
-            
+            saveData(); closeModal(); showToast(`Item atualizado em ${boxUpdates} caixas!`, "success");
             if (state.activeTab === 'catalog') { renderCatalogPanel(); }
         }
 
@@ -802,32 +772,32 @@
             
             if (type === 'add') {
                 content = `
-                    <h3 class="text-xl font-bold text-slate-800 mb-6">Adicionar Item</h3>
+                    <h3 class="text-xl font-bold text-slate-800 dark:text-white mb-6">Adicionar Item</h3>
                     <form onsubmit="handleAddItem(event)" class="space-y-5">
                         <div class="space-y-2">
-                            <label class="block text-sm font-semibold text-slate-600">Nome do Item</label>
+                            <label class="block text-sm font-semibold text-slate-600 dark:text-slate-400">Nome do Item</label>
                             <div class="relative group">
                                 <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                                    <i data-lucide="search" class="h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors"></i>
+                                    <i data-lucide="search" class="h-5 w-5 text-slate-400 dark:text-slate-500 group-focus-within:text-indigo-500 transition-colors"></i>
                                 </div>
-                                <input name="itemName" type="text" class="pl-11 block w-full rounded-xl border-slate-200 bg-slate-50 border focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-sm py-3 transition-all outline-none" placeholder="Buscar no catálogo..." autocomplete="off" oninput="handleInputSearch(this)" onfocus="handleInputSearch(this)" autofocus required>
-                                <ul id="suggestions-list" class="absolute z-50 w-full bg-white border border-slate-100 rounded-xl shadow-xl mt-1 max-h-48 overflow-y-auto hidden divide-y divide-slate-50 custom-scrollbar"></ul>
+                                <input name="itemName" type="text" class="pl-11 block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 border focus:bg-white dark:focus:bg-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 text-sm py-3 transition-all outline-none dark:text-white" placeholder="Buscar no catálogo..." autocomplete="off" oninput="handleInputSearch(this)" onfocus="handleInputSearch(this)" autofocus required>
+                                <ul id="suggestions-list" class="absolute z-50 w-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl shadow-xl mt-1 max-h-48 overflow-y-auto hidden divide-y divide-slate-50 dark:divide-slate-700 custom-scrollbar"></ul>
                             </div>
-                            <p class="text-[11px] text-slate-400 font-medium ml-1">Obrigatório selecionar um item do catálogo.</p>
+                            <p class="text-[11px] text-slate-400 dark:text-slate-500 font-medium ml-1">Obrigatório selecionar um item do catálogo.</p>
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-semibold text-slate-600 mb-2">Quantidade</label>
+                                <label class="block text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2">Quantidade</label>
                                 <div class="relative">
-                                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none"><i data-lucide="hash" class="h-4 w-4 text-slate-400"></i></div>
-                                    <input type="number" name="quantity" value="1" min="1" class="pl-10 block w-full rounded-xl border-slate-200 bg-slate-50 focus:bg-white border focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-sm py-3 outline-none">
+                                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none"><i data-lucide="hash" class="h-4 w-4 text-slate-400 dark:text-slate-500"></i></div>
+                                    <input type="number" name="quantity" value="1" min="1" class="pl-10 block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:bg-white dark:focus:bg-slate-800 border focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 text-sm py-3 outline-none dark:text-white">
                                 </div>
                             </div>
                             <div>
-                                <label class="block text-sm font-semibold text-slate-600 mb-2">Unidade</label>
+                                <label class="block text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2">Unidade</label>
                                 <div class="relative">
-                                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none"><i data-lucide="scale" class="h-4 w-4 text-slate-400"></i></div>
-                                    <select name="unitType" class="pl-10 block w-full rounded-xl border-slate-200 bg-slate-50 focus:bg-white border focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-sm py-3 outline-none appearance-none">
+                                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none"><i data-lucide="scale" class="h-4 w-4 text-slate-400 dark:text-slate-500"></i></div>
+                                    <select name="unitType" class="pl-10 block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:bg-white dark:focus:bg-slate-800 border focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 text-sm py-3 outline-none appearance-none dark:text-white">
                                         <option value="un">Unidade</option>
                                         <option value="fd">Fardo</option>
                                         <option value="cx">Caixa</option>
@@ -835,39 +805,38 @@
                                 </div>
                             </div>
                         </div>
-                        <label class="flex items-center gap-3 p-4 bg-slate-50 rounded-xl border border-slate-200 cursor-pointer hover:border-indigo-200 transition-colors">
-                            <input type="checkbox" name="isExternal" class="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500 border-slate-300">
-                            <span class="text-sm font-medium text-slate-700">Item fora da caixa (Externo)</span>
+                        <label class="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors">
+                            <input type="checkbox" name="isExternal" class="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500 border-slate-300 dark:border-slate-600 dark:bg-slate-800">
+                            <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Item fora da caixa (Externo)</span>
                         </label>
-                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-indigo-200 transition-all active:scale-95 flex items-center justify-center gap-2">
+                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-indigo-200 dark:shadow-none transition-all active:scale-95 flex items-center justify-center gap-2">
                             <i data-lucide="plus-circle" class="w-5 h-5"></i> Adicionar Item
                         </button>
                     </form>`;
             } else if (type === 'editItem') {
                 const itemToEdit = box.items[data];
-                content = `<h3 class="text-xl font-bold text-slate-800 mb-6">Editar Item</h3><form onsubmit="handleUpdateItem(event)" class="space-y-5"><div class="space-y-2"><label class="block text-sm font-semibold text-slate-600">Nome do Item</label><div class="relative"><div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none"><i data-lucide="pencil" class="h-5 w-5 text-slate-400"></i></div><input name="itemName" type="text" value="${escapeHtml(itemToEdit.name)}" class="pl-11 block w-full rounded-xl border-slate-200 bg-slate-50 focus:bg-white border focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-sm py-3 outline-none" required></div></div><div class="grid grid-cols-2 gap-4"><div><label class="block text-sm font-semibold text-slate-600 mb-2">Quantidade</label><input type="number" name="quantity" value="${itemToEdit.quantity}" min="1" class="block w-full rounded-xl border-slate-200 bg-slate-50 focus:bg-white border focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-sm py-3 px-4 outline-none"></div><div><label class="block text-sm font-semibold text-slate-600 mb-2">Unidade</label><select name="unitType" class="block w-full rounded-xl border-slate-200 bg-slate-50 focus:bg-white border focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-sm py-3 px-4 outline-none"><option value="un" ${itemToEdit.unitType==='un'?'selected':''}>Unidade</option><option value="fd" ${itemToEdit.unitType==='fd'?'selected':''}>Fardo</option><option value="cx" ${itemToEdit.unitType==='cx'?'selected':''}>Caixa</option></select></div></div><label class="flex items-center gap-3 p-4 bg-slate-50 rounded-xl border border-slate-200 cursor-pointer"><input type="checkbox" name="isExternal" ${itemToEdit.isExternal?'checked':''} class="w-5 h-5 text-indigo-600 rounded border-slate-300"><span class="text-sm font-medium text-slate-700">Item Externo</span></label><button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-indigo-200 active:scale-95 flex justify-center gap-2"><i data-lucide="save" class="w-5 h-5"></i> Salvar</button></form>`;
+                content = `<h3 class="text-xl font-bold text-slate-800 dark:text-white mb-6">Editar Item</h3><form onsubmit="handleUpdateItem(event)" class="space-y-5"><div class="space-y-2"><label class="block text-sm font-semibold text-slate-600 dark:text-slate-400">Nome do Item</label><div class="relative"><div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none"><i data-lucide="pencil" class="h-5 w-5 text-slate-400 dark:text-slate-500"></i></div><input name="itemName" type="text" value="${escapeHtml(itemToEdit.name)}" class="pl-11 block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:bg-white dark:focus:bg-slate-800 border focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 text-sm py-3 outline-none dark:text-white" required></div></div><div class="grid grid-cols-2 gap-4"><div><label class="block text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2">Quantidade</label><input type="number" name="quantity" value="${itemToEdit.quantity}" min="1" class="block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:bg-white dark:focus:bg-slate-800 border focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 text-sm py-3 px-4 outline-none dark:text-white"></div><div><label class="block text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2">Unidade</label><select name="unitType" class="block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:bg-white dark:focus:bg-slate-800 border focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 text-sm py-3 px-4 outline-none dark:text-white"><option value="un" ${itemToEdit.unitType==='un'?'selected':''}>Unidade</option><option value="fd" ${itemToEdit.unitType==='fd'?'selected':''}>Fardo</option><option value="cx" ${itemToEdit.unitType==='cx'?'selected':''}>Caixa</option></select></div></div><label class="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer"><input type="checkbox" name="isExternal" ${itemToEdit.isExternal?'checked':''} class="w-5 h-5 text-indigo-600 rounded border-slate-300 dark:border-slate-600 dark:bg-slate-800"><span class="text-sm font-medium text-slate-700 dark:text-slate-300">Item Externo</span></label><button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-indigo-200 dark:shadow-none active:scale-95 flex justify-center gap-2"><i data-lucide="save" class="w-5 h-5"></i> Salvar</button></form>`;
             } else if (type === 'deliver') {
-                content = `<h3 class="text-xl font-bold text-slate-800 mb-6">Registrar Saída</h3><p class="text-sm text-slate-500 mb-4 -mt-4">Caixa: <strong>${box.name}</strong></p><form onsubmit="handleDelivery(event)" class="space-y-5"><div id="dest-input-group"><label class="block text-sm font-semibold text-slate-600 mb-2">Destino</label><select name="destination" class="w-full rounded-xl border-slate-200 bg-slate-50 focus:bg-white border focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-sm py-3 px-4 outline-none mb-3" onchange="document.getElementById('customDestGroup').classList.toggle('hidden', this.value !== '')"><option value="" disabled selected>Selecione...</option>${state.destinations.map(d => `<option value="${d.name}">${d.name}</option>`).join('')}<option value="">Outro (Digitar)</option></select><div id="customDestGroup" class="hidden space-y-3 p-4 bg-yellow-50 rounded-xl border border-yellow-100"><input name="customName" placeholder="Nome do local" class="w-full rounded-lg border-yellow-200 text-sm py-2 px-3 outline-none"><input name="customStreet" placeholder="Rua" class="w-full rounded-lg border-yellow-200 text-sm py-2 px-3 outline-none"><div class="flex gap-2"><input name="customNumber" placeholder="Nº" class="w-1/3 rounded-lg border-yellow-200 text-sm py-2 px-3 outline-none"><input name="customNeighborhood" placeholder="Bairro" class="w-2/3 rounded-lg border-yellow-200 text-sm py-2 px-3 outline-none"></div></div></div><div><label class="block text-sm font-semibold text-slate-600 mb-2">Motorista</label><select name="driver" class="w-full rounded-xl border-slate-200 bg-slate-50 focus:bg-white border focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-sm py-3 px-4 outline-none" required><option value="">Selecione...</option>${state.drivers.map(d => `<option value="${d.name}">${d.name}</option>`).join('')}</select></div><button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-emerald-200 active:scale-95">Confirmar Saída</button></form>`;
+                content = `<h3 class="text-xl font-bold text-slate-800 dark:text-white mb-6">Registrar Saída</h3><p class="text-sm text-slate-500 dark:text-slate-400 mb-4 -mt-4">Caixa: <strong>${box.name}</strong></p><form onsubmit="handleDelivery(event)" class="space-y-5"><div id="dest-input-group"><label class="block text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2">Destino</label><select name="destination" class="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:bg-white dark:focus:bg-slate-800 border focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 text-sm py-3 px-4 outline-none mb-3 dark:text-white" onchange="document.getElementById('customDestGroup').classList.toggle('hidden', this.value !== '')"><option value="" disabled selected>Selecione...</option>${state.destinations.map(d => `<option value="${d.name}">${d.name}</option>`).join('')}<option value="">Outro (Digitar)</option></select><div id="customDestGroup" class="hidden space-y-3 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl border border-yellow-100 dark:border-yellow-800"><input name="customName" placeholder="Nome do local" class="w-full rounded-lg border-yellow-200 dark:border-yellow-700 dark:bg-slate-800 dark:text-white text-sm py-2 px-3 outline-none"><input name="customStreet" placeholder="Rua" class="w-full rounded-lg border-yellow-200 dark:border-yellow-700 dark:bg-slate-800 dark:text-white text-sm py-2 px-3 outline-none"><div class="flex gap-2"><input name="customNumber" placeholder="Nº" class="w-1/3 rounded-lg border-yellow-200 dark:border-yellow-700 dark:bg-slate-800 dark:text-white text-sm py-2 px-3 outline-none"><input name="customNeighborhood" placeholder="Bairro" class="w-2/3 rounded-lg border-yellow-200 dark:border-yellow-700 dark:bg-slate-800 dark:text-white text-sm py-2 px-3 outline-none"></div></div></div><div><label class="block text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2">Motorista</label><select name="driver" class="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:bg-white dark:focus:bg-slate-800 border focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 text-sm py-3 px-4 outline-none dark:text-white" required><option value="">Selecione...</option>${state.drivers.map(d => `<option value="${d.name}">${d.name}</option>`).join('')}</select></div><button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-emerald-200 dark:shadow-none active:scale-95">Confirmar Saída</button></form>`;
             } else if (type === 'complete') {
-                content = `<div class="text-center"><div class="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4 text-emerald-600"><i data-lucide="check" class="w-8 h-8"></i></div><h3 class="text-xl font-bold text-slate-800 mb-2">Confirmar Recebimento</h3><p class="text-slate-500 text-sm mb-6">Deseja marcar <strong>${box.name}</strong> como entregue/devolvida?</p><div class="flex gap-3"><button onclick="closeModal()" class="flex-1 py-3 border border-slate-200 rounded-xl font-semibold text-slate-600 hover:bg-slate-50">Cancelar</button><button onclick="handleCompleteDelivery()" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-lg shadow-emerald-200">Confirmar</button></div></div>`;
+                content = `<div class="text-center"><div class="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-4 text-emerald-600 dark:text-emerald-400"><i data-lucide="check" class="w-8 h-8"></i></div><h3 class="text-xl font-bold text-slate-800 dark:text-white mb-2">Confirmar Recebimento</h3><p class="text-slate-500 dark:text-slate-400 text-sm mb-6">Deseja marcar <strong>${box.name}</strong> como entregue/devolvida?</p><div class="flex gap-3"><button onclick="closeModal()" class="flex-1 py-3 border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">Cancelar</button><button onclick="handleCompleteDelivery()" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-lg shadow-emerald-200 dark:shadow-none">Confirmar</button></div></div>`;
             } else if (type === 'separate') {
-                // Alterado de Violet para Blue
-                content = `<div class="text-center"><div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600"><i data-lucide="package-check" class="w-8 h-8"></i></div><h3 class="text-xl font-bold text-slate-800 mb-2">Marcar como Separado</h3><p class="text-slate-500 text-sm mb-6">Confirmar que os itens da <strong>${box.name}</strong> foram separados?</p><div class="flex gap-3"><button onclick="closeModal()" class="flex-1 py-3 border border-slate-200 rounded-xl font-semibold text-slate-600 hover:bg-slate-50">Cancelar</button><button onclick="handleSeparateBox()" class="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-200">Confirmar</button></div></div>`;
+                content = `<div class="text-center"><div class="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600 dark:text-blue-400"><i data-lucide="package-check" class="w-8 h-8"></i></div><h3 class="text-xl font-bold text-slate-800 dark:text-white mb-2">Marcar como Separado</h3><p class="text-slate-500 dark:text-slate-400 text-sm mb-6">Confirmar que os itens da <strong>${box.name}</strong> foram separados?</p><div class="flex gap-3"><button onclick="closeModal()" class="flex-1 py-3 border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">Cancelar</button><button onclick="handleSeparateBox()" class="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-200 dark:shadow-none">Confirmar</button></div></div>`;
             } else if (type === 'reset') {
-                content = `<div class="text-center"><div class="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4 text-indigo-600"><i data-lucide="refresh-ccw" class="w-8 h-8"></i></div><h3 class="text-xl font-bold text-slate-800 mb-2">Esvaziar Caixa</h3><p class="text-slate-500 text-sm mb-6">Isso removerá todos os itens e tornará a <strong>${box.name}</strong> disponível novamente.</p><div class="flex gap-3"><button onclick="closeModal()" class="flex-1 py-3 border border-slate-200 rounded-xl font-semibold text-slate-600 hover:bg-slate-50">Cancelar</button><button onclick="handleResetBox()" class="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-200">Esvaziar</button></div></div>`;
+                content = `<div class="text-center"><div class="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mx-auto mb-4 text-indigo-600 dark:text-indigo-400"><i data-lucide="refresh-ccw" class="w-8 h-8"></i></div><h3 class="text-xl font-bold text-slate-800 dark:text-white mb-2">Esvaziar Caixa</h3><p class="text-slate-500 dark:text-slate-400 text-sm mb-6">Isso removerá todos os itens e tornará a <strong>${box.name}</strong> disponível novamente.</p><div class="flex gap-3"><button onclick="closeModal()" class="flex-1 py-3 border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">Cancelar</button><button onclick="handleResetBox()" class="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 dark:shadow-none">Esvaziar</button></div></div>`;
             } else if (type === 'missing') {
                 content = `
                     <div class="flex flex-col items-center mb-6">
-                        <div class="w-14 h-14 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mb-3 ring-4 ring-rose-50/50">
+                        <div class="w-14 h-14 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-full flex items-center justify-center mb-3 ring-4 ring-rose-50/50 dark:ring-rose-900/20">
                             <i data-lucide="alert-triangle" class="w-7 h-7"></i>
                         </div>
-                        <h3 class="text-xl font-bold text-slate-800">Reportar Falta</h3>
-                        <p class="text-sm text-slate-500">Caixa: <strong class="text-slate-700">${box.name}</strong></p>
+                        <h3 class="text-xl font-bold text-slate-800 dark:text-white">Reportar Falta</h3>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Caixa: <strong class="text-slate-700 dark:text-slate-300">${box.name}</strong></p>
                     </div>
 
                     <form onsubmit="handleReportMissing(event)" class="space-y-5">
                         <div class="space-y-1.5 relative">
-                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Item do Catálogo</label>
+                            <label class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider ml-1">Item do Catálogo</label>
                             <div class="relative group">
                                 <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-rose-500 transition-colors">
                                     <i data-lucide="search" class="w-5 h-5"></i>
@@ -876,67 +845,65 @@
                                     name="itemName" 
                                     type="text" 
                                     placeholder="Digite para buscar..." 
-                                    class="w-full pl-11 pr-4 py-3.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 outline-none transition-all text-sm font-medium text-slate-700"
+                                    class="w-full pl-11 pr-4 py-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:bg-white dark:focus:bg-slate-800 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 outline-none transition-all text-sm font-medium text-slate-700 dark:text-white"
                                     autocomplete="off" 
                                     oninput="handleInputSearch(this)" 
                                     onfocus="handleInputSearch(this)" 
                                     required
                                 >
-                                <!-- Lista de Sugestões (Dropdown) -->
-                                <ul id="suggestions-list" class="absolute left-0 right-0 top-full mt-1.5 bg-white border border-slate-100 rounded-xl shadow-xl max-h-56 overflow-y-auto hidden z-50 divide-y divide-slate-50"></ul>
+                                <ul id="suggestions-list" class="absolute left-0 right-0 top-full mt-1.5 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl shadow-xl max-h-56 overflow-y-auto hidden z-50 divide-y divide-slate-50 dark:divide-slate-700 custom-scrollbar"></ul>
                             </div>
-                            <p class="text-[11px] text-slate-400 ml-1">Selecione um item existente na lista.</p>
+                            <p class="text-[11px] text-slate-400 dark:text-slate-500 ml-1">Selecione um item existente na lista.</p>
                         </div>
 
                         <div class="grid grid-cols-12 gap-3">
                             <div class="col-span-4 space-y-1.5">
-                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Qtd.</label>
-                                <input name="quantity" type="number" min="1" placeholder="0" required class="w-full px-3 py-3.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-rose-500 focus:ring-2 focus:ring-rose-500/10 outline-none text-center font-bold text-slate-700">
+                                <label class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider ml-1">Qtd.</label>
+                                <input name="quantity" type="number" min="1" placeholder="0" required class="w-full px-3 py-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:bg-white dark:focus:bg-slate-800 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/10 outline-none text-center font-bold text-slate-700 dark:text-white">
                             </div>
                             <div class="col-span-8 space-y-1.5">
-                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Motivo</label>
-                                <input name="reason" type="text" placeholder="Ex: Avaria, não veio..." class="w-full px-4 py-3.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-rose-500 focus:ring-2 focus:ring-rose-500/10 outline-none text-sm font-medium">
+                                <label class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider ml-1">Motivo</label>
+                                <input name="reason" type="text" placeholder="Ex: Avaria, não veio..." class="w-full px-4 py-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:bg-white dark:focus:bg-slate-800 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/10 outline-none text-sm font-medium dark:text-white">
                             </div>
                         </div>
 
-                        <button type="submit" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-rose-200 active:scale-95 transition-all flex items-center justify-center gap-2 mt-2">
+                        <button type="submit" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-rose-200 dark:shadow-none active:scale-95 transition-all flex items-center justify-center gap-2 mt-2">
                             <i data-lucide="alert-octagon" class="w-5 h-5"></i> Registrar Pendência
                         </button>
                     </form>
                 `;
             }
 
-            // Fallback for simple forms
             if (!content) {
-                if (type === 'addBox') content = `<h3 class="text-xl font-bold text-slate-800 mb-4">Nova Caixa</h3><form onsubmit="handleAddBox(event)"><input name="boxName" placeholder="Nome da Caixa" class="w-full rounded-xl border-slate-200 bg-slate-50 p-3 mb-4 outline-none focus:ring-2 focus:ring-indigo-100"><button class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">Criar</button></form>`;
-                else if (type === 'editBox') content = `<h3 class="text-xl font-bold text-slate-800 mb-4">Renomear Caixa</h3><form onsubmit="handleEditBox(event)"><input name="boxName" value="${box.name}" class="w-full rounded-xl border-slate-200 bg-slate-50 p-3 mb-4 outline-none focus:ring-2 focus:ring-indigo-100"><button class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">Salvar</button></form>`;
-                else if (type === 'deleteBox') content = `<div class="text-center"><h3 class="text-xl font-bold text-slate-800 mb-2">Excluir Caixa</h3><p class="text-slate-500 mb-6">Tem certeza? Isso apagará o histórico local desta caixa.</p><div class="flex gap-3"><button onclick="closeModal()" class="flex-1 py-3 border border-slate-200 rounded-xl font-semibold text-slate-600 hover:bg-slate-50">Cancelar</button><button onclick="confirmDeleteBox()" class="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold shadow-lg shadow-red-200 hover:bg-red-700">Excluir</button></div></div>`;
-                else if (type === 'deleteItem') content = `<div class="text-center"><h3 class="text-xl font-bold text-slate-800 mb-2">Remover Item</h3><div class="flex gap-3 mt-6"><button onclick="closeModal()" class="flex-1 py-3 border border-slate-200 rounded-xl font-semibold text-slate-600 hover:bg-slate-50">Cancelar</button><button onclick="confirmDeleteItem()" class="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold shadow-lg shadow-red-200 hover:bg-red-700">Remover</button></div></div>`;
-                else if (type === 'editCatalogItem') content = `<h3 class="font-bold mb-4 text-xl">Editar Item do Catálogo</h3><form onsubmit="handleEditCatalogItem(event)" class="space-y-3"><input name="newItemName" value="${escapeHtml(state.catalog[data])}" class="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" required><button class="w-full bg-indigo-600 text-white p-3 rounded-xl mt-2 hover:bg-indigo-700 font-bold">Salvar</button></form>`;
-                else if (type === 'deleteCatalogItem') content = `<div class="text-center"><h3 class="font-bold text-red-600 text-xl mb-2">Excluir do Catálogo</h3><p class="mb-6 text-slate-500">${state.catalog[data]}</p><div class="flex gap-3"><button onclick="closeModal()" class="flex-1 border p-3 rounded-xl font-bold">Cancelar</button><button onclick="confirmDeleteCatalogItem()" class="flex-1 bg-red-600 text-white p-3 rounded-xl font-bold shadow-lg shadow-red-200 hover:bg-red-700">Confirmar</button></div></div>`;
-                else if (type === 'editLocation') content = `<h3 class="font-bold mb-4 text-xl">Editar Local</h3><form onsubmit="handleEditDestination(event)" class="space-y-3"><input name="editName" value="${state.destinations[data].name}" class="w-full border p-3 rounded-xl"><input name="editStreet" value="${state.destinations[data].street||''}" placeholder="Rua" class="w-full border p-3 rounded-xl"><div class="flex gap-2"><input name="editNumber" value="${state.destinations[data].number||''}" placeholder="Nº" class="w-1/3 border p-3 rounded-xl"><input name="editNeighborhood" value="${state.destinations[data].neighborhood||''}" placeholder="Bairro" class="w-2/3 border p-3 rounded-xl"></div><button class="w-full bg-indigo-600 text-white p-3 rounded-xl mt-2 font-bold">Salvar</button></form>`;
-                else if (type === 'deleteLocation') content = `<div class="text-center"><h3 class="font-bold text-red-600 text-xl mb-2">Excluir Local</h3><p class="mb-6 text-slate-500">${state.destinations[data].name}</p><div class="flex gap-3"><button onclick="closeModal()" class="flex-1 border p-3 rounded-xl font-bold">Cancelar</button><button onclick="confirmDeleteLocation()" class="flex-1 bg-red-600 text-white p-3 rounded-xl font-bold shadow-lg shadow-red-200 hover:bg-red-700">Confirmar</button></div></div>`;
-                else if (type === 'editDriver') content = `<h3 class="font-bold mb-4 text-xl">Editar Motorista</h3><form onsubmit="handleEditDriver(event)" class="space-y-3"><input name="editDriverName" value="${state.drivers[data].name}" class="w-full border p-3 rounded-xl"><input name="editDriverPhone" value="${state.drivers[data].phone||''}" placeholder="Telefone" class="w-full border p-3 rounded-xl"><button class="w-full bg-indigo-600 text-white p-3 rounded-xl mt-2 font-bold">Salvar</button></form>`;
-                else if (type === 'deleteDriver') content = `<div class="text-center"><h3 class="font-bold text-red-600 text-xl mb-2">Excluir Motorista</h3><p class="mb-6 text-slate-500">${state.drivers[data].name}</p><div class="flex gap-3"><button onclick="closeModal()" class="flex-1 border p-3 rounded-xl font-bold">Cancelar</button><button onclick="confirmDeleteDriver()" class="flex-1 bg-red-600 text-white p-3 rounded-xl font-bold shadow-lg shadow-red-200 hover:bg-red-700">Confirmar</button></div></div>`;
-                else if (type === 'changeDestination') content = `<h3 class="font-bold mb-4 text-xl">Alterar Destino</h3><form onsubmit="handleChangeDestination(event)"><div id="dest-input-group"><select name="destination" class="w-full border p-3 rounded-xl mb-3" onchange="document.getElementById('customDestGroup2').classList.toggle('hidden', this.value !== '')"><option value="" disabled selected>Selecione...</option>${state.destinations.map(d => `<option value="${d.name}">${d.name}</option>`).join('')}<option value="">Outro (Digitar)</option></select><div id="customDestGroup2" class="hidden space-y-3 mb-3"><input name="customName" placeholder="Nome do local" class="w-full border p-3 rounded-xl bg-yellow-50"><input name="customStreet" placeholder="Rua" class="w-full border p-3 rounded-xl text-sm"><div class="flex gap-2"><input name="customNumber" placeholder="Nº" class="w-1/3 border p-3 rounded-xl text-sm"><input name="customNeighborhood" placeholder="Bairro" class="w-2/3 border p-3 rounded-xl text-sm"></div></div></div><button class="w-full bg-indigo-600 text-white p-3 rounded-xl mt-2 font-bold">Salvar</button></form>`;
-                else if (type === 'changeDriver') content = `<h3 class="font-bold mb-4 text-xl">Alterar Motorista</h3><form onsubmit="handleChangeDriver(event)"><select name="newDriver" class="w-full border p-3 rounded-xl mb-4"><option value="">Sem motorista</option>${state.drivers.map(d => `<option value="${d.name}">${d.name}</option>`).join('')}</select><button class="w-full bg-indigo-600 text-white p-3 rounded-xl font-bold">Salvar</button></form>`;
+                if (type === 'addBox') content = `<h3 class="text-xl font-bold text-slate-800 dark:text-white mb-4">Nova Caixa</h3><form onsubmit="handleAddBox(event)"><input name="boxName" placeholder="Nome da Caixa" class="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-3 mb-4 outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 dark:text-white"><button class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">Criar</button></form>`;
+                else if (type === 'editBox') content = `<h3 class="text-xl font-bold text-slate-800 dark:text-white mb-4">Renomear Caixa</h3><form onsubmit="handleEditBox(event)"><input name="boxName" value="${box.name}" class="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-3 mb-4 outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 dark:text-white"><button class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">Salvar</button></form>`;
+                else if (type === 'deleteBox') content = `<div class="text-center"><h3 class="text-xl font-bold text-slate-800 dark:text-white mb-2">Excluir Caixa</h3><p class="text-slate-500 dark:text-slate-400 mb-6">Tem certeza? Isso apagará o histórico local desta caixa.</p><div class="flex gap-3"><button onclick="closeModal()" class="flex-1 py-3 border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">Cancelar</button><button onclick="confirmDeleteBox()" class="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold shadow-lg shadow-red-200 dark:shadow-none hover:bg-red-700">Excluir</button></div></div>`;
+                else if (type === 'deleteItem') content = `<div class="text-center"><h3 class="text-xl font-bold text-slate-800 dark:text-white mb-2">Remover Item</h3><div class="flex gap-3 mt-6"><button onclick="closeModal()" class="flex-1 py-3 border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">Cancelar</button><button onclick="confirmDeleteItem()" class="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold shadow-lg shadow-red-200 dark:shadow-none hover:bg-red-700">Remover</button></div></div>`;
+                else if (type === 'editCatalogItem') content = `<h3 class="font-bold mb-4 text-xl text-slate-800 dark:text-white">Editar Item do Catálogo</h3><form onsubmit="handleEditCatalogItem(event)" class="space-y-3"><input name="newItemName" value="${escapeHtml(state.catalog[data])}" class="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white" required><button class="w-full bg-indigo-600 text-white p-3 rounded-xl mt-2 hover:bg-indigo-700 font-bold">Salvar</button></form>`;
+                else if (type === 'deleteCatalogItem') content = `<div class="text-center"><h3 class="font-bold text-red-600 text-xl mb-2">Excluir do Catálogo</h3><p class="mb-6 text-slate-500 dark:text-slate-400">${state.catalog[data]}</p><div class="flex gap-3"><button onclick="closeModal()" class="flex-1 border p-3 rounded-xl font-bold text-slate-600 dark:text-slate-300 dark:border-slate-700">Cancelar</button><button onclick="confirmDeleteCatalogItem()" class="flex-1 bg-red-600 text-white p-3 rounded-xl font-bold shadow-lg shadow-red-200 dark:shadow-none hover:bg-red-700">Confirmar</button></div></div>`;
+                else if (type === 'editLocation') content = `<h3 class="font-bold mb-4 text-xl text-slate-800 dark:text-white">Editar Local</h3><form onsubmit="handleEditDestination(event)" class="space-y-3"><input name="editName" value="${state.destinations[data].name}" class="w-full border p-3 rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white"><input name="editStreet" value="${state.destinations[data].street||''}" placeholder="Rua" class="w-full border p-3 rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white"><div class="flex gap-2"><input name="editNumber" value="${state.destinations[data].number||''}" placeholder="Nº" class="w-1/3 border p-3 rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white"><input name="editNeighborhood" value="${state.destinations[data].neighborhood||''}" placeholder="Bairro" class="w-2/3 border p-3 rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white"></div><button class="w-full bg-indigo-600 text-white p-3 rounded-xl mt-2 font-bold">Salvar</button></form>`;
+                else if (type === 'deleteLocation') content = `<div class="text-center"><h3 class="font-bold text-red-600 text-xl mb-2">Excluir Local</h3><p class="mb-6 text-slate-500 dark:text-slate-400">${state.destinations[data].name}</p><div class="flex gap-3"><button onclick="closeModal()" class="flex-1 border p-3 rounded-xl font-bold text-slate-600 dark:text-slate-300 dark:border-slate-700">Cancelar</button><button onclick="confirmDeleteLocation()" class="flex-1 bg-red-600 text-white p-3 rounded-xl font-bold shadow-lg shadow-red-200 dark:shadow-none hover:bg-red-700">Confirmar</button></div></div>`;
+                else if (type === 'editDriver') content = `<h3 class="font-bold mb-4 text-xl text-slate-800 dark:text-white">Editar Motorista</h3><form onsubmit="handleEditDriver(event)" class="space-y-3"><input name="editDriverName" value="${state.drivers[data].name}" class="w-full border p-3 rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white"><input name="editDriverPhone" value="${state.drivers[data].phone||''}" placeholder="Telefone" class="w-full border p-3 rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white"><button class="w-full bg-indigo-600 text-white p-3 rounded-xl mt-2 font-bold">Salvar</button></form>`;
+                else if (type === 'deleteDriver') content = `<div class="text-center"><h3 class="font-bold text-red-600 text-xl mb-2">Excluir Motorista</h3><p class="mb-6 text-slate-500 dark:text-slate-400">${state.drivers[data].name}</p><div class="flex gap-3"><button onclick="closeModal()" class="flex-1 border p-3 rounded-xl font-bold text-slate-600 dark:text-slate-300 dark:border-slate-700">Cancelar</button><button onclick="confirmDeleteDriver()" class="flex-1 bg-red-600 text-white p-3 rounded-xl font-bold shadow-lg shadow-red-200 dark:shadow-none hover:bg-red-700">Confirmar</button></div></div>`;
+                else if (type === 'changeDestination') content = `<h3 class="font-bold mb-4 text-xl text-slate-800 dark:text-white">Alterar Destino</h3><form onsubmit="handleChangeDestination(event)"><div id="dest-input-group"><select name="destination" class="w-full border p-3 rounded-xl mb-3 dark:bg-slate-900 dark:border-slate-700 dark:text-white" onchange="document.getElementById('customDestGroup2').classList.toggle('hidden', this.value !== '')"><option value="" disabled selected>Selecione...</option>${state.destinations.map(d => `<option value="${d.name}">${d.name}</option>`).join('')}<option value="">Outro (Digitar)</option></select><div id="customDestGroup2" class="hidden space-y-3 mb-3"><input name="customName" placeholder="Nome do local" class="w-full border p-3 rounded-xl bg-yellow-50 dark:bg-yellow-900/20 dark:border-yellow-700 dark:text-white"><input name="customStreet" placeholder="Rua" class="w-full border p-3 rounded-xl text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white"><div class="flex gap-2"><input name="customNumber" placeholder="Nº" class="w-1/3 border p-3 rounded-xl text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white"><input name="customNeighborhood" placeholder="Bairro" class="w-2/3 border p-3 rounded-xl text-sm dark:bg-slate-900 dark:border-slate-700 dark:text-white"></div></div></div><button class="w-full bg-indigo-600 text-white p-3 rounded-xl mt-2 font-bold">Salvar</button></form>`;
+                else if (type === 'changeDriver') content = `<h3 class="font-bold mb-4 text-xl text-slate-800 dark:text-white">Alterar Motorista</h3><form onsubmit="handleChangeDriver(event)"><select name="newDriver" class="w-full border p-3 rounded-xl mb-4 dark:bg-slate-900 dark:border-slate-700 dark:text-white"><option value="">Sem motorista</option>${state.drivers.map(d => `<option value="${d.name}">${d.name}</option>`).join('')}</select><button class="w-full bg-indigo-600 text-white p-3 rounded-xl font-bold">Salvar</button></form>`;
                 else if (type === 'editMissing') {
                     const mItem = state.missingItems[data];
-                    content = `<h3 class="font-bold mb-4 text-xl">Editar Falta</h3><form onsubmit="handleEditMissing(event)" class="space-y-3"><input name="editItemName" value="${mItem.itemName}" class="w-full border p-3 rounded-xl"><input name="editQuantity" type="number" value="${mItem.quantity}" class="w-full border p-3 rounded-xl"><textarea name="editReason" class="w-full border p-3 rounded-xl">${mItem.reason}</textarea><button class="w-full bg-indigo-600 text-white p-3 rounded-xl font-bold">Salvar</button></form>`;
+                    content = `<h3 class="font-bold mb-4 text-xl text-slate-800 dark:text-white">Editar Falta</h3><form onsubmit="handleEditMissing(event)" class="space-y-3"><input name="editItemName" value="${mItem.itemName}" class="w-full border p-3 rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white"><input name="editQuantity" type="number" value="${mItem.quantity}" class="w-full border p-3 rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white"><textarea name="editReason" class="w-full border p-3 rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white">${mItem.reason}</textarea><button class="w-full bg-indigo-600 text-white p-3 rounded-xl font-bold">Salvar</button></form>`;
                 }
                 else if (type === 'deleteMissing') {
                     const mItem = state.missingItems[data];
-                    content = `<div class="text-center"><h3 class="font-bold text-red-600 text-xl mb-2">Excluir Registro</h3><p class="mb-6 text-slate-500">${mItem.itemName}</p><div class="flex gap-3"><button onclick="closeModal()" class="flex-1 border p-3 rounded-xl font-bold">Cancelar</button><button onclick="confirmDeleteMissing()" class="flex-1 bg-red-600 text-white p-3 rounded-xl font-bold shadow-lg shadow-red-200 hover:bg-red-700">Confirmar</button></div></div>`;
+                    content = `<div class="text-center"><h3 class="font-bold text-red-600 text-xl mb-2">Excluir Registro</h3><p class="mb-6 text-slate-500 dark:text-slate-400">${mItem.itemName}</p><div class="flex gap-3"><button onclick="closeModal()" class="flex-1 border p-3 rounded-xl font-bold text-slate-600 dark:text-slate-300 dark:border-slate-700">Cancelar</button><button onclick="confirmDeleteMissing()" class="flex-1 bg-red-600 text-white p-3 rounded-xl font-bold shadow-lg shadow-red-200 dark:shadow-none hover:bg-red-700">Confirmar</button></div></div>`;
                 }
-                else if (type === 'confirmImport') content = `<h3 class="font-bold text-xl mb-2 text-orange-600">Restaurar Backup?</h3><p class="text-sm text-slate-600 mb-6">Isso substituirá todos os dados atuais. Tem certeza?</p><div class="flex gap-3"><button onclick="executeImport()" class="flex-1 bg-orange-600 text-white p-3 rounded-xl font-bold">Sim, Restaurar</button><button onclick="closeModal()" class="flex-1 border p-3 rounded-xl font-bold">Cancelar</button></div>`;
+                else if (type === 'confirmImport') content = `<h3 class="font-bold text-xl mb-2 text-orange-600">Restaurar Backup?</h3><p class="text-sm text-slate-600 dark:text-slate-400 mb-6">Isso substituirá todos os dados atuais. Tem certeza?</p><div class="flex gap-3"><button onclick="executeImport()" class="flex-1 bg-orange-600 text-white p-3 rounded-xl font-bold">Sim, Restaurar</button><button onclick="closeModal()" class="flex-1 border p-3 rounded-xl font-bold text-slate-600 dark:text-slate-300 dark:border-slate-700">Cancelar</button></div>`;
                 
-                if (!content) content = `<h3 class="font-bold text-lg mb-4">Ação Requerida</h3><button onclick="closeModal()" class="bg-indigo-500 text-white px-4 py-2 rounded">Fechar</button>`;
+                if (!content) content = `<h3 class="font-bold text-lg mb-4 dark:text-white">Ação Requerida</h3><button onclick="closeModal()" class="bg-indigo-500 text-white px-4 py-2 rounded">Fechar</button>`;
             }
 
             container.innerHTML = `
                 <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
                     <div class="glass-panel bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md animate-zoom-in relative ring-1 ring-white/50">
-                        <button onclick="closeModal()" class="absolute top-4 right-4 p-1 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+                        <button onclick="closeModal()" class="absolute top-4 right-4 p-1 rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-white transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
                         ${content}
                     </div>
                 </div>`;
@@ -954,34 +921,33 @@
             <div class="space-y-8 pb-20">
                 <!-- Stats Row -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div class="bg-white p-5 rounded-2xl shadow-card border border-slate-200 flex flex-col justify-center relative overflow-hidden group">
-                        <div class="absolute right-0 top-0 w-24 h-full bg-gradient-to-l from-slate-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                        <span class="text-3xl font-bold text-slate-800 tracking-tight">${state.boxes.length}</span>
-                        <span class="text-[11px] text-slate-400 font-bold uppercase tracking-wider mt-1">Total de Caixas</span>
-                        <div class="w-8 h-1 bg-slate-800 rounded-full mt-3"></div>
+                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 flex flex-col justify-center relative overflow-hidden group">
+                        <div class="absolute right-0 top-0 w-24 h-full bg-gradient-to-l from-slate-50 dark:from-slate-700 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <span class="text-3xl font-bold text-slate-800 dark:text-white tracking-tight">${state.boxes.length}</span>
+                        <span class="text-[11px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mt-1">Total de Caixas</span>
+                        <div class="w-8 h-1 bg-slate-800 dark:bg-slate-600 rounded-full mt-3"></div>
                     </div>
-                    <div class="bg-white p-5 rounded-2xl shadow-card border border-slate-200 flex flex-col justify-center">
-                        <!-- Alterado para Emerald (Verde) -->
-                        <span class="text-3xl font-bold text-emerald-600 tracking-tight">${available}</span>
-                        <span class="text-[11px] text-slate-400 font-bold uppercase tracking-wider mt-1">Disponíveis</span>
-                        <div class="w-8 h-1 bg-emerald-300 rounded-full mt-3"></div>
+                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 flex flex-col justify-center">
+                        <span class="text-3xl font-bold text-emerald-600 dark:text-emerald-400 tracking-tight">${available}</span>
+                        <span class="text-[11px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mt-1">Disponíveis</span>
+                        <div class="w-8 h-1 bg-emerald-300 dark:bg-emerald-700 rounded-full mt-3"></div>
                     </div>
-                    <div class="bg-white p-5 rounded-2xl shadow-card border border-slate-200 flex flex-col justify-center">
-                        <span class="text-3xl font-bold text-amber-500 tracking-tight">${delivering}</span>
-                        <span class="text-[11px] text-slate-400 font-bold uppercase tracking-wider mt-1">Em Trânsito</span>
-                        <div class="w-8 h-1 bg-amber-300 rounded-full mt-3"></div>
+                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 flex flex-col justify-center">
+                        <span class="text-3xl font-bold text-amber-500 dark:text-amber-400 tracking-tight">${delivering}</span>
+                        <span class="text-[11px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mt-1">Em Trânsito</span>
+                        <div class="w-8 h-1 bg-amber-300 dark:bg-amber-700 rounded-full mt-3"></div>
                     </div>
-                    <div class="bg-white p-5 rounded-2xl shadow-card border border-slate-200 flex flex-col justify-center relative overflow-hidden">
-                        ${totalMissing > 0 ? '<div class="absolute -right-2 -top-2 w-16 h-16 bg-rose-50 rounded-full animate-pulse opacity-50"></div>' : ''}
-                        <span class="text-3xl font-bold ${totalMissing > 0 ? 'text-rose-600' : 'text-slate-400'} tracking-tight relative z-10">${totalMissing}</span>
-                        <span class="text-[11px] text-slate-400 font-bold uppercase tracking-wider mt-1 relative z-10">Pendências</span>
-                        <div class="w-8 h-1 ${totalMissing > 0 ? 'bg-rose-500' : 'bg-slate-200'} rounded-full mt-3 relative z-10"></div>
+                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 flex flex-col justify-center relative overflow-hidden">
+                        ${totalMissing > 0 ? '<div class="absolute -right-2 -top-2 w-16 h-16 bg-rose-50 dark:bg-rose-900/20 rounded-full animate-pulse opacity-50"></div>' : ''}
+                        <span class="text-3xl font-bold ${totalMissing > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400 dark:text-slate-600'} tracking-tight relative z-10">${totalMissing}</span>
+                        <span class="text-[11px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mt-1 relative z-10">Pendências</span>
+                        <div class="w-8 h-1 ${totalMissing > 0 ? 'bg-rose-500' : 'bg-slate-200 dark:bg-slate-700'} rounded-full mt-3 relative z-10"></div>
                     </div>
                 </div>
 
                 <div class="flex justify-between items-center px-1">
-                    <h2 class="text-lg font-bold text-slate-800">Visão Geral</h2>
-                    <button onclick="openModal('addBox')" class="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl font-medium shadow-lg shadow-slate-200 flex items-center gap-2 transition-all active:scale-95 text-sm border border-transparent">
+                    <h2 class="text-lg font-bold text-slate-800 dark:text-white">Visão Geral</h2>
+                    <button onclick="openModal('addBox')" class="bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 dark:hover:bg-slate-600 text-white px-5 py-2.5 rounded-xl font-medium shadow-lg shadow-slate-200 dark:shadow-none flex items-center gap-2 transition-all active:scale-95 text-sm border border-transparent">
                         <i data-lucide="plus" class="w-4 h-4"></i> <span>Nova Caixa</span>
                     </button>
                 </div>
@@ -994,12 +960,11 @@
                 
                 // Status Logic
                 let statusBadge = '';
-                // Alterado: available = verde (emerald), separated = azul (blue)
-                if(status === 'available') statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Disponível</span>`;
-                else if(status === 'in_delivery') statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-600 border border-amber-100"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Em Trânsito</span>`;
-                else if(status === 'delivered') statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200"><span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span> Entregue</span>`;
-                else if(status === 'issue') statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-100"><span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Atenção</span>`;
-                else if(status === 'separated') statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100"><span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Separado</span>`;
+                if(status === 'available') statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Disponível</span>`;
+                else if(status === 'in_delivery') statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-800"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Em Trânsito</span>`;
+                else if(status === 'delivered') statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700"><span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span> Entregue</span>`;
+                else if(status === 'issue') statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-800"><span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Atenção</span>`;
+                else if(status === 'separated') statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800"><span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Separado</span>`;
 
                 const mappedItems = box.items.map((item, index) => ({...item, originalIndex: index}));
                 const internalItems = mappedItems.filter(i => !i.isExternal);
@@ -1008,14 +973,14 @@
                 // Render List Function
                 const renderList = (items, title, isExt) => items.length ? `
                     <div class="mb-3">
-                        <p class="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-2 pl-1 border-b border-slate-100 pb-1">${title}</p>
+                        <p class="text-[9px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2 pl-1 border-b border-slate-100 dark:border-slate-700 pb-1">${title}</p>
                         <div class="space-y-0.5">
                         ${items.map((it) => `
-                            <div class="flex justify-between items-center text-sm py-1.5 px-1 hover:bg-slate-50 rounded transition-colors group/item">
+                            <div class="flex justify-between items-center text-sm py-1.5 px-1 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded transition-colors group/item">
                                 <div class="truncate flex items-center gap-2">
-                                    <span class="font-bold text-slate-700 min-w-[1.2rem] text-right text-xs">${it.quantity}</span>
-                                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wide border border-slate-200 px-1 rounded">${it.unitType}</span>
-                                    <span class="text-slate-600 truncate font-medium text-xs ${isExt?'italic':''}">${escapeHtml(it.name)}</span>
+                                    <span class="font-bold text-slate-700 dark:text-slate-300 min-w-[1.2rem] text-right text-xs">${it.quantity}</span>
+                                    <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide border border-slate-200 dark:border-slate-600 px-1 rounded">${it.unitType}</span>
+                                    <span class="text-slate-600 dark:text-slate-400 truncate font-medium text-xs ${isExt?'italic':''}">${escapeHtml(it.name)}</span>
                                 </div>
                                 <div class="flex gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
                                     <button onclick="openModal('editItem', ${box.id}, ${it.originalIndex})" class="text-slate-400 hover:text-indigo-600 p-0.5"><i data-lucide="pencil" class="w-3 h-3"></i></button>
@@ -1029,27 +994,27 @@
                 // Destination Card Section
                 const hasDest = !!box.destination;
                 const destInfo = `
-                    <div class="bg-slate-50 rounded-xl p-3 border border-slate-100 mb-4 group/dest relative overflow-hidden">
+                    <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-100 dark:border-slate-700 mb-4 group/dest relative overflow-hidden">
                         ${!hasDest ? 
-                            `<div class="flex justify-between items-center text-slate-400 text-sm italic py-1">
+                            `<div class="flex justify-between items-center text-slate-400 dark:text-slate-500 text-sm italic py-1">
                                 <div class="flex items-center gap-2"><i data-lucide="map" class="w-4 h-4 opacity-50"></i> Sem destino</div>
-                                <button onclick="openModal('changeDestination', ${box.id})" class="text-indigo-600 hover:bg-indigo-50 p-1.5 rounded-lg transition-colors" title="Adicionar Destino"><i data-lucide="plus" class="w-4 h-4"></i></button>
+                                <button onclick="openModal('changeDestination', ${box.id})" class="text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 p-1.5 rounded-lg transition-colors" title="Adicionar Destino"><i data-lucide="plus" class="w-4 h-4"></i></button>
                              </div>` 
                             : 
                             `<div class="flex items-start gap-3">
-                                <div class="bg-white p-2 rounded-lg border border-slate-200 shadow-sm text-slate-700 shrink-0 mt-0.5">
+                                <div class="bg-white dark:bg-slate-800 p-2 rounded-lg border border-slate-200 dark:border-slate-600 shadow-sm text-slate-700 dark:text-slate-300 shrink-0 mt-0.5">
                                     <i data-lucide="map-pin" class="w-4 h-4"></i>
                                 </div>
                                 <div class="min-w-0 flex-grow">
                                     <div class="flex justify-between items-start">
                                         <div>
-                                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wide mb-0.5">Destino</p>
-                                            <p class="font-bold text-slate-800 text-sm leading-tight truncate pr-1" title="${escapeHtml(box.destination)}">${escapeHtml(box.destination)}</p>
+                                            <p class="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wide mb-0.5">Destino</p>
+                                            <p class="font-bold text-slate-800 dark:text-white text-sm leading-tight truncate pr-1" title="${escapeHtml(box.destination)}">${escapeHtml(box.destination)}</p>
                                         </div>
                                         <button onclick="openModal('changeDestination', ${box.id})" class="text-slate-400 hover:text-indigo-600 p-1 rounded transition-colors opacity-0 group-hover/dest:opacity-100" title="Editar Destino"><i data-lucide="pencil" class="w-3 h-3"></i></button>
                                     </div>
-                                    <div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">
-                                        <div class="flex items-center gap-1.5 text-xs text-slate-500">
+                                    <div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+                                        <div class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
                                             <i data-lucide="user" class="w-3 h-3"></i>
                                             <span class="truncate max-w-[110px]">${escapeHtml(box.driver) || 'Sem motorista'}</span>
                                         </div>
@@ -1062,12 +1027,11 @@
                 `;
 
                 // Main Action Button
-                // Botão "Separar" agora é Azul (Blue)
                 let mainBtn = '';
-                if (status === 'available') mainBtn = `<button onclick="openModal('separate',${box.id})" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl text-sm font-bold shadow-md shadow-blue-200 transition-all active:scale-95 flex items-center justify-center gap-2"><i data-lucide="package-check" class="w-4 h-4"></i> Separar</button>`;
-                else if (status === 'separated') mainBtn = `<button onclick="openModal('deliver',${box.id})" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl text-sm font-bold shadow-md shadow-indigo-200 transition-all active:scale-95 flex items-center justify-center gap-2"><i data-lucide="send" class="w-4 h-4"></i> Enviar</button>`;
-                else if (status === 'in_delivery') mainBtn = `<button onclick="openModal('complete',${box.id})" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl text-sm font-bold shadow-md shadow-emerald-200 transition-all active:scale-95 flex items-center justify-center gap-2"><i data-lucide="check" class="w-4 h-4"></i> Receber</button>`;
-                else mainBtn = `<button onclick="openModal('reset',${box.id})" class="flex-1 bg-white border border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-800 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 flex items-center justify-center gap-2">Resetar</button>`;
+                if (status === 'available') mainBtn = `<button onclick="openModal('separate',${box.id})" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl text-sm font-bold shadow-md shadow-blue-200 dark:shadow-none transition-all active:scale-95 flex items-center justify-center gap-2"><i data-lucide="package-check" class="w-4 h-4"></i> Separar</button>`;
+                else if (status === 'separated') mainBtn = `<button onclick="openModal('deliver',${box.id})" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl text-sm font-bold shadow-md shadow-indigo-200 dark:shadow-none transition-all active:scale-95 flex items-center justify-center gap-2"><i data-lucide="send" class="w-4 h-4"></i> Enviar</button>`;
+                else if (status === 'in_delivery') mainBtn = `<button onclick="openModal('complete',${box.id})" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl text-sm font-bold shadow-md shadow-emerald-200 dark:shadow-none transition-all active:scale-95 flex items-center justify-center gap-2"><i data-lucide="check" class="w-4 h-4"></i> Receber</button>`;
+                else mainBtn = `<button onclick="openModal('reset',${box.id})" class="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-300 hover:text-slate-800 dark:hover:bg-slate-700 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 flex items-center justify-center gap-2">Resetar</button>`;
 
                 html += `
                 <div 
@@ -1080,11 +1044,11 @@
                     ondragenter="handleDragEnter(event)"
                     ondragleave="handleDragLeave(event)"
                     ondrop="handleDrop(event, ${index})"
-                    class="group/card-container bg-white rounded-xl shadow-card border border-slate-200 flex flex-col h-full relative overflow-hidden transition-none"
+                    class="group/card-container bg-white dark:bg-slate-800 rounded-xl shadow-card border border-slate-200 dark:border-slate-700 flex flex-col h-full relative overflow-hidden transition-none"
                 >
                     <!-- Drag Handle Strip -->
                     <div 
-                        class="h-1.5 w-full bg-slate-50 cursor-grab hover:bg-slate-100 transition-colors border-b border-slate-50 rounded-t-xl"
+                        class="h-1.5 w-full bg-slate-50 dark:bg-slate-700 cursor-grab hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors border-b border-slate-50 dark:border-slate-700 rounded-t-xl"
                         onmousedown="enableDrag(event, ${index})"
                         onmouseup="disableDrag(event, ${index})"
                         title="Arraste para reordenar"
@@ -1093,18 +1057,18 @@
                     <!-- Header -->
                     <div class="px-5 pt-4 pb-2 flex justify-between items-start">
                         <div>
-                            <h3 class="font-bold text-lg text-slate-800 leading-tight">${escapeHtml(box.name)}</h3>
+                            <h3 class="font-bold text-lg text-slate-800 dark:text-white leading-tight">${escapeHtml(box.name)}</h3>
                             <div class="mt-1.5">${statusBadge}</div>
                         </div>
                         <div class="flex items-center gap-1">
-                            <button onclick="printBox(${box.id})" class="p-2 text-slate-300 hover:text-indigo-600 hover:bg-slate-50 rounded-lg transition-colors"><i data-lucide="printer" class="w-4 h-4"></i></button>
+                            <button onclick="printBox(${box.id})" class="p-2 text-slate-300 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors"><i data-lucide="printer" class="w-4 h-4"></i></button>
                             
                             <!-- Menu Modificado -->
                             <div class="relative">
-                                <button onclick="toggleMenu(event, ${box.id})" class="p-2 text-slate-300 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"><i data-lucide="more-horizontal" class="w-4 h-4"></i></button>
-                                <div id="menu-${box.id}" class="absolute right-0 top-full mt-1 w-32 bg-white rounded-xl shadow-xl border border-slate-100 p-1 hidden z-50 animate-fade-in">
-                                    <button onclick="openModal('editBox', ${box.id})" class="w-full text-left px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 rounded-lg flex items-center gap-2"><i data-lucide="pencil" class="w-3 h-3"></i> Editar</button>
-                                    <button onclick="openModal('deleteBox', ${box.id})" class="w-full text-left px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-2"><i data-lucide="trash" class="w-3 h-3"></i> Excluir</button>
+                                <button onclick="toggleMenu(event, ${box.id})" class="p-2 text-slate-300 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors"><i data-lucide="more-horizontal" class="w-4 h-4"></i></button>
+                                <div id="menu-${box.id}" class="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 p-1 hidden z-50 animate-fade-in">
+                                    <button onclick="openModal('editBox', ${box.id})" class="w-full text-left px-3 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg flex items-center gap-2"><i data-lucide="pencil" class="w-3 h-3"></i> Editar</button>
+                                    <button onclick="openModal('deleteBox', ${box.id})" class="w-full text-left px-3 py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg flex items-center gap-2"><i data-lucide="trash" class="w-3 h-3"></i> Excluir</button>
                                 </div>
                             </div>
                         </div>
@@ -1121,7 +1085,7 @@
                                     ${renderList(externalItems, "Externo", true)}
                                  </div>` 
                                 : 
-                                `<div class="h-full flex flex-col items-center justify-center text-slate-300 border-2 border-dashed border-slate-100 rounded-xl min-h-[120px]">
+                                `<div class="h-full flex flex-col items-center justify-center text-slate-300 dark:text-slate-600 border-2 border-dashed border-slate-100 dark:border-slate-700 rounded-xl min-h-[120px]">
                                     <i data-lucide="box" class="w-8 h-8 mb-2 opacity-50"></i>
                                     <span class="text-xs font-medium">Vazia</span>
                                  </div>`
@@ -1130,12 +1094,12 @@
                     </div>
 
                     <!-- Actions Footer -->
-                    <div class="p-4 bg-white border-t border-slate-100 rounded-b-xl mt-auto grid grid-cols-[1fr_auto_auto] gap-2">
+                    <div class="p-4 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700 rounded-b-xl mt-auto grid grid-cols-[1fr_auto_auto] gap-2">
                         ${mainBtn}
-                        <button onclick="openModal('add',${box.id})" class="px-3.5 py-2.5 bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-xl font-bold transition-colors border border-slate-100" title="Adicionar Item">
+                        <button onclick="openModal('add',${box.id})" class="px-3.5 py-2.5 bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 rounded-xl font-bold transition-colors border border-slate-100 dark:border-slate-600" title="Adicionar Item">
                             <i data-lucide="plus" class="w-5 h-5"></i>
                         </button>
-                        <button onclick="openModal('missing',${box.id})" class="px-3.5 py-2.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl font-bold transition-colors border border-rose-50" title="Reportar Problema">
+                        <button onclick="openModal('missing',${box.id})" class="px-3.5 py-2.5 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/40 rounded-xl font-bold transition-colors border border-rose-50 dark:border-rose-900/30" title="Reportar Problema">
                             <i data-lucide="alert-triangle" class="w-5 h-5"></i>
                         </button>
                     </div>
@@ -1153,15 +1117,15 @@
             appLayout.classList.add('hidden');
             appLayout.classList.remove('opacity-100');
             container.innerHTML = `
-                <div class="bg-white p-10 rounded-3xl shadow-2xl border border-slate-100 w-full max-w-sm animate-zoom-in text-center relative overflow-hidden">
+                <div class="bg-white dark:bg-slate-900 p-10 rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-800 w-full max-w-sm animate-zoom-in text-center relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 to-violet-600"></div>
-                    <div class="bg-indigo-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 text-indigo-600 shadow-inner">
+                    <div class="bg-indigo-50 dark:bg-indigo-900/20 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 text-indigo-600 dark:text-indigo-400 shadow-inner">
                         <i data-lucide="lock" class="w-8 h-8"></i>
                     </div>
-                    <h2 class="text-2xl font-bold text-slate-800 mb-2">Bem-vindo</h2>
-                    <p class="text-slate-500 text-sm mb-8">Digite sua credencial para acessar o painel logístico.</p>
+                    <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-2">Bem-vindo</h2>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm mb-8">Digite sua credencial para acessar o painel logístico.</p>
                     <form onsubmit="handleLogin(event)" class="space-y-4">
-                        <input type="password" name="password" placeholder="Senha" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-center tracking-widest text-lg transition-all" autofocus>
+                        <input type="password" name="password" placeholder="Senha" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3.5 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-center tracking-widest text-lg transition-all dark:text-white" autofocus>
                         <button type="submit" class="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg hover:shadow-xl active:scale-95 flex items-center justify-center gap-2">
                             <span>Acessar</span> <i data-lucide="arrow-right" class="w-4 h-4"></i>
                         </button>
@@ -1176,8 +1140,8 @@
             const container = document.getElementById('app-content');
             container.innerHTML = `
                 <div class="max-w-2xl mx-auto space-y-6 pb-10">
-                    <div class="bg-white rounded-xl shadow-card border border-slate-200 p-6">
-                        <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2 mb-6">
+                    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-card border border-slate-200 dark:border-slate-700 p-6">
+                        <h2 class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-6">
                             <i data-lucide="list" class="text-slate-500"></i> Cadastrar Item no Catálogo
                         </h2>
                         <form onsubmit="handleAddCatalogItem(event)" class="space-y-3">
@@ -1186,20 +1150,20 @@
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                         <i data-lucide="package-plus" class="h-5 w-5 text-slate-400 group-focus-within:text-slate-600 transition-colors"></i>
                                     </div>
-                                    <input name="newItemName" type="text" required placeholder="Digite o nome do novo item..." class="pl-10 block w-full rounded-xl border-slate-200 bg-slate-50 border focus:bg-white focus:border-slate-500 focus:ring-2 focus:ring-slate-100 text-sm p-3.5 transition-all outline-none" autocomplete="off">
+                                    <input name="newItemName" type="text" required placeholder="Digite o nome do novo item..." class="pl-10 block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 border focus:bg-white dark:focus:bg-slate-800 focus:border-slate-500 focus:ring-2 focus:ring-slate-100 dark:focus:ring-slate-700 text-sm p-3.5 transition-all outline-none dark:text-white" autocomplete="off">
                                 </div>
-                                <button type="submit" class="bg-slate-900 hover:bg-slate-800 text-white px-6 py-2 rounded-xl font-medium shadow-lg shadow-slate-200 transition-all active:scale-95 flex items-center gap-2 whitespace-nowrap">
+                                <button type="submit" class="bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 dark:hover:bg-slate-600 text-white px-6 py-2 rounded-xl font-medium shadow-lg shadow-slate-200 dark:shadow-none transition-all active:scale-95 flex items-center gap-2 whitespace-nowrap">
                                     <i data-lucide="plus" class="w-4 h-4"></i> <span class="hidden sm:inline">Cadastrar</span>
                                 </button>
                             </div>
                         </form>
                     </div>
                     
-                    <div class="bg-white rounded-xl shadow-card border border-slate-200 overflow-hidden">
-                        <div class="p-4 border-b border-slate-100 bg-slate-50/50 font-semibold text-slate-700 flex flex-col sm:flex-row justify-between items-center gap-3">
+                    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-card border border-slate-200 dark:border-slate-700 overflow-hidden">
+                        <div class="p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 font-semibold text-slate-700 dark:text-slate-300 flex flex-col sm:flex-row justify-between items-center gap-3">
                             <div class="flex items-center gap-2 w-full sm:w-auto">
                                 <span>Itens Disponíveis (${state.catalog.length})</span>
-                                <span class="text-xs font-normal text-slate-500 bg-white px-2 py-1 rounded border border-slate-200">Ordenado A-Z</span>
+                                <span class="text-xs font-normal text-slate-500 bg-white dark:bg-slate-700 px-2 py-1 rounded border border-slate-200 dark:border-slate-600">Ordenado A-Z</span>
                             </div>
                             
                             <!-- Search Input -->
@@ -1207,24 +1171,24 @@
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <i data-lucide="search" class="h-4 w-4 text-slate-400"></i>
                                 </div>
-                                <input type="text" id="catalog-search" oninput="filterCatalog()" placeholder="Pesquisar..." class="pl-9 block w-full rounded-lg border-slate-200 bg-white border focus:border-slate-500 focus:ring-2 focus:ring-slate-100 text-xs p-2.5 transition-all outline-none">
+                                <input type="text" id="catalog-search" oninput="filterCatalog()" placeholder="Pesquisar..." class="pl-9 block w-full rounded-lg border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 border focus:border-slate-500 focus:ring-2 focus:ring-slate-100 dark:focus:ring-slate-600 text-xs p-2.5 transition-all outline-none dark:text-white">
                             </div>
                         </div>
 
-                        <div id="catalog-list-container" class="divide-y divide-slate-50 max-h-[60vh] overflow-y-auto">
+                        <div id="catalog-list-container" class="divide-y divide-slate-50 dark:divide-slate-700 max-h-[60vh] overflow-y-auto">
                             ${state.catalog.length ? state.catalog.map((item, i) => `
-                                <div class="catalog-item p-4 flex justify-between items-center group hover:bg-slate-50 transition-colors" data-name="${escapeHtml(item)}">
+                                <div class="catalog-item p-4 flex justify-between items-center group hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors" data-name="${escapeHtml(item)}">
                                     <div class="flex gap-3 items-center">
-                                        <div class="bg-slate-100 p-2 rounded-lg text-slate-500">
+                                        <div class="bg-slate-100 dark:bg-slate-700 p-2 rounded-lg text-slate-500 dark:text-slate-300">
                                             <i data-lucide="tag" class="w-4 h-4"></i>
                                         </div>
-                                        <div class="font-medium text-slate-700 item-name-text">${escapeHtml(item)}</div>
+                                        <div class="font-medium text-slate-700 dark:text-slate-200 item-name-text">${escapeHtml(item)}</div>
                                     </div>
                                     <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onclick="openModal('editCatalogItem', null, ${i})" class="text-slate-400 hover:text-blue-600 p-2 rounded hover:bg-slate-100 transition-colors" title="Editar">
+                                        <button onclick="openModal('editCatalogItem', null, ${i})" class="text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" title="Editar">
                                             <i data-lucide="pencil" class="w-4 h-4"></i>
                                         </button>
-                                        <button onclick="openModal('deleteCatalogItem', null, ${i})" class="text-slate-300 hover:text-red-500 p-2 rounded hover:bg-red-50 transition-colors" title="Remover">
+                                        <button onclick="openModal('deleteCatalogItem', null, ${i})" class="text-slate-300 hover:text-red-500 p-2 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" title="Remover">
                                             <i data-lucide="trash-2" class="w-4 h-4"></i>
                                         </button>
                                     </div>
@@ -1286,16 +1250,16 @@
                 else if(l.action === 'Alteração') { icon='pencil'; color='bg-indigo-50 text-indigo-600 border-indigo-100'; }
                 else if(l.action === 'Separação') { icon='package-check'; color='bg-violet-50 text-violet-600 border-violet-100'; }
                 
-                let printBtn = l.action === 'Saída' ? `<button onclick="printHistoryManifest(${l.id})" class="ml-auto text-xs flex items-center gap-1 text-slate-400 hover:text-blue-600 bg-white border border-slate-200 hover:border-blue-300 px-2 py-1 rounded-md transition-colors"><i data-lucide="printer" class="w-3 h-3"></i> Imprimir</button>` : '';
+                let printBtn = l.action === 'Saída' ? `<button onclick="printHistoryManifest(${l.id})" class="ml-auto text-xs flex items-center gap-1 text-slate-400 hover:text-blue-600 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:border-blue-300 px-2 py-1 rounded-md transition-colors"><i data-lucide="printer" class="w-3 h-3"></i> Imprimir</button>` : '';
                 const time = new Date(l.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
                 
-                return `<div class="timeline-item relative pl-14 py-2 group"><div class="timeline-line group-last:hidden"></div><div class="absolute left-0 top-2 w-12 h-12 flex items-center justify-center z-10"><div class="w-10 h-10 rounded-full border-2 ${color} flex items-center justify-center shadow-sm bg-white"><i data-lucide="${icon}" class="w-5 h-5"></i></div></div><div class="bg-white border border-slate-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-all hover:border-slate-200"><div class="flex justify-between items-start mb-1"><div class="flex flex-col"><span class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-0.5">${time} • ${escapeHtml(l.user)}</span><h4 class="text-base font-bold text-slate-800 flex items-center gap-2">${escapeHtml(l.action)} <span class="font-normal text-slate-500">em</span> <span class="text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded text-sm font-semibold">${escapeHtml(l.boxName)}</span></h4></div>${printBtn}</div><div class="text-sm text-slate-600 mt-2 p-3 bg-slate-50/50 rounded-lg border border-slate-50 whitespace-pre-wrap leading-relaxed">${escapeHtml(l.details)}</div></div></div>`;
+                return `<div class="timeline-item relative pl-14 py-2 group"><div class="timeline-line group-last:hidden"></div><div class="absolute left-0 top-2 w-12 h-12 flex items-center justify-center z-10"><div class="w-10 h-10 rounded-full border-2 ${color} dark:border-slate-600 flex items-center justify-center shadow-sm bg-white dark:bg-slate-800"><i data-lucide="${icon}" class="w-5 h-5"></i></div></div><div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl p-4 shadow-sm hover:shadow-md transition-all hover:border-slate-200 dark:hover:border-slate-600"><div class="flex justify-between items-start mb-1"><div class="flex flex-col"><span class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-0.5">${time} • ${escapeHtml(l.user)}</span><h4 class="text-base font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">${escapeHtml(l.action)} <span class="font-normal text-slate-500 dark:text-slate-400">em</span> <span class="text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded text-sm font-semibold">${escapeHtml(l.boxName)}</span></h4></div>${printBtn}</div><div class="text-sm text-slate-600 dark:text-slate-400 mt-2 p-3 bg-slate-50/50 dark:bg-slate-900/50 rounded-lg border border-slate-50 dark:border-slate-700 whitespace-pre-wrap leading-relaxed">${escapeHtml(l.details)}</div></div></div>`;
             };
 
             let contentHtml = '';
             if (state.historyView === 'today') {
                 const todaysLogs = filtered.filter(l => getLocalDateString(l.timestamp) === todayPT);
-                contentHtml = `<div class="flex-grow overflow-hidden flex flex-col bg-white rounded-xl shadow-card border border-slate-200"><div class="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center"><span class="font-bold text-slate-800 flex items-center gap-2"><i data-lucide="calendar" class="w-4 h-4"></i> Hoje (${new Date().toLocaleDateString()})</span><span class="text-xs font-medium bg-slate-200 text-slate-700 px-2 py-1 rounded-full">${todaysLogs.length} Registos</span></div><div class="overflow-y-auto flex-grow p-6 bg-[#f8fafc] scroll-smooth"><div class="max-w-3xl mx-auto space-y-1">${todaysLogs.length ? todaysLogs.map(renderTimelineItem).join('') : `<div class="flex flex-col items-center justify-center h-64 text-slate-400"><div class="bg-slate-100 p-4 rounded-full mb-3"><i data-lucide="clock" class="w-8 h-8 opacity-50"></i></div><p>Nenhuma atividade registada hoje.</p></div>`}</div></div></div>`;
+                contentHtml = `<div class="flex-grow overflow-hidden flex flex-col bg-white dark:bg-slate-800 rounded-xl shadow-card border border-slate-200 dark:border-slate-700"><div class="p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex justify-between items-center"><span class="font-bold text-slate-800 dark:text-white flex items-center gap-2"><i data-lucide="calendar" class="w-4 h-4"></i> Hoje (${new Date().toLocaleDateString()})</span><span class="text-xs font-medium bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-2 py-1 rounded-full">${todaysLogs.length} Registos</span></div><div class="overflow-y-auto flex-grow p-6 bg-[#f8fafc] dark:bg-slate-950 scroll-smooth"><div class="max-w-3xl mx-auto space-y-1">${todaysLogs.length ? todaysLogs.map(renderTimelineItem).join('') : `<div class="flex flex-col items-center justify-center h-64 text-slate-400"><div class="bg-slate-100 dark:bg-slate-800 p-4 rounded-full mb-3"><i data-lucide="clock" class="w-8 h-8 opacity-50"></i></div><p>Nenhuma atividade registada hoje.</p></div>`}</div></div></div>`;
             } else {
                 const archiveLogs = filtered.filter(l => getLocalDateString(l.timestamp) !== todayPT);
                 const grouped = {};
@@ -1314,10 +1278,10 @@
                     const chevron = isExpanded ? 'chevron-up' : 'chevron-down';
                     let expandedContent = '';
                     if (isExpanded) {
-                        expandedContent = `<div class="border-t border-slate-100 bg-slate-50/50 p-6"><div class="max-w-3xl mx-auto">${grouped[date].map(renderTimelineItem).join('')}</div></div>`;
+                        expandedContent = `<div class="border-t border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 p-6"><div class="max-w-3xl mx-auto">${grouped[date].map(renderTimelineItem).join('')}</div></div>`;
                     }
                           
-                    return `<div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm transition-all hover:shadow-md mb-3"><button onclick="toggleDateAccordion('${date}')" class="w-full px-5 py-4 flex justify-between items-center bg-white hover:bg-slate-50 transition-colors group"><div class="flex items-center gap-3"><div class="bg-slate-100 text-slate-600 p-2 rounded-lg group-hover:bg-slate-800 group-hover:text-white transition-colors"><i data-lucide="calendar-days" class="w-5 h-5"></i></div><span class="font-bold text-slate-700 text-lg">${date}</span></div><div class="flex items-center gap-3"><span class="text-xs font-bold bg-slate-100 text-slate-500 px-2.5 py-1 rounded-full">${grouped[date].length} eventos</span><i data-lucide="${chevron}" class="w-5 h-5 text-slate-400"></i></div></button>${expandedContent}</div>`;
+                    return `<div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm transition-all hover:shadow-md mb-3"><button onclick="toggleDateAccordion('${date}')" class="w-full px-5 py-4 flex justify-between items-center bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors group"><div class="flex items-center gap-3"><div class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 p-2 rounded-lg group-hover:bg-slate-800 dark:group-hover:bg-slate-600 group-hover:text-white transition-colors"><i data-lucide="calendar-days" class="w-5 h-5"></i></div><span class="font-bold text-slate-700 dark:text-slate-200 text-lg">${date}</span></div><div class="flex items-center gap-3"><span class="text-xs font-bold bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-2.5 py-1 rounded-full">${grouped[date].length} eventos</span><i data-lucide="${chevron}" class="w-5 h-5 text-slate-400"></i></div></button>${expandedContent}</div>`;
                 }).join('');
 
                 const emptyState = !dates.length ? 
@@ -1327,30 +1291,30 @@
                      </div>` : '';
 
                 contentHtml = `
-                <div class="flex-grow overflow-hidden flex flex-col bg-white rounded-xl shadow-card border border-slate-200">
-                    <div class="p-4 border-b border-slate-100 bg-slate-50/50 font-bold text-slate-800 flex items-center gap-2">
+                <div class="flex-grow overflow-hidden flex flex-col bg-white dark:bg-slate-800 rounded-xl shadow-card border border-slate-200 dark:border-slate-700">
+                    <div class="p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 font-bold text-slate-800 dark:text-white flex items-center gap-2">
                         <i data-lucide="archive" class="w-4 h-4"></i> Arquivo Histórico
                     </div>
-                    <div class="overflow-y-auto flex-grow p-4 space-y-4 bg-[#f8fafc]">
+                    <div class="overflow-y-auto flex-grow p-4 space-y-4 bg-[#f8fafc] dark:bg-slate-950">
                         ${listHtml}
                         ${emptyState}
                     </div>
                 </div>`;
             }
 
-            container.innerHTML = `<div class="flex flex-col h-full overflow-hidden pb-4"><div class="flex flex-col md:flex-row gap-4 mb-6 shrink-0 justify-between items-center"><div class="bg-slate-200 p-1 rounded-xl flex gap-1 w-full md:w-auto"><button onclick="setHistoryView('today')" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${state.historyView==='today'?'bg-white text-slate-800 shadow-sm':'text-slate-500 hover:text-slate-700 hover:bg-slate-300/50'}"><i data-lucide="sun" class="w-4 h-4"></i> Hoje</button><button onclick="setHistoryView('archive')" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${state.historyView==='archive'?'bg-white text-slate-800 shadow-sm':'text-slate-500 hover:text-slate-700 hover:bg-slate-300/50'}"><i data-lucide="history" class="w-4 h-4"></i> Arquivo</button></div><div class="flex gap-2 w-full md:w-auto bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm"><div class="relative flex-grow md:w-64"><i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i><input type="text" placeholder="Filtrar eventos..." value="${escapeHtml(state.historyFilter.search)}" oninput="handleHistoryFilter('search', this.value)" class="w-full pl-9 pr-3 py-2 text-sm bg-transparent outline-none text-slate-700 placeholder:text-slate-400"></div><div class="w-px bg-slate-200 my-1"></div><input type="date" value="${state.historyFilter.date}" onchange="handleHistoryFilter('date', this.value)" class="bg-transparent text-sm text-slate-600 px-2 outline-none font-medium cursor-pointer hover:text-blue-600">${(state.historyFilter.search || state.historyFilter.date) ? `<button onclick="clearHistoryFilters()" class="text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-colors border border-transparent hover:border-red-100 flex items-center gap-1"><i data-lucide="x" class="w-3 h-3"></i></button>` : ''}</div></div>${contentHtml}</div>`;
+            container.innerHTML = `<div class="flex flex-col h-full overflow-hidden pb-4"><div class="flex flex-col md:flex-row gap-4 mb-6 shrink-0 justify-between items-center"><div class="bg-slate-200 dark:bg-slate-800 p-1 rounded-xl flex gap-1 w-full md:w-auto"><button onclick="setHistoryView('today')" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${state.historyView==='today'?'bg-white dark:bg-slate-600 text-slate-800 dark:text-white shadow-sm':'text-slate-500 hover:text-slate-700 hover:bg-slate-300/50 dark:hover:bg-slate-700'}"><i data-lucide="sun" class="w-4 h-4"></i> Hoje</button><button onclick="setHistoryView('archive')" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${state.historyView==='archive'?'bg-white dark:bg-slate-600 text-slate-800 dark:text-white shadow-sm':'text-slate-500 hover:text-slate-700 hover:bg-slate-300/50 dark:hover:bg-slate-700'}"><i data-lucide="history" class="w-4 h-4"></i> Arquivo</button></div><div class="flex gap-2 w-full md:w-auto bg-white dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm"><div class="relative flex-grow md:w-64"><i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i><input type="text" placeholder="Filtrar eventos..." value="${escapeHtml(state.historyFilter.search)}" oninput="handleHistoryFilter('search', this.value)" class="w-full pl-9 pr-3 py-2 text-sm bg-transparent outline-none text-slate-700 dark:text-white placeholder:text-slate-400"></div><div class="w-px bg-slate-200 dark:bg-slate-700 my-1"></div><input type="date" value="${state.historyFilter.date}" onchange="handleHistoryFilter('date', this.value)" class="bg-transparent text-sm text-slate-600 dark:text-slate-300 px-2 outline-none font-medium cursor-pointer hover:text-blue-600">${(state.historyFilter.search || state.historyFilter.date) ? `<button onclick="clearHistoryFilters()" class="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-colors border border-transparent hover:border-red-100 flex items-center gap-1"><i data-lucide="x" class="w-3 h-3"></i></button>` : ''}</div></div>${contentHtml}</div>`;
             if (typeof lucide !== 'undefined') lucide.createIcons();
         }
 
         function renderLocationsPanel() {
             const container = document.getElementById('app-content');
-            container.innerHTML = `<div class="max-w-2xl mx-auto space-y-6 pb-10"><div class="bg-white rounded-xl shadow-card border border-slate-200 p-6"><h2 class="text-xl font-bold text-slate-800 flex items-center gap-2 mb-6"><i data-lucide="map-pin" class="text-slate-500"></i> Cadastrar Endereço</h2><form onsubmit="handleAddDestination(event)" class="space-y-3"><input name="newName" type="text" required placeholder="Nome do Local" class="w-full border border-slate-200 bg-slate-50 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-slate-200 focus:bg-white transition-all"><div class="grid grid-cols-3 gap-3"><div class="col-span-2"><input name="newStreet" type="text" placeholder="Rua" class="w-full border border-slate-200 bg-slate-50 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-slate-200 focus:bg-white transition-all"></div><div><input name="newNumber" type="text" placeholder="Nº" class="w-full border border-slate-200 bg-slate-50 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-slate-200 focus:bg-white transition-all"></div></div><input name="newNeighborhood" type="text" placeholder="Bairro" class="w-full border border-slate-200 bg-slate-50 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-slate-200 focus:bg-white transition-all"><button type="submit" class="w-full bg-slate-900 text-white px-4 py-3 rounded-xl hover:bg-slate-800 flex items-center justify-center gap-2 font-bold shadow-lg shadow-slate-200 active:scale-95 transition-all"><i data-lucide="plus" class="w-4 h-4"></i> Cadastrar</button></form></div><div class="bg-white rounded-xl shadow-card border border-slate-200 overflow-hidden"><div class="p-4 border-b border-slate-100 bg-slate-50/50 font-semibold text-slate-700">Locais Cadastrados (${state.destinations.length})</div><div class="divide-y divide-slate-50">${state.destinations.length ? state.destinations.map((d, i) => `<div class="p-4 flex justify-between items-start group hover:bg-slate-50 transition-colors"><div class="flex gap-3"><div class="bg-slate-100 p-2 rounded-lg text-slate-600 mt-1"><i data-lucide="building-2" class="w-4 h-4"></i></div><div><div class="font-medium text-slate-700">${escapeHtml(d.name)}</div><div class="text-xs text-slate-400">${escapeHtml(d.street)||''} ${escapeHtml(d.number)||''} ${escapeHtml(d.neighborhood)||''}</div></div></div><div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity"><button onclick="openModal('editLocation',null,${i})" class="text-slate-400 hover:text-blue-600 p-2 hover:bg-slate-100 rounded-lg transition-colors"><i data-lucide="pencil" class="w-4 h-4"></i></button><button onclick="openModal('deleteLocation',null,${i})" class="text-slate-300 hover:text-red-500 p-2 hover:bg-red-50 rounded-lg transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div>`).join('') : '<p class="p-6 text-center text-slate-300">Nenhum local cadastrado.</p>'}</div></div></div>`;
+            container.innerHTML = `<div class="max-w-2xl mx-auto space-y-6 pb-10"><div class="bg-white dark:bg-slate-800 rounded-xl shadow-card border border-slate-200 dark:border-slate-700 p-6"><h2 class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-6"><i data-lucide="map-pin" class="text-slate-500"></i> Cadastrar Endereço</h2><form onsubmit="handleAddDestination(event)" class="space-y-3"><input name="newName" type="text" required placeholder="Nome do Local" class="w-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-slate-200 focus:bg-white dark:focus:bg-slate-800 dark:text-white transition-all"><div class="grid grid-cols-3 gap-3"><div class="col-span-2"><input name="newStreet" type="text" placeholder="Rua" class="w-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-slate-200 focus:bg-white dark:focus:bg-slate-800 dark:text-white transition-all"></div><div><input name="newNumber" type="text" placeholder="Nº" class="w-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-slate-200 focus:bg-white dark:focus:bg-slate-800 dark:text-white transition-all"></div></div><input name="newNeighborhood" type="text" placeholder="Bairro" class="w-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-slate-200 focus:bg-white dark:focus:bg-slate-800 dark:text-white transition-all"><button type="submit" class="w-full bg-slate-900 dark:bg-slate-700 text-white px-4 py-3 rounded-xl hover:bg-slate-800 dark:hover:bg-slate-600 flex justify-center gap-2 font-bold shadow-lg shadow-slate-200 dark:shadow-none active:scale-95 transition-all"><i data-lucide="plus" class="w-4 h-4"></i> Cadastrar</button></form></div><div class="bg-white dark:bg-slate-800 rounded-xl shadow-card border border-slate-200 dark:border-slate-700 overflow-hidden"><div class="p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 font-semibold text-slate-700 dark:text-white">Locais Cadastrados (${state.destinations.length})</div><div class="divide-y divide-slate-50 dark:divide-slate-700">${state.destinations.length ? state.destinations.map((d, i) => `<div class="p-4 flex justify-between items-start group hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"><div class="flex gap-3"><div class="bg-slate-100 dark:bg-slate-700 p-2 rounded-lg text-slate-600 dark:text-slate-300 mt-1"><i data-lucide="building-2" class="w-4 h-4"></i></div><div><div class="font-medium text-slate-700 dark:text-slate-200">${escapeHtml(d.name)}</div><div class="text-xs text-slate-400">${escapeHtml(d.street)||''} ${escapeHtml(d.number)||''} ${escapeHtml(d.neighborhood)||''}</div></div></div><div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity"><button onclick="openModal('editLocation',null,${i})" class="text-slate-400 hover:text-blue-600 p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"><i data-lucide="pencil" class="w-4 h-4"></i></button><button onclick="openModal('deleteLocation',null,${i})" class="text-slate-300 hover:text-red-500 p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div>`).join('') : '<p class="p-6 text-center text-slate-300">Nenhum local cadastrado.</p>'}</div></div></div>`;
             if (typeof lucide !== 'undefined') lucide.createIcons();
         }
 
         function renderDriversPanel() {
             const container = document.getElementById('app-content');
-            container.innerHTML = `<div class="max-w-2xl mx-auto space-y-6 pb-10"><div class="bg-white rounded-xl shadow-card border border-slate-200 p-6"><h2 class="text-xl font-bold text-slate-800 flex items-center gap-2 mb-6"><i data-lucide="users" class="text-slate-500"></i> Cadastrar Motorista</h2><form onsubmit="handleAddDriver(event)" class="space-y-3"><div class="flex flex-col gap-3"><input name="newDriverName" type="text" required placeholder="Nome do Motorista" class="w-full border border-slate-200 bg-slate-50 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-slate-200 focus:bg-white transition-all"><div class="flex gap-3"><input name="newDriverPhone" type="text" placeholder="Telefone" class="flex-1 border border-slate-200 bg-slate-50 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-slate-200 focus:bg-white transition-all"><button type="submit" class="bg-slate-900 text-white px-6 py-3 rounded-xl hover:bg-slate-800 flex items-center justify-center gap-2 font-bold shadow-lg shadow-slate-200 active:scale-95 transition-all"><i data-lucide="plus" class="w-4 h-4"></i> Cadastrar</button></div></div></form></div><div class="bg-white rounded-xl shadow-card border border-slate-200 overflow-hidden"><div class="p-4 border-b border-slate-100 bg-slate-50/50 font-semibold text-slate-700">Motoristas Cadastrados (${state.drivers.length})</div><div class="divide-y divide-slate-50">${state.drivers.length ? state.drivers.map((d, i) => `<div class="p-4 flex justify-between items-center group hover:bg-slate-50 transition-colors"><div class="flex gap-3 items-center"><div class="bg-slate-100 p-2 rounded-lg text-slate-600"><i data-lucide="user" class="w-4 h-4"></i></div><div><div class="font-medium text-slate-700">${escapeHtml(d.name)}</div><div class="text-xs text-slate-400">${escapeHtml(d.phone) || 'Sem telefone'}</div></div></div><div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity"><button onclick="openModal('editDriver',null,${i})" class="text-slate-400 hover:text-blue-600 p-2 hover:bg-slate-100 rounded-lg transition-colors"><i data-lucide="pencil" class="w-4 h-4"></i></button><button onclick="openModal('deleteDriver',null,${i})" class="text-slate-300 hover:text-red-500 p-2 hover:bg-red-50 rounded-lg transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div>`).join('') : '<p class="p-6 text-center text-slate-300">Nenhum motorista cadastrado.</p>'}</div></div></div>`;
+            container.innerHTML = `<div class="max-w-2xl mx-auto space-y-6 pb-10"><div class="bg-white dark:bg-slate-800 rounded-xl shadow-card border border-slate-200 dark:border-slate-700 p-6"><h2 class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-6"><i data-lucide="users" class="text-slate-500"></i> Cadastrar Motorista</h2><form onsubmit="handleAddDriver(event)" class="space-y-3"><div class="flex flex-col gap-3"><input name="newDriverName" type="text" required placeholder="Nome do Motorista" class="w-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-slate-200 focus:bg-white dark:focus:bg-slate-800 dark:text-white transition-all"><div class="flex gap-3"><input name="newDriverPhone" type="text" placeholder="Telefone" class="flex-1 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-slate-200 focus:bg-white dark:focus:bg-slate-800 dark:text-white transition-all"><button type="submit" class="bg-slate-900 dark:bg-slate-700 text-white px-6 py-3 rounded-xl hover:bg-slate-800 dark:hover:bg-slate-600 flex items-center justify-center gap-2 font-bold shadow-lg shadow-slate-200 dark:shadow-none active:scale-95 transition-all"><i data-lucide="plus" class="w-4 h-4"></i> Cadastrar</button></div></div></form></div><div class="bg-white dark:bg-slate-800 rounded-xl shadow-card border border-slate-200 dark:border-slate-700 overflow-hidden"><div class="p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 font-semibold text-slate-700 dark:text-white">Motoristas Cadastrados (${state.drivers.length})</div><div class="divide-y divide-slate-50 dark:divide-slate-700">${state.drivers.length ? state.drivers.map((d, i) => `<div class="p-4 flex justify-between items-center group hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"><div class="flex gap-3 items-center"><div class="bg-slate-100 dark:bg-slate-700 p-2 rounded-lg text-slate-600 dark:text-slate-300"><i data-lucide="user" class="w-4 h-4"></i></div><div><div class="font-medium text-slate-700 dark:text-slate-200">${escapeHtml(d.name)}</div><div class="text-xs text-slate-400">${escapeHtml(d.phone) || 'Sem telefone'}</div></div></div><div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity"><button onclick="openModal('editDriver',null,${i})" class="text-slate-400 hover:text-blue-600 p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"><i data-lucide="pencil" class="w-4 h-4"></i></button><button onclick="openModal('deleteDriver',null,${i})" class="text-slate-300 hover:text-red-500 p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div>`).join('') : '<p class="p-6 text-center text-slate-300">Nenhum motorista cadastrado.</p>'}</div></div></div>`;
             if (typeof lucide !== 'undefined') lucide.createIcons();
         }
 
@@ -1391,33 +1355,33 @@
                     : (isPendingTab ? 'Nenhuma pendência registrada.' : 'Nenhum item resolvido ainda.');
 
                 contentHtml = `
-                    <div class="flex flex-col items-center justify-center h-64 text-slate-400 animate-fade-in bg-white rounded-xl border border-slate-200 mt-6 shadow-card">
-                        <div class="bg-slate-50 p-4 rounded-full mb-3 ring-1 ring-slate-100">
-                            <i data-lucide="${isPendingTab ? 'check-circle' : 'archive'}" class="w-10 h-10 ${isPendingTab ? 'text-emerald-400' : 'text-slate-300'}"></i>
+                    <div class="flex flex-col items-center justify-center h-64 text-slate-400 dark:text-slate-500 animate-fade-in bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 mt-6 shadow-card">
+                        <div class="bg-slate-50 dark:bg-slate-700 p-4 rounded-full mb-3 ring-1 ring-slate-100 dark:ring-slate-600">
+                            <i data-lucide="${isPendingTab ? 'check-circle' : 'archive'}" class="w-10 h-10 ${isPendingTab ? 'text-emerald-400' : 'text-slate-300 dark:text-slate-400'}"></i>
                         </div>
-                        <h3 class="text-base font-bold text-slate-700">${isPendingTab ? 'Tudo em Ordem!' : 'Arquivo Vazio'}</h3>
-                        <p class="text-sm">${emptyMessage}</p>
+                        <h3 class="text-base font-bold text-slate-700 dark:text-slate-200">${isPendingTab ? 'Tudo em Ordem!' : 'Arquivo Vazio'}</h3>
+                        <p class="text-sm dark:text-slate-400">${emptyMessage}</p>
                         ${!isPendingTab && state.missingDateFilter ? `<button onclick="setMissingDateFilter('')" class="mt-4 text-blue-600 hover:text-blue-800 text-sm font-medium">Limpar Filtro</button>` : ''}
                     </div>`;
             } else {
                 contentHtml = Object.values(grouped).map(group => {
                     const groupItemsHtml = group.items.map(m => {
                         const isResolved = m.status === 'resolved';
-                        const statusColor = isResolved ? 'bg-emerald-50 text-emerald-700 border-l-4 border-emerald-400' : 'bg-rose-50 text-rose-700 border-l-4 border-rose-400';
+                        const statusColor = isResolved ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-l-4 border-emerald-400' : 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border-l-4 border-rose-400';
                         const statusLabel = isResolved ? 'Resolvido' : 'Pendente';
 
                         return `
-                            <div class="p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0">
+                            <div class="p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors border-b border-slate-50 dark:border-slate-700 last:border-0">
                                 <div class="flex-grow pl-2 ${isResolved ? 'border-l-4 border-emerald-400' : 'border-l-4 border-rose-400'}">
                                     <div class="flex items-center gap-2 mb-1">
-                                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">${new Date(m.date).toLocaleDateString()}</span>
-                                        <span class="font-bold text-slate-800">${m.quantity}x ${escapeHtml(m.itemName)}</span>
+                                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">${new Date(m.date).toLocaleDateString()}</span>
+                                        <span class="font-bold text-slate-800 dark:text-white">${m.quantity}x ${escapeHtml(m.itemName)}</span>
                                     </div>
-                                    ${m.reason ? `<p class="text-sm text-slate-500 italic flex items-start gap-1"><i data-lucide="message-square" class="w-3 h-3 mt-1 shrink-0 opacity-50"></i> ${escapeHtml(m.reason)}</p>` : ''}
+                                    ${m.reason ? `<p class="text-sm text-slate-500 dark:text-slate-400 italic flex items-start gap-1"><i data-lucide="message-square" class="w-3 h-3 mt-1 shrink-0 opacity-50"></i> ${escapeHtml(m.reason)}</p>` : ''}
                                 </div>
                                 
                                 <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-                                    <span class="px-2.5 py-1 rounded-full text-xs font-bold ${isResolved ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">
+                                    <span class="px-2.5 py-1 rounded-full text-xs font-bold ${isResolved ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300' : 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300'}">
                                         ${statusLabel}
                                     </span>
 
@@ -1440,15 +1404,15 @@
                     }).join('');
 
                     return `
-                        <div class="bg-white rounded-xl shadow-card border border-slate-200 overflow-hidden mb-6 animate-fade-in">
-                            <div class="bg-slate-50/80 border-b border-slate-200 p-4 flex justify-between items-center">
+                        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-card border border-slate-200 dark:border-slate-700 overflow-hidden mb-6 animate-fade-in">
+                            <div class="bg-slate-50/80 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700 p-4 flex justify-between items-center">
                                 <div class="flex items-center gap-3">
-                                    <div class="bg-white p-2 rounded-lg border border-slate-200 shadow-sm text-slate-700">
+                                    <div class="bg-white dark:bg-slate-700 p-2 rounded-lg border border-slate-200 dark:border-slate-600 shadow-sm text-slate-700 dark:text-white">
                                         <i data-lucide="package" class="w-5 h-5"></i>
                                     </div>
                                     <div>
-                                        <h3 class="font-bold text-slate-800 text-lg leading-tight">${escapeHtml(group.boxName)}</h3>
-                                        <p class="text-xs text-slate-500 flex items-center gap-1">
+                                        <h3 class="font-bold text-slate-800 dark:text-white text-lg leading-tight">${escapeHtml(group.boxName)}</h3>
+                                        <p class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
                                             <i data-lucide="map-pin" class="w-3 h-3"></i> ${escapeHtml(group.destination)}
                                         </p>
                                     </div>
@@ -1457,7 +1421,7 @@
                                     <i data-lucide="printer" class="w-5 h-5"></i>
                                 </button>
                             </div>
-                            <div class="divide-y divide-slate-100">
+                            <div class="divide-y divide-slate-100 dark:divide-slate-700">
                                 ${groupItemsHtml}
                             </div>
                         </div>
@@ -1469,42 +1433,42 @@
                 <div class="max-w-4xl mx-auto pb-10 space-y-6 animate-fade-in">
                     <!-- Cards de Estatísticas e Filtros -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-card flex items-center gap-4 relative overflow-hidden">
-                            <div class="absolute right-0 top-0 w-24 h-full bg-gradient-to-l from-slate-50 to-transparent opacity-50"></div>
-                            <div class="p-3 bg-slate-100 text-slate-600 rounded-xl"><i data-lucide="list" class="w-6 h-6"></i></div>
-                            <div><div class="text-3xl font-bold text-slate-800 tracking-tight">${total}</div><div class="text-xs text-slate-500 font-bold uppercase tracking-wider">Total Registros</div></div>
+                        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card flex items-center gap-4 relative overflow-hidden">
+                            <div class="absolute right-0 top-0 w-24 h-full bg-gradient-to-l from-slate-50 dark:from-slate-700 to-transparent opacity-50"></div>
+                            <div class="p-3 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-white rounded-xl"><i data-lucide="list" class="w-6 h-6"></i></div>
+                            <div><div class="text-3xl font-bold text-slate-800 dark:text-white tracking-tight">${total}</div><div class="text-xs text-slate-500 font-bold uppercase tracking-wider">Total Registros</div></div>
                         </div>
-                        <button onclick="setMissingTab('pending')" class="text-left bg-white p-5 rounded-2xl border ${isPendingTab ? 'border-rose-200 ring-1 ring-rose-100' : 'border-slate-200'} shadow-card flex items-center gap-4 relative overflow-hidden transition-all hover:shadow-lg group">
-                            <div class="absolute right-0 top-0 w-24 h-full bg-gradient-to-l from-rose-50 to-transparent opacity-50"></div>
-                            <div class="p-3 ${isPendingTab ? 'bg-rose-100 text-rose-600' : 'bg-slate-100 text-slate-400 group-hover:bg-rose-50 group-hover:text-rose-500'} rounded-xl transition-colors"><i data-lucide="alert-octagon" class="w-6 h-6"></i></div>
-                            <div><div class="text-3xl font-bold ${isPendingTab ? 'text-rose-600' : 'text-slate-600'} tracking-tight">${pendingCount}</div><div class="text-xs ${isPendingTab ? 'text-rose-500' : 'text-slate-400'} font-bold uppercase tracking-wider">Pendentes</div></div>
+                        <button onclick="setMissingTab('pending')" class="text-left bg-white dark:bg-slate-800 p-5 rounded-2xl border ${isPendingTab ? 'border-rose-200 dark:border-rose-800 ring-1 ring-rose-100 dark:ring-rose-900' : 'border-slate-200 dark:border-slate-700'} shadow-card flex items-center gap-4 relative overflow-hidden transition-all hover:shadow-lg group">
+                            <div class="absolute right-0 top-0 w-24 h-full bg-gradient-to-l from-rose-50 dark:from-rose-900/30 to-transparent opacity-50"></div>
+                            <div class="p-3 ${isPendingTab ? 'bg-rose-100 text-rose-600 dark:bg-rose-900 dark:text-rose-200' : 'bg-slate-100 dark:bg-slate-700 text-slate-400 group-hover:bg-rose-50 group-hover:text-rose-500'} rounded-xl transition-colors"><i data-lucide="alert-octagon" class="w-6 h-6"></i></div>
+                            <div><div class="text-3xl font-bold ${isPendingTab ? 'text-rose-600 dark:text-rose-400' : 'text-slate-600 dark:text-slate-400'} tracking-tight">${pendingCount}</div><div class="text-xs ${isPendingTab ? 'text-rose-500' : 'text-slate-400'} font-bold uppercase tracking-wider">Pendentes</div></div>
                         </button>
-                        <button onclick="setMissingTab('resolved')" class="text-left bg-white p-5 rounded-2xl border ${!isPendingTab ? 'border-emerald-200 ring-1 ring-emerald-100' : 'border-slate-200'} shadow-card flex items-center gap-4 relative overflow-hidden transition-all hover:shadow-lg group">
-                            <div class="absolute right-0 top-0 w-24 h-full bg-gradient-to-l from-emerald-50 to-transparent opacity-50"></div>
-                            <div class="p-3 ${!isPendingTab ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400 group-hover:bg-emerald-50 group-hover:text-emerald-500'} rounded-xl transition-colors"><i data-lucide="archive" class="w-6 h-6"></i></div>
-                            <div><div class="text-3xl font-bold ${!isPendingTab ? 'text-emerald-600' : 'text-slate-600'} tracking-tight">${resolvedCount}</div><div class="text-xs ${!isPendingTab ? 'text-emerald-500' : 'text-slate-400'} font-bold uppercase tracking-wider">Resolvidos</div></div>
+                        <button onclick="setMissingTab('resolved')" class="text-left bg-white dark:bg-slate-800 p-5 rounded-2xl border ${!isPendingTab ? 'border-emerald-200 dark:border-emerald-800 ring-1 ring-emerald-100 dark:ring-emerald-900' : 'border-slate-200 dark:border-slate-700'} shadow-card flex items-center gap-4 relative overflow-hidden transition-all hover:shadow-lg group">
+                            <div class="absolute right-0 top-0 w-24 h-full bg-gradient-to-l from-emerald-50 dark:from-emerald-900/30 to-transparent opacity-50"></div>
+                            <div class="p-3 ${!isPendingTab ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900 dark:text-emerald-200' : 'bg-slate-100 dark:bg-slate-700 text-slate-400 group-hover:bg-emerald-50 group-hover:text-emerald-500'} rounded-xl transition-colors"><i data-lucide="archive" class="w-6 h-6"></i></div>
+                            <div><div class="text-3xl font-bold ${!isPendingTab ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400'} tracking-tight">${resolvedCount}</div><div class="text-xs ${!isPendingTab ? 'text-emerald-500' : 'text-slate-400'} font-bold uppercase tracking-wider">Resolvidos</div></div>
                         </button>
                     </div>
 
                     <!-- Toolbar -->
-                    <div class="flex flex-col sm:flex-row justify-between items-center bg-white p-2 rounded-xl border border-slate-200 shadow-sm gap-4 sticky top-0 z-20">
+                    <div class="flex flex-col sm:flex-row justify-between items-center bg-white dark:bg-slate-800 p-2 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm gap-4 sticky top-0 z-20">
                         <div class="flex items-center gap-3 w-full sm:w-auto">
-                            <div class="flex gap-1 bg-slate-100 p-1 rounded-lg w-full sm:w-auto">
-                                <button onclick="setMissingTab('pending')" class="flex-1 sm:flex-none px-4 py-2 rounded-md text-sm font-bold transition-all ${isPendingTab ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}">Pendências</button>
-                                <button onclick="setMissingTab('resolved')" class="flex-1 sm:flex-none px-4 py-2 rounded-md text-sm font-bold transition-all ${!isPendingTab ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}">Arquivo</button>
+                            <div class="flex gap-1 bg-slate-100 dark:bg-slate-700 p-1 rounded-lg w-full sm:w-auto">
+                                <button onclick="setMissingTab('pending')" class="flex-1 sm:flex-none px-4 py-2 rounded-md text-sm font-bold transition-all ${isPendingTab ? 'bg-white dark:bg-slate-600 text-rose-600 dark:text-rose-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-white'}">Pendências</button>
+                                <button onclick="setMissingTab('resolved')" class="flex-1 sm:flex-none px-4 py-2 rounded-md text-sm font-bold transition-all ${!isPendingTab ? 'bg-white dark:bg-slate-600 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-white'}">Arquivo</button>
                             </div>
 
                             <!-- Filtro de Data (Apenas no Arquivo) -->
                             ${!isPendingTab ? `
                                 <div class="relative flex items-center group">
                                     <div class="absolute left-3 pointer-events-none text-slate-400"><i data-lucide="calendar" class="w-4 h-4"></i></div>
-                                    <input type="date" value="${state.missingDateFilter}" onchange="setMissingDateFilter(this.value)" class="pl-9 pr-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all cursor-pointer hover:border-emerald-300" title="Filtrar por data">
+                                    <input type="date" value="${state.missingDateFilter}" onchange="setMissingDateFilter(this.value)" class="pl-9 pr-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all cursor-pointer hover:border-emerald-300" title="Filtrar por data">
                                     ${state.missingDateFilter ? `<button onclick="setMissingDateFilter('')" class="ml-2 text-slate-400 hover:text-red-500" title="Limpar filtro"><i data-lucide="x" class="w-4 h-4"></i></button>` : ''}
                                 </div>
                             ` : ''}
                         </div>
 
-                        <button onclick="printMissingItems()" class="w-full sm:w-auto flex items-center justify-center gap-2 text-sm font-bold text-slate-600 hover:text-blue-700 bg-white hover:bg-slate-50 px-4 py-2 rounded-lg transition-all border border-transparent hover:border-blue-200">
+                        <button onclick="printMissingItems()" class="w-full sm:w-auto flex items-center justify-center gap-2 text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-blue-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 px-4 py-2 rounded-lg transition-all border border-transparent hover:border-blue-200">
                             <i data-lucide="printer" class="w-4 h-4"></i> Imprimir Relatório
                         </button>
                     </div>
@@ -1534,9 +1498,9 @@
             const sidebarHtml = navItems.map(item => {
                 const isActive = state.activeTab === item.id;
                 const collapsed = state.sidebarCollapsed;
-                const baseClass = `w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group ${isActive ? 'bg-slate-900 text-white shadow-md shadow-slate-200' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'} ${collapsed ? 'justify-center px-0' : ''}`;
-                const iconClass = isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-600';
-                return `<button onclick="switchTab('${item.id}')" class="${baseClass}" title="${collapsed ? item.label : ''}"><div class="relative"><i data-lucide="${item.icon}" class="w-5 h-5 ${iconClass}"></i>${collapsed && item.badge > 0 ? `<span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border border-white"></span>` : ''}</div>${!collapsed ? `<span class="flex-grow text-left truncate">${item.label}</span>${item.badge > 0 ? `<span class="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">${item.badge}</span>` : ''}${isActive ? `<div class="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0"></div>` : ''}` : ''}</button>`;
+                const baseClass = `w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group ${isActive ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none' : 'text-slate-500 hover:bg-indigo-50 dark:hover:bg-slate-800 hover:text-indigo-900 dark:hover:text-white'} ${collapsed ? 'justify-center px-0' : ''}`;
+                const iconClass = isActive ? 'text-white' : 'text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400';
+                return `<button onclick="switchTab('${item.id}')" class="${baseClass}" title="${collapsed ? item.label : ''}"><div class="relative"><i data-lucide="${item.icon}" class="w-5 h-5 ${iconClass}"></i>${collapsed && item.badge > 0 ? `<span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border border-white"></span>` : ''}</div>${!collapsed ? `<span class="flex-grow text-left truncate">${item.label}</span>${item.badge > 0 ? `<span class="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">${item.badge}</span>` : ''}` : ''}</button>`;
             }).join('');
             
             document.getElementById('sidebar-nav').innerHTML = sidebarHtml;
@@ -1544,15 +1508,15 @@
             const userFooter = document.getElementById('sidebar-footer');
             if (userFooter) {
                 if (state.sidebarCollapsed) { 
-                    userFooter.innerHTML = `<button onclick="logout()" class="w-full flex items-center justify-center text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors" title="Sair"><i data-lucide="log-out" class="w-5 h-5"></i></button>`; 
+                    userFooter.innerHTML = `<button onclick="logout()" class="w-full flex items-center justify-center text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 p-2 rounded-lg transition-colors" title="Sair"><i data-lucide="log-out" class="w-5 h-5"></i></button>`; 
                 } else { 
-                    userFooter.innerHTML = `<div class="flex items-center gap-3 mb-3 px-2"><div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold border border-slate-300 shrink-0"><i data-lucide="user" class="w-4 h-4"></i></div><div class="overflow-hidden"><p class="text-sm font-bold text-slate-700 truncate">${state.currentUser}</p><p class="text-xs text-slate-400 truncate">Operador Logístico</p></div></div><button onclick="logout()" class="w-full flex items-center justify-center gap-2 text-sm text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors border border-transparent hover:border-red-100"><i data-lucide="log-out" class="w-4 h-4"></i> Sair do Sistema</button>`; 
+                    userFooter.innerHTML = `<div class="flex items-center gap-3 mb-3 px-2"><div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 font-bold border border-slate-300 dark:border-slate-600 shrink-0"><i data-lucide="user" class="w-4 h-4"></i></div><div class="overflow-hidden"><p class="text-sm font-bold text-slate-700 dark:text-white truncate">${state.currentUser}</p><p class="text-xs text-slate-400 truncate">Operador Logístico</p></div></div><button onclick="logout()" class="w-full flex items-center justify-center gap-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 p-2 rounded-lg transition-colors border border-transparent hover:border-red-100"><i data-lucide="log-out" class="w-4 h-4"></i> Sair do Sistema</button>`; 
                 }
             }
             
             const mobileHtml = navItems.map(item => {
                 const isActive = state.activeTab === item.id;
-                const baseClass = `flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 ${isActive ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`;
+                const baseClass = `flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 ${isActive ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'}`;
                 return `<button onclick="switchTab('${item.id}')" class="${baseClass}">${item.label}${item.badge > 0 ? `<span class="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full ml-1">${item.badge}</span>` : ''}</button>`;
             }).join('');
             
@@ -1561,7 +1525,59 @@
 
         function renderSettingsPanel() {
             const container = document.getElementById('app-content');
-            container.innerHTML = `<div class="max-w-xl mx-auto mt-10"><div class="bg-white p-8 rounded-2xl shadow-card border border-slate-200 text-center"><h2 class="text-2xl font-bold text-slate-800 mb-6">Backup de Dados</h2><div class="grid grid-cols-2 gap-4"><button onclick="handleExportBackup()" class="bg-slate-50 text-slate-600 py-4 rounded-xl font-bold border border-slate-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-colors flex flex-col items-center justify-center gap-2"><i data-lucide="download" class="w-6 h-6"></i> Exportar</button><label class="bg-slate-50 text-slate-600 py-4 rounded-xl font-bold border border-slate-200 hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200 transition-colors flex flex-col items-center justify-center gap-2 cursor-pointer"><i data-lucide="upload" class="w-6 h-6"></i> Importar<input type="file" class="hidden" onchange="handleImportBackup(event)"></label></div></div></div>`;
+            container.innerHTML = `
+            <div class="max-w-2xl mx-auto mt-6 space-y-6 pb-10">
+                <!-- Header -->
+                <div class="text-center mb-8">
+                    <h2 class="text-2xl font-bold text-slate-800 dark:text-white">Configurações</h2>
+                    <p class="text-slate-500 dark:text-slate-400">Personalize sua experiência.</p>
+                </div>
+
+                <!-- User Profile -->
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700">
+                    <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                        <i data-lucide="user-circle" class="w-5 h-5 text-indigo-500"></i> Perfil
+                    </h3>
+                    <form onsubmit="handleUpdateUsername(event)" class="flex gap-3 items-end">
+                        <div class="flex-grow">
+                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Nome de Usuário</label>
+                            <input name="username" type="text" value="${escapeHtml(state.currentUser)}" class="w-full border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white transition-all">
+                        </div>
+                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-md shadow-indigo-200 dark:shadow-none">Salvar</button>
+                    </form>
+                </div>
+
+                <!-- Appearance -->
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                            <i data-lucide="moon" class="w-5 h-5 text-indigo-500"></i> Modo Noturno
+                        </h3>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Alternar entre tema claro e escuro.</p>
+                    </div>
+                    <button onclick="toggleDarkMode()" class="relative w-14 h-8 rounded-full transition-colors duration-200 ${state.darkMode ? 'bg-indigo-600' : 'bg-slate-200'}">
+                        <span class="absolute left-1 top-1 w-6 h-6 bg-white rounded-full transition-transform duration-200 shadow-sm flex items-center justify-center ${state.darkMode ? 'translate-x-6' : 'translate-x-0'}">
+                            ${state.darkMode ? '<i data-lucide="moon" class="w-3 h-3 text-indigo-600"></i>' : '<i data-lucide="sun" class="w-3 h-3 text-slate-400"></i>'}
+                        </span>
+                    </button>
+                </div>
+
+                <!-- Data Management -->
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700">
+                    <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                        <i data-lucide="database" class="w-5 h-5 text-indigo-500"></i> Dados do Sistema
+                    </h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <button onclick="handleExportBackup()" class="bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-3 rounded-xl font-bold border border-slate-200 dark:border-slate-600 hover:bg-indigo-50 dark:hover:bg-slate-600 hover:text-indigo-600 hover:border-indigo-200 transition-all flex flex-col items-center justify-center gap-2">
+                            <i data-lucide="download" class="w-5 h-5"></i> Exportar
+                        </button>
+                        <label class="bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-3 rounded-xl font-bold border border-slate-200 dark:border-slate-600 hover:bg-amber-50 dark:hover:bg-slate-600 hover:text-amber-600 hover:border-amber-200 transition-all flex flex-col items-center justify-center gap-2 cursor-pointer">
+                            <i data-lucide="upload" class="w-5 h-5"></i> Importar
+                            <input type="file" class="hidden" onchange="handleImportBackup(event)">
+                        </label>
+                    </div>
+                </div>
+            </div>`;
             if (typeof lucide !== 'undefined') lucide.createIcons();
         }
 
@@ -1585,7 +1601,7 @@
 
                 const sidebar = document.getElementById('main-sidebar');
                 const logoContent = document.getElementById('sidebar-logo-content');
-                const navLabel = document.getElementById('nav-label'); // Added
+                const navLabel = document.getElementById('nav-label');
 
                 if (sidebar) {
                     if (state.sidebarCollapsed) { 
@@ -1607,6 +1623,10 @@
                         if(navLabel) navLabel.classList.remove('hidden');
                     }
                 }
+                
+                // Aplicar Dark Mode no Init
+                if (state.darkMode) document.documentElement.classList.add('dark');
+                else document.documentElement.classList.remove('dark');
 
                 renderNav();
                 if (state.activeTab === 'dashboard') renderDashboard();
