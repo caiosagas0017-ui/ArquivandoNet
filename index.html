@@ -144,7 +144,55 @@
     <div id="modal-container"></div>
 
     <script>
-        // --- 1. Utilitários ---
+        // --- 1. CONFIGURAÇÃO & SERVIÇOS DE DADOS (PREPARAÇÃO NEON/NETLIFY) ---
+        
+        // Altere para true quando tiver o backend configurado
+        const CONFIG = {
+            USE_CLOUD_DB: false, 
+            API_BASE_URL: '/.netlify/functions' // Endpoint padrão para Netlify Functions
+        };
+
+        // Gerenciador de Dados Abstrato
+        const DataManager = {
+            // Helper interno para localStorage seguro
+            _localGet: (key, fallback) => {
+                try { return JSON.parse(localStorage.getItem(key)) || fallback; } 
+                catch { return fallback; }
+            },
+            _localSet: (key, data) => localStorage.setItem(key, JSON.stringify(data)),
+
+            // Método genérico de carregamento
+            async load(key, fallback) {
+                if (CONFIG.USE_CLOUD_DB) {
+                    // TODO: Implementar fetch para Netlify/Neon aqui
+                    // Exemplo:
+                    // const res = await fetch(`${CONFIG.API_BASE_URL}/get-data?key=${key}`);
+                    // return await res.json();
+                    console.log(`[Cloud] Loading ${key}... (Simulado)`);
+                    return this._localGet(key, fallback); // Fallback temporário
+                } else {
+                    return this._localGet(key, fallback);
+                }
+            },
+
+            // Método genérico de salvamento
+            async save(key, data) {
+                if (CONFIG.USE_CLOUD_DB) {
+                    // TODO: Implementar fetch POST para Netlify/Neon aqui
+                    // Exemplo:
+                    // await fetch(`${CONFIG.API_BASE_URL}/save-data`, {
+                    //    method: 'POST', 
+                    //    body: JSON.stringify({ key, data }) 
+                    // });
+                    console.log(`[Cloud] Saving ${key}... (Simulado)`);
+                    this._localSet(key, data); // Fallback temporário
+                } else {
+                    this._localSet(key, data);
+                }
+            }
+        };
+
+        // --- 2. Utilitários Gerais ---
         function escapeHtml(text) {
             if (text === null || text === undefined) return "";
             return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
@@ -153,10 +201,6 @@
         function getLocalDateString(isoString) {
             if (!isoString) return '';
             try { return new Date(new Date(isoString).getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0]; } catch (e) { return ''; }
-        }
-
-        function safeParse(key, fallbackValue) {
-            try { return JSON.parse(localStorage.getItem(key)) || fallbackValue; } catch { return fallbackValue; }
         }
 
         function showToast(message, type = 'success') {
@@ -170,7 +214,7 @@
             setTimeout(() => { if(toast.parentNode) toast.parentNode.removeChild(toast); }, 3000);
         }
 
-        // --- 2. Estado ---
+        // --- 3. Constantes e Estado ---
         const DEFAULT_DESTINOS = [
             { name: "Clínica Mult 1", street: "Av. Principal", number: "100", neighborhood: "Centro" },
             { name: "Clínica Mult 2", street: "Rua das Flores", number: "250", neighborhood: "Jardins" },
@@ -183,31 +227,32 @@
 
         const INITIAL_BOXES = [1,2,3,4].map(id => ({ id, name: `Caixa ${id}`, status: 'available', items: [], destination: null, driver: null }));
 
-        const storedCatalog = safeParse('logistica_catalog', []);
+        // Carregamento Inicial via DataManager
+        const storedCatalog = DataManager._localGet('logistica_catalog', []);
         const initialCatalog = (storedCatalog.length > 0) ? storedCatalog : DEFAULT_CATALOG;
 
         let state = {
             isLoggedIn: localStorage.getItem('logistica_auth') === 'true',
-            boxes: safeParse('logistica_boxes', INITIAL_BOXES),
-            history: safeParse('logistica_history', []),
-            missingItems: safeParse('logistica_missing', []),
-            destinations: safeParse('logistica_destinations', DEFAULT_DESTINOS),
-            drivers: safeParse('logistica_drivers', DEFAULT_DRIVERS),
+            boxes: DataManager._localGet('logistica_boxes', INITIAL_BOXES),
+            history: DataManager._localGet('logistica_history', []),
+            missingItems: DataManager._localGet('logistica_missing', []),
+            destinations: DataManager._localGet('logistica_destinations', DEFAULT_DESTINOS),
+            drivers: DataManager._localGet('logistica_drivers', DEFAULT_DRIVERS),
             catalog: initialCatalog,
             activeTab: localStorage.getItem('logistica_activeTab') || 'dashboard',
             currentUser: localStorage.getItem('logistica_currentUser') || "Logistica",
-            darkMode: safeParse('logistica_darkMode', false), // New state for Dark Mode
+            darkMode: DataManager._localGet('logistica_darkMode', false),
             modal: { type: null, boxId: null, data: null },
             historyFilter: { search: '', date: '' },
             historyView: 'today',
             expandedDate: null,
-            sidebarCollapsed: safeParse('logistica_sidebar_collapsed', false),
+            sidebarCollapsed: DataManager._localGet('logistica_sidebar_collapsed', false),
             dragSourceIndex: null,
             missingTab: 'pending',
             missingDateFilter: ''
         };
 
-        // --- 3. Autenticação & Persistência ---
+        // --- 4. Funções de Negócio ---
         function handleLogin(e) {
             e.preventDefault();
             if (e.target.password.value === '1234') {
@@ -217,15 +262,16 @@
         function logout() { state.isLoggedIn = false; localStorage.removeItem('logistica_auth'); renderApp(); }
         
         function saveData(skipRender = false) {
-            localStorage.setItem('logistica_boxes', JSON.stringify(state.boxes));
-            localStorage.setItem('logistica_history', JSON.stringify(state.history));
-            localStorage.setItem('logistica_missing', JSON.stringify(state.missingItems));
-            localStorage.setItem('logistica_destinations', JSON.stringify(state.destinations));
-            localStorage.setItem('logistica_drivers', JSON.stringify(state.drivers));
-            localStorage.setItem('logistica_catalog', JSON.stringify(state.catalog));
+            // Uso do DataManager para persistência (abstração para Neon)
+            DataManager.save('logistica_boxes', state.boxes);
+            DataManager.save('logistica_history', state.history);
+            DataManager.save('logistica_missing', state.missingItems);
+            DataManager.save('logistica_destinations', state.destinations);
+            DataManager.save('logistica_drivers', state.drivers);
+            DataManager.save('logistica_catalog', state.catalog);
+            DataManager.save('logistica_darkMode', state.darkMode);
             localStorage.setItem('logistica_activeTab', state.activeTab);
             localStorage.setItem('logistica_sidebar_collapsed', JSON.stringify(state.sidebarCollapsed));
-            localStorage.setItem('logistica_darkMode', JSON.stringify(state.darkMode));
             localStorage.setItem('logistica_currentUser', state.currentUser);
             if (!skipRender) renderApp();
         }
@@ -234,7 +280,6 @@
             state.history.unshift({ id: Date.now(), timestamp: new Date().toISOString(), action, details, boxName, user: state.currentUser });
         }
 
-        // --- 4. Config & Backup Actions ---
         function handleExportBackup() {
             const dataStr = JSON.stringify(state);
             const blob = new Blob([dataStr], { type: "application/json" });
@@ -259,6 +304,15 @@
             reader.readAsText(file);
         }
 
+        function toggleMenu(e, id) {
+            e.stopPropagation();
+            const menu = document.getElementById(`menu-${id}`);
+            document.querySelectorAll('[id^="menu-"]').forEach(el => {
+                if (el.id !== `menu-${id}`) el.classList.add('hidden');
+            });
+            if (menu) menu.classList.toggle('hidden');
+        }
+
         function executeImport() {
             if (state.pendingImport) {
                 state = { ...state, ...state.pendingImport, isLoggedIn: true };
@@ -269,13 +323,12 @@
             }
         }
 
-        // --- New Settings Logic ---
         function toggleDarkMode() {
             state.darkMode = !state.darkMode;
-            saveData(true); // Don't full render yet
+            saveData(true);
             if (state.darkMode) document.documentElement.classList.add('dark');
             else document.documentElement.classList.remove('dark');
-            renderApp(); // Re-render UI
+            renderApp();
         }
 
         function handleUpdateUsername(e) {
@@ -288,16 +341,7 @@
             }
         }
 
-        // --- 5. UI Helpers (Menu & Drag) ---
-        function toggleMenu(e, id) {
-            e.stopPropagation();
-            const menu = document.getElementById(`menu-${id}`);
-            document.querySelectorAll('[id^="menu-"]').forEach(el => {
-                if (el.id !== `menu-${id}`) el.classList.add('hidden');
-            });
-            if (menu) menu.classList.toggle('hidden');
-        }
-
+        // --- Drag & Drop ---
         function enableDrag(e, idx) { document.getElementById(`card-${idx}`).setAttribute('draggable', 'true'); }
         function disableDrag(e, idx) { document.getElementById(`card-${idx}`).setAttribute('draggable', 'false'); }
         function handleDragStart(e, idx) { state.dragSourceIndex = idx; e.target.classList.add('dragging'); }
@@ -321,8 +365,7 @@
             }
         }
 
-        // --- 6. Handlers de Negócio (Caixas e Itens) ---
-        
+        // --- Logic Handlers ---
         function handleInputSearch(input) {
             const val = input.value.toLowerCase();
             const list = document.getElementById('suggestions-list');
@@ -495,7 +538,6 @@
             if (suggestions) suggestions.classList.add('hidden');
         }
 
-        // --- 7. Handlers Adicionais ---
         function handleChangeDestination(e) {
             e.preventDefault();
             const form = e.target;
@@ -565,12 +607,9 @@
             if (exists) { showToast("Este item já existe no catálogo.", "error"); return; }
             state.catalog[idx] = newName;
             state.catalog.sort((a, b) => a.localeCompare(b)); 
-
             let boxUpdates = 0;
             state.boxes.forEach(box => {
-                box.items.forEach(item => {
-                    if (item.name === oldName) { item.name = newName; boxUpdates++; }
-                });
+                box.items.forEach(item => { if (item.name === oldName) { item.name = newName; boxUpdates++; } });
             });
             state.missingItems.forEach(missing => {
                 if (missing.itemName === oldName && missing.status === 'pending') { missing.itemName = newName; }
@@ -667,99 +706,7 @@
             renderApp(); 
         }
 
-        function printSingleBoxMissing(boxId) {
-             const items = state.missingItems.filter(m => m.boxId === boxId);
-             if (!items.length) { showToast("Não há faltas para esta caixa.", "error"); return; }
-             const boxName = items[0].boxName;
-             const destination = items[0].destination;
-             const rows = items.map(m => `<tr><td style="padding:8px;border-bottom:1px solid #e2e8f0;color:#334155;">${new Date(m.date).toLocaleDateString('pt-BR')}</td><td style="padding:8px;border-bottom:1px solid #e2e8f0;font-weight:bold;color:#c0392b;">${m.quantity}x ${escapeHtml(m.itemName)}</td><td style="padding:8px;border-bottom:1px solid #e2e8f0;font-style:italic;color:#64748b;">${escapeHtml(m.reason || '-')}</td><td style="padding:8px;border-bottom:1px solid #e2e8f0;font-size:11px;">${m.status === 'resolved' ? '<span style="color:green">Resolvido</span>' : '<span style="color:red">Pendente</span>'}</td></tr>`).join('');
-             const contentHtml = `<div style="border:1px solid #cbd5e1;border-radius:6px;overflow:hidden;"><div style="background-color:#f1f5f9;padding:15px;border-bottom:1px solid #cbd5e1;"><h2 style="margin:0;font-size:18px;color:#0f172a;">${escapeHtml(boxName)}</h2><p style="margin:5px 0 0 0;font-size:14px;color:#475569;">Destino: <strong>${escapeHtml(destination)}</strong></p></div><table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr style="background-color:#ffffff;text-align:left;border-bottom:1px solid #e2e8f0;"><th style="padding:10px;width:90px;color:#64748b;">Data</th><th style="padding:10px;color:#64748b;">Item Faltante</th><th style="padding:10px;color:#64748b;">Motivo/Obs</th><th style="padding:10px;width:80px;color:#64748b;">Status</th></tr></thead><tbody>${rows}</tbody></table></div>`;
-             const html = `<html><head><title>Faltas - ${escapeHtml(boxName)}</title><style>body{font-family:sans-serif;padding:30px;color:#1e293b;}@media print{.no-print{display:none}}</style></head><body><h1>Relatório de Faltas - Caixa Individual</h1>${contentHtml}<script>window.onload=()=>{window.print()}<\/script></body></html>`;
-             const win = window.open('', '_blank');
-             if(win) { win.document.write(html); win.document.close(); } else { showToast("Pop-up bloqueado.", "error"); }
-        }
-
-        function printMissingItems() {
-            if (!state.missingItems.length) { showToast("Não há faltas para imprimir.", "error"); return; }
-            const grouped = {};
-            state.missingItems.forEach(item => {
-                const key = `${item.boxName}-${item.destination}`;
-                if (!grouped[key]) { grouped[key] = { boxName: item.boxName, destination: item.destination, items: [] }; }
-                grouped[key].items.push(item);
-            });
-            let contentHtml = '';
-            Object.values(grouped).forEach(group => {
-                const rows = group.items.map(m => `<tr><td style="padding:8px;border-bottom:1px solid #e2e8f0;color:#334155;">${new Date(m.date).toLocaleDateString('pt-BR')}</td><td style="padding:8px;border-bottom:1px solid #e2e8f0;font-weight:bold;color:#c0392b;">${m.quantity}x ${escapeHtml(m.itemName)}</td><td style="padding:8px;border-bottom:1px solid #e2e8f0;font-style:italic;color:#64748b;">${escapeHtml(m.reason || '-')}</td><td style="padding:8px;border-bottom:1px solid #e2e8f0;font-size:11px;">${m.status === 'resolved' ? '<span style="color:green">Resolvido</span>' : '<span style="color:red">Pendente</span>'}</td></tr>`).join('');
-                contentHtml += `<div style="margin-bottom:25px;border:1px solid #cbd5e1;border-radius:6px;overflow:hidden;page-break-inside:avoid;page-break-after:always;"><div style="background-color:#f1f5f9;padding:10px 15px;border-bottom:1px solid #cbd5e1;"><div style="font-size:16px;font-weight:bold;color:#0f172a;">${escapeHtml(group.boxName)}</div><div style="font-size:12px;color:#475569;margin-top:2px;">Destino: <strong style="color:#1e40af;">${escapeHtml(group.destination)}</strong></div></div><table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr style="background-color:#ffffff;text-align:left;border-bottom:1px solid #e2e8f0;"><th style="padding:8px;width:80px;color:#64748b;">Data</th><th style="padding:8px;color:#64748b;">Item Faltante</th><th style="padding:8px;color:#64748b;">Motivo/Obs</th><th style="padding:8px;width:60px;color:#64748b;">Status</th></tr></thead><tbody>${rows}</tbody></table></div>`;
-            });
-            const html = `<html><head><title>Relatório de Faltas</title><style>body{font-family:sans-serif;padding:30px;color:#1e293b;max-width:900px;margin:0 auto;}h1{color:#1e3a8a;border-bottom:2px solid #3b82f6;padding-bottom:10px;margin-bottom:5px;font-size:22px;}.subtitle{font-size:12px;color:#64748b;margin-bottom:30px;}@media print{body{padding:0;}.no-print{display:none;}}</style></head><body><h1>Relatório de Faltas e Pendências</h1><div class="subtitle">Gerado em: ${new Date().toLocaleString('pt-BR')}</div>${contentHtml}<script>window.onload=function(){window.print();}<\/script></body></html>`;
-            const win = window.open('', '_blank');
-            if(win) { win.document.write(html); win.document.close(); } else { showToast("Pop-up bloqueado.", 'error'); }
-        }
-
-        function printBox(boxId) {
-            const box = state.boxes.find(b => b.id === boxId);
-            if (!box) return;
-            const dest = state.destinations.find(d => d.name.trim().toLowerCase() === (box.destination || '').trim().toLowerCase());
-            let addressStr = `<div style="font-size:16px;font-weight:600;color:#1e3a8a;">${escapeHtml(box.destination || 'N/A')}</div>`;
-            if (dest && (dest.street || dest.neighborhood)) {
-                const street = dest.street ? escapeHtml(dest.street) : '';
-                const num = dest.number ? `, ${escapeHtml(dest.number)}` : '';
-                const hood = dest.neighborhood ? ` - ${escapeHtml(dest.neighborhood)}` : '';
-                addressStr += `<div style="font-size:12px;font-weight:normal;color:#555;margin-top:4px;">${street}${num}${hood}</div>`;
-            }
-            const internal = box.items.filter(i => !i.isExternal);
-            const external = box.items.filter(i => i.isExternal);
-            const renderList = (items) => items.map(i => `<li style="padding:8px 0;border-bottom:1px solid #e0f2fe;display:flex;align-items:center;font-size:14px;"><span style="display:inline-block;width:16px;height:16px;border:1px solid #1e40af;margin-right:12px;border-radius:2px;"></span><span style="font-weight:bold;margin-right:6px;background-color:#eff6ff;padding:2px 6px;border-radius:4px;border:1px solid #bfdbfe;">${i.quantity}${i.unitType==='fd'?' Fd':i.unitType==='cx'?' Cx':' Un'}</span> ${escapeHtml(i.name)}</li>`).join('');
-            const driverObj = state.drivers.find(d => d.name === box.driver);
-            const driverPhone = driverObj ? driverObj.phone : '';
-            const driverDisplay = box.driver ? (driverPhone ? `${escapeHtml(box.driver)}<br><span style="font-size:11px;font-weight:normal;">${escapeHtml(driverPhone)}</span>` : escapeHtml(box.driver)) : '-';
-            const html = `<html><head><title>Manifesto ${escapeHtml(box.name)}</title><style>body{font-family:sans-serif;padding:20px;color:#1e3a8a;}.header{border-bottom:2px solid #1e3a8a;padding-bottom:20px;margin-bottom:30px;display:flex;justify-content:space-between;align-items:flex-end;}.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:30px;background:#eff6ff;padding:20px;border-radius:8px;border:1px solid #bfdbfe;}.label{font-size:11px;text-transform:uppercase;font-weight:bold;color:#60a5fa;margin-bottom:2px;}.value{font-size:16px;font-weight:600;color:#1e3a8a;}h2{font-size:18px;border-bottom:2px solid #bfdbfe;padding-bottom:5px;margin-top:25px;color:#1e40af;}ul{list-style:none;padding:0;}.sign-line{border-top:1px solid #1e3a8a;flex:1;padding-top:5px;text-align:center;margin-top:50px;font-size:12px;color:#1e3a8a;}@media print{.info-grid{background:none;border:1px solid #bfdbfe;}h2{border-bottom:2px solid #bfdbfe;}body{-webkit-print-color-adjust:exact;}}</style></head><body><div class="header"><div><h1 style="margin:0;color:#1e3a8a;font-size:28px;">${escapeHtml(box.destination || "Logística Central")}</h1><div style="color:#3b82f6;">Controle de Entrega</div></div><div style="text-align:right;"><div class="value" style="font-size:24px;">${escapeHtml(box.name)}</div></div></div><div class="info-grid"><div><div class="label">Destino</div>${addressStr}</div><div><div class="label">Data</div><div class="value">${new Date().toLocaleDateString('pt-BR')}</div></div><div><div class="label">Status</div><div class="value">${box.status==='in_delivery'?'Em Entrega':box.status==='delivered'?'Entregue':'Disponível'}</div></div><div><div class="label">Motorista</div><div class="value">${driverDisplay}</div></div></div>${internal.length > 0 ? `<h2>Conteúdo (${internal.reduce((a,i)=>a+(i.quantity||1),0)})</h2><ul>${renderList(internal)}</ul>` : ''}${external.length > 0 ? `<h2>Itens Fora da Caixa (${external.reduce((a,i)=>a+(i.quantity||1),0)})</h2><ul>${renderList(external)}</ul>` : ''}${internal.length===0 && external.length===0 ? '<p style="text-align:center;color:#93c5fd;margin-top:20px;">Vazio</p>' : ''}<div style="display:flex;gap:40px;margin-top:60px;"><div class="sign-line">Assinatura Expedição</div><div class="sign-line">Assinatura Recebimento</div></div><script>window.onload=function(){window.print();}<\/script></body></html>`;
-            const win = window.open('', '_blank');
-            if(win) { win.document.write(html); win.document.close(); } else { showToast("Pop-up bloqueado.", 'error'); }
-        }
-
-        function printHistoryManifest(logId) {
-            const log = state.history.find(l => l.id === logId);
-            if (!log) return;
-            let destinationName = "Desconhecido";
-            let driverName = "Desconhecido";
-            let itemsText = "";
-            const destMatch = log.details.match(/Saiu para entrega em: (.*?) \(Mot:/);
-            if (destMatch) destinationName = destMatch[1];
-            const driverMatch = log.details.match(/\(Mot: (.*?)\)/);
-            if (driverMatch) driverName = driverMatch[1];
-            if (log.details.includes("Conteúdo: ")) { itemsText = log.details.split("Conteúdo: ")[1]; }
-            const destObj = state.destinations.find(d => d.name.trim().toLowerCase() === destinationName.trim().toLowerCase());
-            const driverObj = state.drivers.find(d => d.name.trim().toLowerCase() === driverName.trim().toLowerCase());
-            let addressStr = `<div style="font-size:16px;font-weight:600;color:#1e3a8a;">${escapeHtml(destinationName)}</div>`;
-            if (destObj) {
-                const street = destObj.street ? escapeHtml(destObj.street) : '';
-                const num = destObj.number ? `, ${escapeHtml(destObj.number)}` : '';
-                const hood = destObj.neighborhood ? ` - ${escapeHtml(destObj.neighborhood)}` : '';
-                if(street || hood) { addressStr += `<div style="font-size:12px;font-weight:normal;color:#555;margin-top:4px;">${street}${num}${hood}</div>`; }
-            }
-            let driverDisplay = escapeHtml(driverName);
-            if (driverObj && driverObj.phone) { driverDisplay += `<br><span style="font-size:11px;font-weight:normal;">${escapeHtml(driverObj.phone)}</span>`; }
-            let itemsHtml = '<li style="padding:10px;text-align:center;color:#999;">Sem detalhes de itens no histórico</li>';
-            if (itemsText) {
-                itemsHtml = itemsText.split(', ').map(itemStr => {
-                    const match = itemStr.match(/^(\d+)([a-z]+)\s+(.*)$/);
-                    if (match) {
-                        const qtd = match[1];
-                        const unit = match[2] === 'fd' ? ' Fd' : (match[2] === 'cx' ? ' Cx' : ' Un');
-                        const name = match[3];
-                        return `<li style="padding:8px 0;border-bottom:1px solid #e0f2fe;display:flex;align-items:center;font-size:14px;"><span style="display:inline-block;width:16px;height:16px;border:1px solid #1e40af;margin-right:12px;border-radius:2px;"></span><span style="font-weight:bold;margin-right:6px;background-color:#eff6ff;padding:2px 6px;border-radius:4px;border:1px solid #bfdbfe;">${qtd}${unit}</span> ${escapeHtml(name)}</li>`;
-                    } else { return `<li style="padding:8px 0;border-bottom:1px solid #e0f2fe;display:flex;align-items:center;font-size:14px;"><span style="display:inline-block;width:16px;height:16px;border:1px solid #1e40af;margin-right:12px;border-radius:2px;"></span>${escapeHtml(itemStr)}</li>`; }
-                }).join('');
-            }
-            const html = `<html><head><title>Cópia de Manifesto</title><style>body { font-family: sans-serif; padding: 20px; color: #1e3a8a; } .header { border-bottom: 2px solid #1e3a8a; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; } .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; background: #eff6ff; padding: 20px; border-radius: 8px; border: 1px solid #bfdbfe; } .label { font-size: 11px; text-transform: uppercase; font-weight: bold; color: #60a5fa; margin-bottom: 2px; } .value { font-size: 16px; font-weight: 600; color: #1e3a8a; } h2 { font-size: 18px; border-bottom: 2px solid #bfdbfe; padding-bottom: 5px; margin-top: 25px; color: #1e40af; } ul { list-style: none; padding: 0; } .sign-line { border-top: 1px solid #1e3a8a; flex: 1; padding-top: 5px; text-align: center; margin-top: 50px; font-size: 12px; color: #1e3a8a; } .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 100px; color: rgba(30, 58, 138, 0.05); pointer-events: none; z-index: -1; border: 5px solid rgba(30, 58, 138, 0.05); padding: 20px; border-radius: 20px; text-transform: uppercase; } @media print { .info-grid { background: none; border: 1px solid #bfdbfe; } h2 { border-bottom: 2px solid #bfdbfe; } body { -webkit-print-color-adjust: exact; } }</style></head><body><div class="watermark">CÓPIA</div><div class="header"><div><h1 style="margin:0;color:#1e3a8a;font-size:28px;">${escapeHtml(destinationName)}</h1><div style="color:#3b82f6;">Controle de Entrega (Histórico)</div></div><div style="text-align:right;"><div class="value" style="font-size:24px;">${escapeHtml(log.boxName)}</div><div style="font-size:12px;color:#666;">ID Log: ${log.id}</div></div></div><div class="info-grid"><div><div class="label">Destino</div>${addressStr}</div><div><div class="label">Data Original</div><div class="value">${new Date(log.timestamp).toLocaleDateString('pt-BR')} ${new Date(log.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div></div><div><div class="label">Status no Registro</div><div class="value">Enviado</div></div><div><div class="label">Motorista</div><div class="value">${driverDisplay}</div></div></div><h2>Conteúdo Registrado</h2><ul>${itemsHtml}</ul><div style="display:flex;gap:40px;margin-top:60px;"><div class="sign-line">Responsável Expedição</div><div class="sign-line">Conferência Recebimento</div></div><script>window.onload=function(){window.print();} <\/script></body></html>`;
-            const win = window.open('', '_blank');
-            if(win) { win.document.write(html); win.document.close(); }
-            else { showToast("Pop-up bloqueado.", 'error'); }
-        }
-
-        // --- 8. Renderização (Views & Components) ---
+        // --- Render Views ---
 
         function renderModal() {
             const container = document.getElementById('modal-container');
@@ -783,26 +730,19 @@
                                 <input name="itemName" type="text" class="pl-11 block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 border focus:bg-white dark:focus:bg-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 text-sm py-3 transition-all outline-none dark:text-white" placeholder="Buscar no catálogo..." autocomplete="off" oninput="handleInputSearch(this)" onfocus="handleInputSearch(this)" autofocus required>
                                 <ul id="suggestions-list" class="absolute z-50 w-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl shadow-xl mt-1 max-h-48 overflow-y-auto hidden divide-y divide-slate-50 dark:divide-slate-700 custom-scrollbar"></ul>
                             </div>
-                            <p class="text-[11px] text-slate-400 dark:text-slate-500 font-medium ml-1">Obrigatório selecionar um item do catálogo.</p>
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2">Quantidade</label>
-                                <div class="relative">
-                                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none"><i data-lucide="hash" class="h-4 w-4 text-slate-400 dark:text-slate-500"></i></div>
-                                    <input type="number" name="quantity" value="1" min="1" class="pl-10 block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:bg-white dark:focus:bg-slate-800 border focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 text-sm py-3 outline-none dark:text-white">
-                                </div>
+                                <input type="number" name="quantity" value="1" min="1" class="pl-10 block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:bg-white dark:focus:bg-slate-800 border focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 text-sm py-3 outline-none dark:text-white">
                             </div>
                             <div>
                                 <label class="block text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2">Unidade</label>
-                                <div class="relative">
-                                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none"><i data-lucide="scale" class="h-4 w-4 text-slate-400 dark:text-slate-500"></i></div>
-                                    <select name="unitType" class="pl-10 block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:bg-white dark:focus:bg-slate-800 border focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 text-sm py-3 outline-none appearance-none dark:text-white">
-                                        <option value="un">Unidade</option>
-                                        <option value="fd">Fardo</option>
-                                        <option value="cx">Caixa</option>
-                                    </select>
-                                </div>
+                                <select name="unitType" class="pl-10 block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:bg-white dark:focus:bg-slate-800 border focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 text-sm py-3 outline-none appearance-none dark:text-white">
+                                    <option value="un">Unidade</option>
+                                    <option value="fd">Fardo</option>
+                                    <option value="cx">Caixa</option>
+                                </select>
                             </div>
                         </div>
                         <label class="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors">
@@ -833,7 +773,6 @@
                         <h3 class="text-xl font-bold text-slate-800 dark:text-white">Reportar Falta</h3>
                         <p class="text-sm text-slate-500 dark:text-slate-400">Caixa: <strong class="text-slate-700 dark:text-slate-300">${box.name}</strong></p>
                     </div>
-
                     <form onsubmit="handleReportMissing(event)" class="space-y-5">
                         <div class="space-y-1.5 relative">
                             <label class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider ml-1">Item do Catálogo</label>
@@ -841,21 +780,10 @@
                                 <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-rose-500 transition-colors">
                                     <i data-lucide="search" class="w-5 h-5"></i>
                                 </div>
-                                <input 
-                                    name="itemName" 
-                                    type="text" 
-                                    placeholder="Digite para buscar..." 
-                                    class="w-full pl-11 pr-4 py-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:bg-white dark:focus:bg-slate-800 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 outline-none transition-all text-sm font-medium text-slate-700 dark:text-white"
-                                    autocomplete="off" 
-                                    oninput="handleInputSearch(this)" 
-                                    onfocus="handleInputSearch(this)" 
-                                    required
-                                >
+                                <input name="itemName" type="text" placeholder="Digite para buscar..." class="w-full pl-11 pr-4 py-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:bg-white dark:focus:bg-slate-800 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 outline-none transition-all text-sm font-medium text-slate-700 dark:text-white" autocomplete="off" oninput="handleInputSearch(this)" onfocus="handleInputSearch(this)" required>
                                 <ul id="suggestions-list" class="absolute left-0 right-0 top-full mt-1.5 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl shadow-xl max-h-56 overflow-y-auto hidden z-50 divide-y divide-slate-50 dark:divide-slate-700 custom-scrollbar"></ul>
                             </div>
-                            <p class="text-[11px] text-slate-400 dark:text-slate-500 ml-1">Selecione um item existente na lista.</p>
                         </div>
-
                         <div class="grid grid-cols-12 gap-3">
                             <div class="col-span-4 space-y-1.5">
                                 <label class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider ml-1">Qtd.</label>
@@ -866,15 +794,12 @@
                                 <input name="reason" type="text" placeholder="Ex: Avaria, não veio..." class="w-full px-4 py-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:bg-white dark:focus:bg-slate-800 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/10 outline-none text-sm font-medium dark:text-white">
                             </div>
                         </div>
-
-                        <button type="submit" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-rose-200 dark:shadow-none active:scale-95 transition-all flex items-center justify-center gap-2 mt-2">
-                            <i data-lucide="alert-octagon" class="w-5 h-5"></i> Registrar Pendência
-                        </button>
-                    </form>
-                `;
+                        <button type="submit" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-rose-200 dark:shadow-none active:scale-95 transition-all flex items-center justify-center gap-2 mt-2"><i data-lucide="alert-octagon" class="w-5 h-5"></i> Registrar Pendência</button>
+                    </form>`;
             }
 
             if (!content) {
+                // FALLBACK FOR DELETE AND OTHER ACTIONS
                 if (type === 'addBox') content = `<h3 class="text-xl font-bold text-slate-800 dark:text-white mb-4">Nova Caixa</h3><form onsubmit="handleAddBox(event)"><input name="boxName" placeholder="Nome da Caixa" class="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-3 mb-4 outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 dark:text-white"><button class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">Criar</button></form>`;
                 else if (type === 'editBox') content = `<h3 class="text-xl font-bold text-slate-800 dark:text-white mb-4">Renomear Caixa</h3><form onsubmit="handleEditBox(event)"><input name="boxName" value="${box.name}" class="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-3 mb-4 outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 dark:text-white"><button class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">Salvar</button></form>`;
                 else if (type === 'deleteBox') content = `<div class="text-center"><h3 class="text-xl font-bold text-slate-800 dark:text-white mb-2">Excluir Caixa</h3><p class="text-slate-500 dark:text-slate-400 mb-6">Tem certeza? Isso apagará o histórico local desta caixa.</p><div class="flex gap-3"><button onclick="closeModal()" class="flex-1 py-3 border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">Cancelar</button><button onclick="confirmDeleteBox()" class="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold shadow-lg shadow-red-200 dark:shadow-none hover:bg-red-700">Excluir</button></div></div>`;
@@ -1302,8 +1227,20 @@
                 </div>`;
             }
 
-            container.innerHTML = `<div class="flex flex-col h-full overflow-hidden pb-4"><div class="flex flex-col md:flex-row gap-4 mb-6 shrink-0 justify-between items-center"><div class="bg-slate-200 dark:bg-slate-800 p-1 rounded-xl flex gap-1 w-full md:w-auto"><button onclick="setHistoryView('today')" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${state.historyView==='today'?'bg-white dark:bg-slate-600 text-slate-800 dark:text-white shadow-sm':'text-slate-500 hover:text-slate-700 hover:bg-slate-300/50 dark:hover:bg-slate-700'}"><i data-lucide="sun" class="w-4 h-4"></i> Hoje</button><button onclick="setHistoryView('archive')" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${state.historyView==='archive'?'bg-white dark:bg-slate-600 text-slate-800 dark:text-white shadow-sm':'text-slate-500 hover:text-slate-700 hover:bg-slate-300/50 dark:hover:bg-slate-700'}"><i data-lucide="history" class="w-4 h-4"></i> Arquivo</button></div><div class="flex gap-2 w-full md:w-auto bg-white dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm"><div class="relative flex-grow md:w-64"><i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i><input type="text" placeholder="Filtrar eventos..." value="${escapeHtml(state.historyFilter.search)}" oninput="handleHistoryFilter('search', this.value)" class="w-full pl-9 pr-3 py-2 text-sm bg-transparent outline-none text-slate-700 dark:text-white placeholder:text-slate-400"></div><div class="w-px bg-slate-200 dark:bg-slate-700 my-1"></div><input type="date" value="${state.historyFilter.date}" onchange="handleHistoryFilter('date', this.value)" class="bg-transparent text-sm text-slate-600 dark:text-slate-300 px-2 outline-none font-medium cursor-pointer hover:text-blue-600">${(state.historyFilter.search || state.historyFilter.date) ? `<button onclick="clearHistoryFilters()" class="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-colors border border-transparent hover:border-red-100 flex items-center gap-1"><i data-lucide="x" class="w-3 h-3"></i></button>` : ''}</div></div>${contentHtml}</div>`;
-            if (typeof lucide !== 'undefined') lucide.createIcons();
+            // Otimização: Verifica se o campo de busca já existe no DOM.
+            // Se existir, atualiza APENAS a div de conteúdo (#history-content-area),
+            // evitando reescrever o input e perder o foco.
+            const historyContainer = document.getElementById('history-content-area');
+            const historyInput = document.getElementById('history-search-input');
+            
+            if (historyContainer && historyInput) {
+                historyContainer.innerHTML = contentHtml;
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            } else {
+                // Se não existir (primeira renderização), desenha tudo.
+                container.innerHTML = `<div class="flex flex-col h-full overflow-hidden pb-4"><div class="flex flex-col md:flex-row gap-4 mb-6 shrink-0 justify-between items-center"><div class="bg-slate-200 dark:bg-slate-800 p-1 rounded-xl flex gap-1 w-full md:w-auto"><button onclick="setHistoryView('today')" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${state.historyView==='today'?'bg-white dark:bg-slate-600 text-slate-800 dark:text-white shadow-sm':'text-slate-500 hover:text-slate-700 hover:bg-slate-300/50 dark:hover:bg-slate-700'}"><i data-lucide="sun" class="w-4 h-4"></i> Hoje</button><button onclick="setHistoryView('archive')" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${state.historyView==='archive'?'bg-white dark:bg-slate-600 text-slate-800 dark:text-white shadow-sm':'text-slate-500 hover:text-slate-700 hover:bg-slate-300/50 dark:hover:bg-slate-700'}"><i data-lucide="history" class="w-4 h-4"></i> Arquivo</button></div><div class="flex gap-2 w-full md:w-auto bg-white dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm"><div class="relative flex-grow md:w-64"><i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i><input id="history-search-input" type="text" placeholder="Filtrar eventos..." value="${escapeHtml(state.historyFilter.search)}" oninput="handleHistoryFilter('search', this.value)" class="w-full pl-9 pr-3 py-2 text-sm bg-transparent outline-none text-slate-700 dark:text-white placeholder:text-slate-400"></div><div class="w-px bg-slate-200 dark:bg-slate-700 my-1"></div><input type="date" value="${state.historyFilter.date}" onchange="handleHistoryFilter('date', this.value)" class="bg-transparent text-sm text-slate-600 dark:text-slate-300 px-2 outline-none font-medium cursor-pointer hover:text-blue-600">${(state.historyFilter.search || state.historyFilter.date) ? `<button onclick="clearHistoryFilters()" class="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-colors border border-transparent hover:border-red-100 flex items-center gap-1"><i data-lucide="x" class="w-3 h-3"></i></button>` : ''}</div></div><div id="history-content-area" class="flex-grow overflow-hidden flex flex-col">${contentHtml}</div></div>`;
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            }
         }
 
         function renderLocationsPanel() {
