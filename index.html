@@ -36,7 +36,7 @@
 
     <style>
         /* --- Animações e Estilos Globais --- */
-        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; background-color: #f8fafc; }
         
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes zoomIn { from { transform: scale(0.98); opacity: 0; } to { transform: scale(1); opacity: 1; } }
@@ -704,6 +704,100 @@
         function setHistoryView(view) { 
             state.historyView = view; 
             renderApp(); 
+        }
+
+        // --- Printing ---
+
+        function printSingleBoxMissing(boxId) {
+             const items = state.missingItems.filter(m => m.boxId === boxId);
+             if (!items.length) { showToast("Não há faltas para esta caixa.", "error"); return; }
+             const boxName = items[0].boxName;
+             const destination = items[0].destination;
+             const rows = items.map(m => `<tr><td style="padding:8px;border-bottom:1px solid #e2e8f0;color:#334155;">${new Date(m.date).toLocaleDateString('pt-BR')}</td><td style="padding:8px;border-bottom:1px solid #e2e8f0;font-weight:bold;color:#c0392b;">${m.quantity}x ${escapeHtml(m.itemName)}</td><td style="padding:8px;border-bottom:1px solid #e2e8f0;font-style:italic;color:#64748b;">${escapeHtml(m.reason || '-')}</td><td style="padding:8px;border-bottom:1px solid #e2e8f0;font-size:11px;">${m.status === 'resolved' ? '<span style="color:green">Resolvido</span>' : '<span style="color:red">Pendente</span>'}</td></tr>`).join('');
+             const contentHtml = `<div style="border:1px solid #cbd5e1;border-radius:6px;overflow:hidden;"><div style="background-color:#f1f5f9;padding:15px;border-bottom:1px solid #cbd5e1;"><h2 style="margin:0;font-size:18px;color:#0f172a;">${escapeHtml(boxName)}</h2><p style="margin:5px 0 0 0;font-size:14px;color:#475569;">Destino: <strong>${escapeHtml(destination)}</strong></p></div><table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr style="background-color:#ffffff;text-align:left;border-bottom:1px solid #e2e8f0;"><th style="padding:10px;width:90px;color:#64748b;">Data</th><th style="padding:10px;color:#64748b;">Item Faltante</th><th style="padding:10px;color:#64748b;">Motivo/Obs</th><th style="padding:10px;width:80px;color:#64748b;">Status</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+             const html = `<html><head><title>Faltas - ${escapeHtml(boxName)}</title><style>body{font-family:sans-serif;padding:30px;color:#1e293b;}@media print{.no-print{display:none}}</style></head><body><h1>Relatório de Faltas - Caixa Individual</h1>${contentHtml}<script>window.onload=()=>{window.print()}<\/script></body></html>`;
+             const win = window.open('', '_blank');
+             if(win) { win.document.write(html); win.document.close(); } else { showToast("Pop-up bloqueado.", "error"); }
+        }
+
+        function printMissingItems() {
+            if (!state.missingItems.length) { showToast("Não há faltas para imprimir.", "error"); return; }
+            const grouped = {};
+            state.missingItems.forEach(item => {
+                const key = `${item.boxName}-${item.destination}`;
+                if (!grouped[key]) { grouped[key] = { boxName: item.boxName, destination: item.destination, items: [] }; }
+                grouped[key].items.push(item);
+            });
+            let contentHtml = '';
+            Object.values(grouped).forEach(group => {
+                const rows = group.items.map(m => `<tr><td style="padding:8px;border-bottom:1px solid #e2e8f0;color:#334155;">${new Date(m.date).toLocaleDateString('pt-BR')}</td><td style="padding:8px;border-bottom:1px solid #e2e8f0;font-weight:bold;color:#c0392b;">${m.quantity}x ${escapeHtml(m.itemName)}</td><td style="padding:8px;border-bottom:1px solid #e2e8f0;font-style:italic;color:#64748b;">${escapeHtml(m.reason || '-')}</td><td style="padding:8px;border-bottom:1px solid #e2e8f0;font-size:11px;">${m.status === 'resolved' ? '<span style="color:green">Resolvido</span>' : '<span style="color:red">Pendente</span>'}</td></tr>`).join('');
+                contentHtml += `<div style="margin-bottom:25px;border:1px solid #cbd5e1;border-radius:6px;overflow:hidden;page-break-inside:avoid;page-break-after:always;"><div style="background-color:#f1f5f9;padding:10px 15px;border-bottom:1px solid #cbd5e1;"><div style="font-size:16px;font-weight:bold;color:#0f172a;">${escapeHtml(group.boxName)}</div><div style="font-size:12px;color:#475569;margin-top:2px;">Destino: <strong style="color:#1e40af;">${escapeHtml(group.destination)}</strong></div></div><table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr style="background-color:#ffffff;text-align:left;border-bottom:1px solid #e2e8f0;"><th style="padding:8px;width:80px;color:#64748b;">Data</th><th style="padding:8px;color:#64748b;">Item Faltante</th><th style="padding:8px;color:#64748b;">Motivo/Obs</th><th style="padding:8px;width:60px;color:#64748b;">Status</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+            });
+            const html = `<html><head><title>Relatório de Faltas</title><style>body{font-family:sans-serif;padding:30px;color:#1e293b;max-width:900px;margin:0 auto;}h1{color:#1e3a8a;border-bottom:2px solid #3b82f6;padding-bottom:10px;margin-bottom:5px;font-size:22px;}.subtitle{font-size:12px;color:#64748b;margin-bottom:30px;}@media print{body{padding:0;}.no-print{display:none;}}</style></head><body><h1>Relatório de Faltas e Pendências</h1><div class="subtitle">Gerado em: ${new Date().toLocaleString('pt-BR')}</div>${contentHtml}<script>window.onload=function(){window.print();}<\/script></body></html>`;
+            const win = window.open('', '_blank');
+            if(win) { win.document.write(html); win.document.close(); } else { showToast("Pop-up bloqueado.", 'error'); }
+        }
+
+        function printBox(boxId) {
+            const box = state.boxes.find(b => b.id === boxId);
+            if (!box) return;
+            const dest = state.destinations.find(d => d.name.trim().toLowerCase() === (box.destination || '').trim().toLowerCase());
+            let addressStr = `<div style="font-size:16px;font-weight:600;color:#1e3a8a;">${escapeHtml(box.destination || 'N/A')}</div>`;
+            if (dest && (dest.street || dest.neighborhood)) {
+                const street = dest.street ? escapeHtml(dest.street) : '';
+                const num = dest.number ? `, ${escapeHtml(dest.number)}` : '';
+                const hood = dest.neighborhood ? ` - ${escapeHtml(dest.neighborhood)}` : '';
+                addressStr += `<div style="font-size:12px;font-weight:normal;color:#555;margin-top:4px;">${street}${num}${hood}</div>`;
+            }
+            const internal = box.items.filter(i => !i.isExternal);
+            const external = box.items.filter(i => i.isExternal);
+            const renderList = (items) => items.map(i => `<li style="padding:8px 0;border-bottom:1px solid #e0f2fe;display:flex;align-items:center;font-size:14px;"><span style="display:inline-block;width:16px;height:16px;border:1px solid #1e40af;margin-right:12px;border-radius:2px;"></span><span style="font-weight:bold;margin-right:6px;background-color:#eff6ff;padding:2px 6px;border-radius:4px;border:1px solid #bfdbfe;">${i.quantity}${i.unitType==='fd'?' Fd':i.unitType==='cx'?' Cx':' Un'}</span> ${escapeHtml(i.name)}</li>`).join('');
+            const driverObj = state.drivers.find(d => d.name === box.driver);
+            const driverPhone = driverObj ? driverObj.phone : '';
+            const driverDisplay = box.driver ? (driverPhone ? `${escapeHtml(box.driver)}<br><span style="font-size:11px;font-weight:normal;">${escapeHtml(driverPhone)}</span>` : escapeHtml(box.driver)) : '-';
+            const html = `<html><head><title>Manifesto ${escapeHtml(box.name)}</title><style>body{font-family:sans-serif;padding:20px;color:#1e3a8a;}.header{border-bottom:2px solid #1e3a8a;padding-bottom:20px;margin-bottom:30px;display:flex;justify-content:space-between;align-items:flex-end;}.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:30px;background:#eff6ff;padding:20px;border-radius:8px;border:1px solid #bfdbfe;}.label{font-size:11px;text-transform:uppercase;font-weight:bold;color:#60a5fa;margin-bottom:2px;}.value{font-size:16px;font-weight:600;color:#1e3a8a;}h2{font-size:18px;border-bottom:2px solid #bfdbfe;padding-bottom:5px;margin-top:25px;color:#1e40af;}ul{list-style:none;padding:0;}.sign-line{border-top:1px solid #1e3a8a;flex:1;padding-top:5px;text-align:center;margin-top:50px;font-size:12px;color:#1e3a8a;}@media print{.info-grid{background:none;border:1px solid #bfdbfe;}h2{border-bottom:2px solid #bfdbfe;}body{-webkit-print-color-adjust:exact;}}</style></head><body><div class="header"><div><h1 style="margin:0;color:#1e3a8a;font-size:28px;">${escapeHtml(box.destination || "Logística Central")}</h1><div style="color:#3b82f6;">Controle de Entrega</div></div><div style="text-align:right;"><div class="value" style="font-size:24px;">${escapeHtml(box.name)}</div></div></div><div class="info-grid"><div><div class="label">Destino</div>${addressStr}</div><div><div class="label">Data</div><div class="value">${new Date().toLocaleDateString('pt-BR')}</div></div><div><div class="label">Status</div><div class="value">${box.status==='in_delivery'?'Em Entrega':box.status==='delivered'?'Entregue':'Disponível'}</div></div><div><div class="label">Motorista</div><div class="value">${driverDisplay}</div></div></div>${internal.length > 0 ? `<h2>Conteúdo (${internal.reduce((a,i)=>a+(i.quantity||1),0)})</h2><ul>${renderList(internal)}</ul>` : ''}${external.length > 0 ? `<h2>Itens Fora da Caixa (${external.reduce((a,i)=>a+(i.quantity||1),0)})</h2><ul>${renderList(external)}</ul>` : ''}${internal.length===0 && external.length===0 ? '<p style="text-align:center;color:#93c5fd;margin-top:20px;">Vazio</p>' : ''}<div style="display:flex;gap:40px;margin-top:60px;"><div class="sign-line">Assinatura Expedição</div><div class="sign-line">Assinatura Recebimento</div></div><script>window.onload=function(){window.print();}<\/script></body></html>`;
+            const win = window.open('', '_blank');
+            if(win) { win.document.write(html); win.document.close(); } else { showToast("Pop-up bloqueado.", 'error'); }
+        }
+
+        function printHistoryManifest(logId) {
+            const log = state.history.find(l => l.id === logId);
+            if (!log) return;
+            let destinationName = "Desconhecido";
+            let driverName = "Desconhecido";
+            let itemsText = "";
+            const destMatch = log.details.match(/Saiu para entrega em: (.*?) \(Mot:/);
+            if (destMatch) destinationName = destMatch[1];
+            const driverMatch = log.details.match(/\(Mot: (.*?)\)/);
+            if (driverMatch) driverName = driverMatch[1];
+            if (log.details.includes("Conteúdo: ")) { itemsText = log.details.split("Conteúdo: ")[1]; }
+            const destObj = state.destinations.find(d => d.name.trim().toLowerCase() === destinationName.trim().toLowerCase());
+            const driverObj = state.drivers.find(d => d.name.trim().toLowerCase() === driverName.trim().toLowerCase());
+            let addressStr = `<div style="font-size:16px;font-weight:600;color:#1e3a8a;">${escapeHtml(destinationName)}</div>`;
+            if (destObj) {
+                const street = destObj.street ? escapeHtml(destObj.street) : '';
+                const num = destObj.number ? `, ${escapeHtml(destObj.number)}` : '';
+                const hood = destObj.neighborhood ? ` - ${escapeHtml(destObj.neighborhood)}` : '';
+                if(street || hood) { addressStr += `<div style="font-size:12px;font-weight:normal;color:#555;margin-top:4px;">${street}${num}${hood}</div>`; }
+            }
+            let driverDisplay = escapeHtml(driverName);
+            if (driverObj && driverObj.phone) { driverDisplay += `<br><span style="font-size:11px;font-weight:normal;">${escapeHtml(driverObj.phone)}</span>`; }
+            let itemsHtml = '<li style="padding:10px;text-align:center;color:#999;">Sem detalhes de itens no histórico</li>';
+            if (itemsText) {
+                itemsHtml = itemsText.split(', ').map(itemStr => {
+                    const match = itemStr.match(/^(\d+)([a-z]+)\s+(.*)$/);
+                    if (match) {
+                        const qtd = match[1];
+                        const unit = match[2] === 'fd' ? ' Fd' : (match[2] === 'cx' ? ' Cx' : ' Un');
+                        const name = match[3];
+                        return `<li style="padding:8px 0;border-bottom:1px solid #e0f2fe;display:flex;align-items:center;font-size:14px;"><span style="display:inline-block;width:16px;height:16px;border:1px solid #1e40af;margin-right:12px;border-radius:2px;"></span><span style="font-weight:bold;margin-right:6px;background-color:#eff6ff;padding:2px 6px;border-radius:4px;border:1px solid #bfdbfe;">${qtd}${unit}</span> ${escapeHtml(name)}</li>`;
+                    } else { return `<li style="padding:8px 0;border-bottom:1px solid #e0f2fe;display:flex;align-items:center;font-size:14px;"><span style="display:inline-block;width:16px;height:16px;border:1px solid #1e40af;margin-right:12px;border-radius:2px;"></span>${escapeHtml(itemStr)}</li>`; }
+                }).join('');
+            }
+            const html = `<html><head><title>Cópia de Manifesto</title><style>body { font-family: sans-serif; padding: 20px; color: #1e3a8a; } .header { border-bottom: 2px solid #1e3a8a; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; } .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; background: #eff6ff; padding: 20px; border-radius: 8px; border: 1px solid #bfdbfe; } .label { font-size: 11px; text-transform: uppercase; font-weight: bold; color: #60a5fa; margin-bottom: 2px; } .value { font-size: 16px; font-weight: 600; color: #1e3a8a; } h2 { font-size: 18px; border-bottom: 2px solid #bfdbfe; padding-bottom: 5px; margin-top: 25px; color: #1e40af; } ul { list-style: none; padding: 0; } .sign-line { border-top: 1px solid #1e3a8a; flex: 1; padding-top: 5px; text-align: center; margin-top: 50px; font-size: 12px; color: #1e3a8a; } .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 100px; color: rgba(30, 58, 138, 0.05); pointer-events: none; z-index: -1; border: 5px solid rgba(30, 58, 138, 0.05); padding: 20px; border-radius: 20px; text-transform: uppercase; } @media print { .info-grid { background: none; border: 1px solid #bfdbfe; } h2 { border-bottom: 2px solid #bfdbfe; } body { -webkit-print-color-adjust: exact; } }</style></head><body><div class="watermark">CÓPIA</div><div class="header"><div><h1 style="margin:0;color:#1e3a8a;font-size:28px;">${escapeHtml(destinationName)}</h1><div style="color:#3b82f6;">Controle de Entrega (Histórico)</div></div><div style="text-align:right;"><div class="value" style="font-size:24px;">${escapeHtml(log.boxName)}</div><div style="font-size:12px;color:#666;">ID Log: ${log.id}</div></div></div><div class="info-grid"><div><div class="label">Destino</div>${addressStr}</div><div><div class="label">Data Original</div><div class="value">${new Date(log.timestamp).toLocaleDateString('pt-BR')} ${new Date(log.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div></div><div><div class="label">Status no Registro</div><div class="value">Enviado</div></div><div><div class="label">Motorista</div><div class="value">${driverDisplay}</div></div></div><h2>Conteúdo Registrado</h2><ul>${itemsHtml}</ul><div style="display:flex;gap:40px;margin-top:60px;"><div class="sign-line">Responsável Expedição</div><div class="sign-line">Conferência Recebimento</div></div><script>window.onload=function(){window.print();} <\/script></body></html>`;
+            const win = window.open('', '_blank');
+            if(win) { win.document.write(html); win.document.close(); }
+            else { showToast("Pop-up bloqueado.", 'error'); }
         }
 
         // --- Render Views ---
