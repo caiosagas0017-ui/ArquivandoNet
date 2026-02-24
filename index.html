@@ -716,7 +716,15 @@
             const win = window.open('', '_blank');
             if(win) { win.document.write(html); win.document.close(); } else { showToast("Pop-up bloqueado.", 'error'); }
         }
-
+const firebaseConfig = {
+  apiKey: "AIzaSyAzKyN0wY7MCuemOeYv-vJVC74cgw6Vilo",
+  authDomain: "logistica-4d3d0.firebaseapp.com",
+  projectId: "logistica-4d3d0",
+  storageBucket: "logistica-4d3d0.firebasestorage.app",
+  messagingSenderId: "626104311057",
+  appId: "1:626104311057:web:14e05f78ba6aefcb4900b0",
+  measurementId: "G-92W7BZFYN5"
+};
         function printBox(boxId) {
             const box = state.boxes.find(b => b.id === boxId);
             if (!box) return;
