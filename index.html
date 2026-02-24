@@ -87,8 +87,9 @@
 <body class="bg-[#f8fafc] text-slate-900 dark:bg-slate-950 dark:text-slate-100 h-screen overflow-hidden selection:bg-indigo-100 selection:text-indigo-900 dark:selection:bg-indigo-900 dark:selection:text-indigo-100">
 
     <!-- Loading Fallback -->
-    <div id="loading-screen" class="fixed inset-0 bg-slate-50 dark:bg-slate-950 z-50 flex items-center justify-center">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+    <div id="loading-screen" class="fixed inset-0 bg-slate-50 dark:bg-slate-950 z-50 flex flex-col items-center justify-center transition-opacity duration-300">
+        <div class="animate-spin rounded-full h-10 w-10 border-b-4 border-indigo-600 mb-4"></div>
+        <p class="text-slate-500 dark:text-slate-400 font-medium text-sm animate-pulse">A ligar à nuvem...</p>
     </div>
 
     <!-- Login -->
@@ -144,30 +145,76 @@
     <div id="modal-container"></div>
 
     <script>
-        // --- 1. CONFIGURAÇÃO & SERVIÇOS DE DADOS ---
-        const CONFIG = { USE_CLOUD_DB: false, API_BASE_URL: '/.netlify/functions/api' };
-
-        const DataManager = {
-            _localGet: (key, fallback) => { try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch { return fallback; } },
-            _localSet: (key, data) => localStorage.setItem(key, JSON.stringify(data)),
-            async load(key, fallback) {
-                if (CONFIG.USE_CLOUD_DB) {
-                    try {
-                        const response = await fetch(`${CONFIG.API_BASE_URL}?key=${key}`);
-                        if (!response.ok) throw new Error('Erro na API');
-                        const data = await response.json();
-                        return data !== null ? data : fallback;
-                    } catch (error) { console.error(`Erro ao carregar ${key}:`, error); return fallback; }
-                } else { return this._localGet(key, fallback); }
-            },
-            async save(key, data) {
-                this._localSet(key, data);
-                if (CONFIG.USE_CLOUD_DB) {
-                    try { await fetch(CONFIG.API_BASE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, data }) });
-                    } catch (error) { console.error(`Erro ao salvar ${key}:`, error); showToast("Erro de sincronização", "error"); }
-                }
-            }
+        // --- 1. CONFIGURAÇÃO FIREBASE (TEMPO REAL) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAzKyN0wY7MCuemOeYv-vJVC74cgw6Vilo",
+            authDomain: "logistica-4d3d0.firebaseapp.com",
+            projectId: "logistica-4d3d0",
+            storageBucket: "logistica-4d3d0.firebasestorage.app",
+            messagingSenderId: "626104311057",
+            appId: "1:626104311057:web:14e05f78ba6aefcb4900b0",
+            measurementId: "G-92W7BZFYN5"
         };
+
+        let db, auth;
+        let isFirebaseConnected = false;
+        let isDataLoaded = false;
+
+        async function initFirebase() {
+            try {
+                // Importa as ferramentas do Firebase dinamicamente
+                const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
+                const { getAnalytics } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js");
+                const { getAuth, signInAnonymously, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
+                const { getFirestore, doc, onSnapshot } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+
+                const app = initializeApp(firebaseConfig);
+                getAnalytics(app); // Inicializa o Analytics
+                auth = getAuth(app);
+                db = getFirestore(app);
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'logistica-central-app';
+
+                // Autenticação anónima obrigatória para ler/escrever no Firestore
+                await signInAnonymously(auth);
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        // CORREÇÃO AQUI: Adicionado 'geral' no final para ficar com um número par de segmentos (6)
+                        const stateRef = doc(db, 'artifacts', appId, 'public', 'data', 'estado_logistica', 'geral');
+                        
+                        // Escuta as alterações em TEMPO REAL (O coração do Firebase)
+                        onSnapshot(stateRef, (snapshot) => {
+                            if (snapshot.exists()) {
+                                const data = snapshot.data();
+                                state.boxes = data.boxes || INITIAL_BOXES;
+                                state.history = data.history || [];
+                                state.missingItems = data.missingItems || [];
+                                state.destinations = data.destinations || DEFAULT_DESTINOS;
+                                state.drivers = data.drivers || DEFAULT_DRIVERS;
+                                state.catalog = data.catalog || DEFAULT_CATALOG;
+                                
+                                isFirebaseConnected = true;
+                                isDataLoaded = true;
+                                renderApp(); // Atualiza a interface de todos instantaneamente
+                            } else {
+                                // Primeiro uso: Cria o documento no banco de dados com os dados padrão
+                                isFirebaseConnected = true;
+                                isDataLoaded = true;
+                                saveData(true);
+                            }
+                        }, (error) => {
+                            console.error("Erro na sincronização em tempo real:", error);
+                            isDataLoaded = true; // Permite renderizar a interface mesmo com erro de sincronização
+                            renderApp();
+                        });
+                    }
+                });
+            } catch (error) {
+                console.error("Erro ao iniciar o Firebase:", error);
+                isDataLoaded = true; // Cai para o fallback caso falhe
+                renderApp();
+            }
+        }
 
         // --- 2. Utilitários Gerais ---
         function escapeHtml(text) {
@@ -195,23 +242,23 @@
         const DEFAULT_CATALOG = ["AÇUCAR SACHET UNIÃO","AÇUCAR UNIÃO REFINADO","ADOÇANTE ZERO CAL 100ML","AGENDA DIARIA ESPIRAL","AGUA SANITARIA 2L","ALCOOL 1L","ALCOOL GEL 70% 800ML","ALMOFADAP/CARIMBO Nº3 AZUL","ALMOFADAP/CARIMBO Nº3 PRETA","ALMOFADAP/CARIMBO Nº3 VERMELHA","APONTADOR COM LIXEIRA","BOBINA SENHA ATENDIMENTO PAPEL TERMICO 80 MM","BOM AR 500ML","BORRACHA TK PLASTICA PEQUENA","CADERNO 1/4 BROC. C/DURA 96F","CADERNO 1/4 BROC. INDICE A/Z 96F","CADERNO 1/4 BROC. PROTOCOLO 96F","CADERNO UNIVERSITARIO 1X1 96F","CAIXA ARQUIVO MORTO PAPELÃO","CALCULADORA","CANETA BIC CRISTAL 1.6MM","CANETA ESFEROGRAFICA AZUL","CANETA ESFEROGRAFICA PILOT","CANETA ESFEROGRAFICA PRETA","CANETA ESFEROGRAFICA VERMELHA","CANETA MARCA TEXTO AMARELO","CANETA MARCA TEXTO AZUL","CANETA PARA QUADRO BRANCO AZUL","CANETA PARA QUADRO BRANCO PRETA","CANETA PARA QUADRO BRANCO VERMELHA","CANETA RETROPROJETOR 2.0 MM AZUL","CANETA RETROPROJETOR 2.0 MM PRETA","CANETA RETROPROJETOR 2.0 MM VERMELHA","CAPA P/ ENCADERNAÇÃO A4 PRETA","CAPA P/ ENCADERNAÇÃO TRANSPARENTE","CARTÃO PONTO MENSAL","CERA BRILHO FÁCIL 750 ML","CHÁ MATTE","CLIPS Nº 3","CLIPS Nº 4","CLIPS Nº8","COLA BASTÃO 10G","COLA TENAZ LIQ 40G","COPO DESCARTÁVEL 180 ML","COPO DESCARTAVEL 50ML","CORRETIVO FITA","CORRETIVO PINCEL","CORRETIVO TIPO CANETA","DECLARAÇÃO ATENDENTE CAMU BL 50F","DECLARAÇÃO SESSÃO TERAPIA - ENDEREÇO MULTI","DESINFETANTE 2L","DETERGENTE LIQUIDO 500ML","ELASTICO SUPER RESISTENTE 1KG","ENVELOPE A4 26X36","ENVELOPE COMERCIAL JANELA 22X15,7CM PAPEL OFFSET","ENVELOPE OFICIO C/JANELA","ENVELOPE OFICIO S/JANELA","ENVELOPE PARDO 18,5X25","ENVELOPE PARDO 31X41","ESPONJA MAGICA","ESPONJA SCOTH BRITE","EXTRATOR DE GRAMPOS","FIBRA LIMPEZA LEVE","FIBRA LIMPEZA USO GERAL","FICHA C/PAUTA 5X8 100 FLS","FILTRO DE PAPEL N°103","FILTRO REFIL ECO IBBL SPECIALE","FITA ADESIVA PEQUENA","FITA CREPE BRANCA","FITA DUPLA FACE","FITA LARGA TRANSPARENTE","FITA P/ MAQUINA DE CALCULAR","FLANELA","FLANELA BRANCA 38X58 GRANDE","FOSFORO EXTRA LONGO","GRAFITE 2B 0.5","GRAFITE 2B 0.7","GRAMPEADOR MÉDIO","GRAMPO 106/6 CX 5000UN","GRAMPO 26/6 GALVANIZADO CX 5000 UM","GRAMPO TRUNFO Nº2 CX COM 50 UM","GUIA DE COMPROVANTE PRESENCIAL","INSETICIDA AEROSOL 300ML","LAPIS PRETO FABER","LAPISEIRA 0.5","LAPISEIRA 0.7","LEITE SEMI DESNATADO","LIMPADOR MULTIUSO DESTAC","LIMPADOR SAPOLIO 300ML","LIMPADOR VEJA MULTI USO 500ML","LIVRO ATA 100 FLS","LIXEIRA DE ESCRITORIO","LUSTRA MOVEIS 500ML","LUVA LIMPEZA SANRO TOP M","MARGARINA 500G","MEXEDOR PARA CAFÉ 500UN","OLEO DE PEROBA 100ML","PANO DE CHÃO SACO ALVEJADO","PANO PERFEX","PAPEL CARBONO FILME PRETO","PAPEL HIGIÊNICO 300MT","PAPEL HIGIÊNICO 4ROLOS","PAPEL INTERFOLHAS C/700","PAPEL OPALINE 180G PCT 50 UM","PAPEL SULFITE A4 BRANCO 500 FLS","PASTA A/Z LOMBO ESTREITO","PASTA A/Z LOMBO LARGO","PASTA A4 PLÁSTICA C/PRESILHA TRANSPARENTE","PASTA CATÁLOGO C/100 PLASTICO","PASTA GRANDE COM ABA E ELASTICO TRANSPARENTE","PASTA L A4 TRANSPARENTE","PASTA POLIONDAS LOMBADA VERDE","PASTA SANF. PLASTICA OFICIO 31DIV","PASTA SUSPENSA PLAST. MARM. COMPL","PERCEVEJO C/100","PILHA AAA","PILHA GRANDE D","PILHA PEQUENA AA","PLASTICO RESISTENTE PASTA 04 FUROS","PO DE CAFÉ","POST IT 100 FLS","PROTOCOLO DE ENTREGA DE GUIAS","RECIBO COMERCIAL BLOCO 50 FLS","REFRESCO TANG","REGUA ACRILICA 30 CM","RELATÓRIO TERAPEUTICO - LOGO UNIMED - SEM ENDEREÇO","REMOVEDOR DE CERA 1L","RODO COM CABO","SABÃO EM PÓ","SABÃO EM PEDRA 5UN","SABONETE LIQUIDO ERVA DOCE 800ML","SACO DE LIXO 100L","SACO DE LIXO 200L","SACO DE LIXO 20L","SACO DE LIXO 40L","SADT BLOCO 100 FOLHAS","TELEFONE COM FIO PRETO","TESOURA ESCOLAR 20CM","TINTA P/CARIMBO AZUL","TINTA P/CARIMBO PRETA","TINTA P/CARIMBO VERMELHA","TOALHA DE PAPEL snog","TONER 83A","TONER 85A","VASSOURA"].sort();
         const INITIAL_BOXES = [1,2,3,4].map(id => ({ id, name: `Caixa ${id}`, status: 'available', items: [], destination: null, driver: null }));
 
-        // Estado Global
+        // Estado Global (Dados agora vêm APENAS da Nuvem)
         let state = {
             isLoggedIn: localStorage.getItem('logistica_auth') === 'true',
-            boxes: DataManager._localGet('logistica_boxes', INITIAL_BOXES),
-            history: DataManager._localGet('logistica_history', []),
-            missingItems: DataManager._localGet('logistica_missing', []),
-            destinations: DataManager._localGet('logistica_destinations', DEFAULT_DESTINOS),
-            drivers: DataManager._localGet('logistica_drivers', DEFAULT_DRIVERS),
-            catalog: DataManager._localGet('logistica_catalog', DEFAULT_CATALOG),
+            boxes: INITIAL_BOXES, // Será sobrescrito pela Nuvem
+            history: [],
+            missingItems: [],
+            destinations: DEFAULT_DESTINOS,
+            drivers: DEFAULT_DRIVERS,
+            catalog: DEFAULT_CATALOG,
             activeTab: localStorage.getItem('logistica_activeTab') || 'dashboard',
             currentUser: localStorage.getItem('logistica_currentUser') || "Logistica",
-            darkMode: DataManager._localGet('logistica_darkMode', false),
+            darkMode: localStorage.getItem('logistica_darkMode') === 'true',
             modal: { type: null, boxId: null, data: null },
             historyFilter: { search: '', date: '' },
             historyView: 'today',
             expandedDate: null,
-            sidebarCollapsed: DataManager._localGet('logistica_sidebar_collapsed', false),
+            sidebarCollapsed: localStorage.getItem('logistica_sidebar_collapsed') === 'true',
             dragSourceIndex: null,
             missingTab: 'pending',
             missingDateFilter: ''
@@ -226,17 +273,34 @@
         }
         function logout() { state.isLoggedIn = false; localStorage.removeItem('logistica_auth'); renderApp(); }
         
-        function saveData(skipRender = false) {
-            DataManager.save('logistica_boxes', state.boxes);
-            DataManager.save('logistica_history', state.history);
-            DataManager.save('logistica_missing', state.missingItems);
-            DataManager.save('logistica_destinations', state.destinations);
-            DataManager.save('logistica_drivers', state.drivers);
-            DataManager.save('logistica_catalog', state.catalog);
-            DataManager.save('logistica_darkMode', state.darkMode);
+        async function saveData(skipRender = false) {
+            // Guarda apenas preferências visuais localmente
             localStorage.setItem('logistica_activeTab', state.activeTab);
-            localStorage.setItem('logistica_sidebar_collapsed', JSON.stringify(state.sidebarCollapsed));
+            localStorage.setItem('logistica_sidebar_collapsed', state.sidebarCollapsed);
             localStorage.setItem('logistica_currentUser', state.currentUser);
+            localStorage.setItem('logistica_darkMode', state.darkMode);
+
+            // SINCRONIZA DADOS APENAS COM O FIREBASE NA NUVEM
+            if (isFirebaseConnected && db) {
+                try {
+                    const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+                    const appId = typeof __app_id !== 'undefined' ? __app_id : 'logistica-central-app';
+                    const payload = {
+                        boxes: state.boxes,
+                        history: state.history,
+                        missingItems: state.missingItems,
+                        destinations: state.destinations,
+                        drivers: state.drivers,
+                        catalog: state.catalog
+                    };
+                    // CORREÇÃO AQUI: Adicionado 'geral' no final para coincidir com a leitura
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'estado_logistica', 'geral'), payload);
+                } catch (e) {
+                    console.error("Erro ao salvar na nuvem: ", e);
+                    showToast("Erro ao sincronizar com a nuvem", "error");
+                }
+            }
+
             if (!skipRender) renderApp();
         }
 
@@ -716,15 +780,7 @@
             const win = window.open('', '_blank');
             if(win) { win.document.write(html); win.document.close(); } else { showToast("Pop-up bloqueado.", 'error'); }
         }
-const firebaseConfig = {
-  apiKey: "AIzaSyAzKyN0wY7MCuemOeYv-vJVC74cgw6Vilo",
-  authDomain: "logistica-4d3d0.firebaseapp.com",
-  projectId: "logistica-4d3d0",
-  storageBucket: "logistica-4d3d0.firebasestorage.app",
-  messagingSenderId: "626104311057",
-  appId: "1:626104311057:web:14e05f78ba6aefcb4900b0",
-  measurementId: "G-92W7BZFYN5"
-};
+
         function printBox(boxId) {
             const box = state.boxes.find(b => b.id === boxId);
             if (!box) return;
@@ -1001,107 +1057,168 @@ const firebaseConfig = {
             const delivering = state.boxes.filter(b => b.status === 'in_delivery').length;
             
             let html = `
-            <div class="space-y-8 pb-20">
-                <!-- Stats Row -->
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 flex flex-col justify-center relative overflow-hidden group">
-                        <div class="absolute right-0 top-0 w-24 h-full bg-gradient-to-l from-slate-50 dark:from-slate-700 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                        <span class="text-3xl font-bold text-slate-800 dark:text-white tracking-tight">${state.boxes.length}</span>
-                        <span class="text-[11px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mt-1">Total de Caixas</span>
-                        <div class="w-8 h-1 bg-slate-800 dark:bg-slate-600 rounded-full mt-3"></div>
+            <div class="space-y-8 pb-24 animate-fade-in max-w-7xl mx-auto">
+                
+                <!-- Cabeçalho Principal -->
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Visão Geral</h2>
+                        <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">Acompanhe e gira o estado das caixas logísticas em tempo real.</p>
                     </div>
-                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 flex flex-col justify-center">
-                        <span class="text-3xl font-bold text-emerald-600 dark:text-emerald-400 tracking-tight">${available}</span>
-                        <span class="text-[11px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mt-1">Disponíveis</span>
-                        <div class="w-8 h-1 bg-emerald-300 dark:bg-emerald-700 rounded-full mt-3"></div>
-                    </div>
-                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 flex flex-col justify-center">
-                        <span class="text-3xl font-bold text-amber-500 dark:text-amber-400 tracking-tight">${delivering}</span>
-                        <span class="text-[11px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mt-1">Em Trânsito</span>
-                        <div class="w-8 h-1 bg-amber-300 dark:bg-amber-700 rounded-full mt-3"></div>
-                    </div>
-                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 flex flex-col justify-center relative overflow-hidden">
-                        ${totalMissing > 0 ? '<div class="absolute -right-2 -top-2 w-16 h-16 bg-rose-50 dark:bg-rose-900/20 rounded-full animate-pulse opacity-50"></div>' : ''}
-                        <span class="text-3xl font-bold ${totalMissing > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400 dark:text-slate-600'} tracking-tight relative z-10">${totalMissing}</span>
-                        <span class="text-[11px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mt-1 relative z-10">Pendências</span>
-                        <div class="w-8 h-1 ${totalMissing > 0 ? 'bg-rose-500' : 'bg-slate-200 dark:bg-slate-700'} rounded-full mt-3 relative z-10"></div>
-                    </div>
-                </div>
-
-                <div class="flex justify-between items-center px-1">
-                    <h2 class="text-lg font-bold text-slate-800 dark:text-white">Visão Geral</h2>
-                    <button onclick="openModal('addBox')" class="bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 dark:hover:bg-slate-600 text-white px-5 py-2.5 rounded-xl font-medium shadow-lg shadow-slate-200 dark:shadow-none flex items-center gap-2 transition-all active:scale-95 text-sm border border-transparent">
-                        <i data-lucide="plus" class="w-4 h-4"></i> <span>Nova Caixa</span>
+                    <button onclick="openModal('addBox')" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-semibold shadow-sm shadow-indigo-600/20 flex items-center justify-center gap-2 transition-all active:scale-95 text-sm border border-transparent">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Nova Caixa
                     </button>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">`;
+                <!-- Estatísticas Estilo "Bento Grid" (Premium SaaS) -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+                    <!-- Total -->
+                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm flex flex-col relative overflow-hidden group">
+                        <div class="flex justify-between items-center mb-4 relative z-10">
+                            <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400 ring-1 ring-inset ring-indigo-100 dark:ring-indigo-500/20 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                                <i data-lucide="layers" class="w-5 h-5"></i>
+                            </div>
+                        </div>
+                        <div class="relative z-10">
+                            <h3 class="text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-none">${state.boxes.length}</h3>
+                            <p class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-1.5">Total de Caixas</p>
+                        </div>
+                        <i data-lucide="layers" class="absolute -right-4 -bottom-4 w-24 h-24 text-slate-50 dark:text-slate-700/50 opacity-50 group-hover:scale-110 transition-transform duration-500 pointer-events-none"></i>
+                    </div>
+                    
+                    <!-- Disponíveis -->
+                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm flex flex-col relative overflow-hidden group">
+                        <div class="flex justify-between items-center mb-4 relative z-10">
+                            <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400 ring-1 ring-inset ring-emerald-100 dark:ring-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white transition-colors">
+                                <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+                            </div>
+                        </div>
+                        <div class="relative z-10">
+                            <h3 class="text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-none">${available}</h3>
+                            <p class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-1.5">Disponíveis</p>
+                        </div>
+                        <i data-lucide="check-circle-2" class="absolute -right-4 -bottom-4 w-24 h-24 text-emerald-50 dark:text-emerald-900/10 opacity-50 group-hover:scale-110 transition-transform duration-500 pointer-events-none"></i>
+                    </div>
+
+                    <!-- Em Trânsito -->
+                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm flex flex-col relative overflow-hidden group">
+                        <div class="flex justify-between items-center mb-4 relative z-10">
+                            <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400 ring-1 ring-inset ring-amber-100 dark:ring-amber-500/20 group-hover:bg-amber-500 group-hover:text-white transition-colors">
+                                <i data-lucide="truck" class="w-5 h-5"></i>
+                            </div>
+                        </div>
+                        <div class="relative z-10">
+                            <h3 class="text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-none">${delivering}</h3>
+                            <p class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-1.5">Em Trânsito</p>
+                        </div>
+                        <i data-lucide="truck" class="absolute -right-4 -bottom-4 w-24 h-24 text-amber-50 dark:text-amber-900/10 opacity-50 group-hover:scale-110 transition-transform duration-500 pointer-events-none"></i>
+                    </div>
+
+                    <!-- Pendências -->
+                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border ${totalMissing > 0 ? 'border-rose-300 dark:border-rose-700 shadow-rose-100 dark:shadow-none' : 'border-slate-200/80 dark:border-slate-700/80'} shadow-sm flex flex-col relative overflow-hidden group">
+                        <div class="flex justify-between items-center mb-4 relative z-10">
+                            <div class="w-10 h-10 rounded-xl ${totalMissing > 0 ? 'bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 ring-rose-200 dark:ring-rose-500/30' : 'bg-slate-50 dark:bg-slate-700 text-slate-400 ring-slate-100 dark:ring-slate-600'} flex items-center justify-center ring-1 ring-inset transition-colors">
+                                <i data-lucide="alert-octagon" class="w-5 h-5"></i>
+                            </div>
+                            ${totalMissing > 0 ? '<span class="flex h-3 w-3 relative"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span></span>' : ''}
+                        </div>
+                        <div class="relative z-10">
+                            <h3 class="text-3xl font-black ${totalMissing > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white'} tracking-tight leading-none">${totalMissing}</h3>
+                            <p class="text-[11px] font-bold ${totalMissing > 0 ? 'text-rose-500' : 'text-slate-500 dark:text-slate-400'} uppercase tracking-widest mt-1.5">Pendências</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Painel de Caixas (Kanban-style) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pt-2">`;
             
             state.boxes.forEach((box, index) => {
                 const hasIssue = state.missingItems.some(m => m.boxId === box.id && m.status === 'pending');
                 const status = (hasIssue && box.status === 'delivered') ? 'issue' : box.status;
                 
-                // Status Logic
+                // Design de Badges Minimalistas
                 let statusBadge = '';
-                if(status === 'available') statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Disponível</span>`;
-                else if(status === 'in_delivery') statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-800"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Em Trânsito</span>`;
-                else if(status === 'delivered') statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700"><span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span> Entregue</span>`;
-                else if(status === 'issue') statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-800"><span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Atenção</span>`;
-                else if(status === 'separated') statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800"><span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Separado</span>`;
+                let topBarColor = 'bg-slate-200 dark:bg-slate-700'; // Default
+                
+                if(status === 'available') {
+                    statusBadge = `<span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-bold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-500/20"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Disponível</span>`;
+                    topBarColor = 'bg-emerald-400';
+                }
+                else if(status === 'in_delivery') {
+                    statusBadge = `<span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-bold bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200/50 dark:border-amber-500/20"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Em Trânsito</span>`;
+                    topBarColor = 'bg-amber-400';
+                }
+                else if(status === 'delivered') {
+                    statusBadge = `<span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700"><span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span> Entregue</span>`;
+                    topBarColor = 'bg-slate-400';
+                }
+                else if(status === 'issue') {
+                    statusBadge = `<span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-bold bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-200/50 dark:border-rose-500/20"><span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Com Pendência</span>`;
+                    topBarColor = 'bg-rose-500';
+                }
+                else if(status === 'separated') {
+                    statusBadge = `<span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-bold bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-200/50 dark:border-indigo-500/20"><span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span> Separado</span>`;
+                    topBarColor = 'bg-indigo-500';
+                }
 
                 const mappedItems = box.items.map((item, index) => ({...item, originalIndex: index}));
                 const internalItems = mappedItems.filter(i => !i.isExternal);
                 const externalItems = mappedItems.filter(i => i.isExternal);
                 
-                // Render List Function
+                // Lista de Itens Mais Limpa
                 const renderList = (items, title, isExt) => items.length ? `
-                    <div class="mb-3">
-                        <p class="text-[9px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2 pl-1 border-b border-slate-100 dark:border-slate-700 pb-1">${title}</p>
-                        <div class="space-y-0.5">
+                    <div class="mb-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">${title}</span>
+                            <div class="h-px flex-grow bg-slate-100 dark:bg-slate-700/50"></div>
+                        </div>
+                        <div class="space-y-1">
                         ${items.map((it) => `
-                            <div class="flex justify-between items-center text-sm py-1.5 px-1 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded transition-colors group/item">
-                                <div class="truncate flex items-center gap-2">
-                                    <span class="font-bold text-slate-700 dark:text-slate-300 min-w-[1.2rem] text-right text-xs">${it.quantity}</span>
-                                    <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide border border-slate-200 dark:border-slate-600 px-1 rounded">${it.unitType}</span>
-                                    <span class="text-slate-600 dark:text-slate-400 truncate font-medium text-xs ${isExt?'italic':''}">${escapeHtml(it.name)}</span>
+                            <div class="flex justify-between items-center py-2 px-3 hover:bg-slate-50 dark:hover:bg-slate-700/30 rounded-xl transition-colors group/item border border-transparent hover:border-slate-100 dark:hover:border-slate-600">
+                                <div class="truncate flex items-center gap-3">
+                                    <div class="flex items-center justify-center bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg px-2 py-1 min-w-[2.5rem]">
+                                        <span class="font-black text-sm leading-none">${it.quantity}</span>
+                                        <span class="text-[9px] font-bold uppercase ml-1 opacity-70">${it.unitType}</span>
+                                    </div>
+                                    <span class="text-slate-700 dark:text-slate-300 truncate font-semibold text-sm ${isExt?'italic':''}">${escapeHtml(it.name)}</span>
                                 </div>
-                                <div class="flex gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
-                                    <button onclick="openModal('editItem', ${box.id}, ${it.originalIndex})" class="text-slate-400 hover:text-indigo-600 p-0.5"><i data-lucide="pencil" class="w-3 h-3"></i></button>
-                                    <button onclick="openModal('deleteItem', ${box.id}, ${it.originalIndex})" class="text-slate-300 hover:text-rose-500 p-0.5"><i data-lucide="x" class="w-3 h-3"></i></button>
+                                <div class="flex gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity bg-white dark:bg-slate-800 shadow-sm rounded-lg border border-slate-100 dark:border-slate-700 p-0.5">
+                                    <button onclick="openModal('editItem', ${box.id}, ${it.originalIndex})" class="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 p-1.5 rounded-md hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors" title="Editar"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+                                    <button onclick="openModal('deleteItem', ${box.id}, ${it.originalIndex})" class="text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 p-1.5 rounded-md hover:bg-rose-50 dark:hover:bg-rose-900/30 transition-colors" title="Remover"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
                                 </div>
                             </div>
                         `).join('')}
                         </div>
                     </div>` : '';
 
-                // Destination Card Section
+                // Widget de Destino "SaaS Style"
                 const hasDest = !!box.destination;
                 const destInfo = `
-                    <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-100 dark:border-slate-700 mb-4 group/dest relative overflow-hidden">
+                    <div class="mb-5 bg-slate-50/70 dark:bg-slate-900/40 rounded-2xl p-4 border border-slate-100 dark:border-slate-700/60 group/dest relative transition-colors hover:bg-slate-100/50 dark:hover:bg-slate-800/50">
                         ${!hasDest ? 
-                            `<div class="flex justify-between items-center text-slate-400 dark:text-slate-500 text-sm italic py-1">
-                                <div class="flex items-center gap-2"><i data-lucide="map" class="w-4 h-4 opacity-50"></i> Sem destino</div>
-                                <button onclick="openModal('changeDestination', ${box.id})" class="text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 p-1.5 rounded-lg transition-colors" title="Adicionar Destino"><i data-lucide="plus" class="w-4 h-4"></i></button>
+                            `<div class="flex justify-between items-center text-slate-400 dark:text-slate-500 text-sm font-medium py-2 px-1">
+                                <div class="flex items-center gap-2"><i data-lucide="map" class="w-5 h-5 opacity-40"></i> Sem destino definido</div>
+                                <button onclick="openModal('changeDestination', ${box.id})" class="text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 hover:border-indigo-300 p-2 rounded-xl transition-all hover:scale-105" title="Adicionar Destino"><i data-lucide="plus" class="w-4 h-4"></i></button>
                              </div>` 
                             : 
-                            `<div class="flex items-start gap-3">
-                                <div class="bg-white dark:bg-slate-800 p-2 rounded-lg border border-slate-200 dark:border-slate-600 shadow-sm text-slate-700 dark:text-slate-300 shrink-0 mt-0.5">
-                                    <i data-lucide="map-pin" class="w-4 h-4"></i>
+                            `<div class="flex items-start gap-4">
+                                <div class="bg-white dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200 dark:border-slate-600 shadow-sm text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5 group-hover/dest:scale-105 transition-transform">
+                                    <i data-lucide="map-pin" class="w-5 h-5"></i>
                                 </div>
                                 <div class="min-w-0 flex-grow">
                                     <div class="flex justify-between items-start">
                                         <div>
-                                            <p class="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wide mb-0.5">Destino</p>
-                                            <p class="font-bold text-slate-800 dark:text-white text-sm leading-tight truncate pr-1" title="${escapeHtml(box.destination)}">${escapeHtml(box.destination)}</p>
+                                            <p class="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest mb-1">Destino Final</p>
+                                            <p class="font-bold text-slate-800 dark:text-white text-base leading-tight truncate pr-1" title="${escapeHtml(box.destination)}">${escapeHtml(box.destination)}</p>
                                         </div>
-                                        <button onclick="openModal('changeDestination', ${box.id})" class="text-slate-400 hover:text-indigo-600 p-1 rounded transition-colors opacity-0 group-hover/dest:opacity-100" title="Editar Destino"><i data-lucide="pencil" class="w-3 h-3"></i></button>
+                                        <button onclick="openModal('changeDestination', ${box.id})" class="text-slate-400 hover:text-indigo-600 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-sm p-1.5 rounded-lg transition-all opacity-0 group-hover/dest:opacity-100 hover:scale-110" title="Editar Destino"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
                                     </div>
-                                    <div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 dark:border-slate-700">
-                                        <div class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                                            <i data-lucide="user" class="w-3 h-3"></i>
-                                            <span class="truncate max-w-[110px]">${escapeHtml(box.driver) || 'Sem motorista'}</span>
+                                    <div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-200 dark:border-slate-700/50">
+                                        <div class="flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-100 dark:border-slate-700 shadow-sm">
+                                            <i data-lucide="user" class="w-3.5 h-3.5 text-slate-400"></i>
+                                            <span class="truncate max-w-[120px]">${escapeHtml(box.driver) || 'Motorista não atribuído'}</span>
                                         </div>
-                                        <button onclick="openModal('changeDriver', ${box.id})" class="text-slate-400 hover:text-indigo-600 p-1 rounded transition-colors opacity-0 group-hover/dest:opacity-100" title="Editar Motorista"><i data-lucide="pencil" class="w-3 h-3"></i></button>
+                                        <button onclick="openModal('changeDriver', ${box.id})" class="text-slate-400 hover:text-indigo-600 p-1.5 rounded-lg transition-all opacity-0 group-hover/dest:opacity-100 hover:bg-white dark:hover:bg-slate-800 shadow-sm border border-transparent hover:border-slate-200 dark:hover:border-slate-700" title="Alterar Motorista"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i></button>
                                     </div>
                                 </div>
                             </div>`
@@ -1109,12 +1226,12 @@ const firebaseConfig = {
                     </div>
                 `;
 
-                // Main Action Button
+                // Botões de Ação Dinâmicos
                 let mainBtn = '';
-                if (status === 'available') mainBtn = `<button onclick="openModal('separate',${box.id})" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl text-sm font-bold shadow-md shadow-blue-200 dark:shadow-none transition-all active:scale-95 flex items-center justify-center gap-2"><i data-lucide="package-check" class="w-4 h-4"></i> Separar</button>`;
-                else if (status === 'separated') mainBtn = `<button onclick="openModal('deliver',${box.id})" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl text-sm font-bold shadow-md shadow-indigo-200 dark:shadow-none transition-all active:scale-95 flex items-center justify-center gap-2"><i data-lucide="send" class="w-4 h-4"></i> Enviar</button>`;
-                else if (status === 'in_delivery') mainBtn = `<button onclick="openModal('complete',${box.id})" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl text-sm font-bold shadow-md shadow-emerald-200 dark:shadow-none transition-all active:scale-95 flex items-center justify-center gap-2"><i data-lucide="check" class="w-4 h-4"></i> Receber</button>`;
-                else mainBtn = `<button onclick="openModal('reset',${box.id})" class="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-300 hover:text-slate-800 dark:hover:bg-slate-700 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 flex items-center justify-center gap-2">Resetar</button>`;
+                if (status === 'available') mainBtn = `<button onclick="openModal('separate',${box.id})" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg text-sm font-semibold shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2 border border-transparent">Separar Caixa</button>`;
+                else if (status === 'separated') mainBtn = `<button onclick="openModal('deliver',${box.id})" class="flex-1 bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 dark:hover:bg-slate-600 text-white py-3 rounded-lg text-sm font-semibold shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2 border border-transparent">Despachar</button>`;
+                else if (status === 'in_delivery') mainBtn = `<button onclick="openModal('complete',${box.id})" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-lg text-sm font-semibold shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2 border border-transparent">Confirmar Entrega</button>`;
+                else mainBtn = `<button onclick="openModal('reset',${box.id})" class="flex-1 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600 py-3 rounded-lg text-sm font-semibold transition-all active:scale-95 flex items-center justify-center gap-2"><i data-lucide="rotate-ccw" class="w-4 h-4 text-slate-400"></i> Resetar Fluxo</button>`;
 
                 html += `
                 <div 
@@ -1127,64 +1244,71 @@ const firebaseConfig = {
                     ondragenter="handleDragEnter(event)"
                     ondragleave="handleDragLeave(event)"
                     ondrop="handleDrop(event, ${index})"
-                    class="group/card-container bg-white dark:bg-slate-800 rounded-xl shadow-card border border-slate-200 dark:border-slate-700 flex flex-col h-full relative overflow-hidden transition-none"
+                    class="group/card-container bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm hover:shadow-xl hover:shadow-slate-200/40 dark:hover:shadow-black/40 border border-slate-100 dark:border-slate-700/60 flex flex-col h-full relative overflow-hidden transition-all duration-300"
                 >
-                    <!-- Drag Handle Strip -->
+                    <!-- Drag Handle Strip Slim -->
                     <div 
-                        class="h-1.5 w-full bg-slate-50 dark:bg-slate-700 cursor-grab hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors border-b border-slate-50 dark:border-slate-700 rounded-t-xl"
+                        class="h-2 w-full bg-slate-100 dark:bg-slate-700 cursor-grab hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors flex items-center justify-center"
                         onmousedown="enableDrag(event, ${index})"
                         onmouseup="disableDrag(event, ${index})"
                         title="Arraste para reordenar"
-                    ></div>
+                    >
+                        <div class="w-10 h-0.5 bg-slate-300 dark:bg-slate-500 rounded-full"></div>
+                    </div>
 
                     <!-- Header -->
-                    <div class="px-5 pt-4 pb-2 flex justify-between items-start">
+                    <div class="px-6 pt-5 pb-3 flex justify-between items-start">
                         <div>
-                            <h3 class="font-bold text-lg text-slate-800 dark:text-white leading-tight">${escapeHtml(box.name)}</h3>
-                            <div class="mt-1.5">${statusBadge}</div>
+                            <h3 class="font-extrabold text-xl text-slate-800 dark:text-white leading-tight mb-2">${escapeHtml(box.name)}</h3>
+                            ${statusBadge}
                         </div>
-                        <div class="flex items-center gap-1">
-                            <button onclick="printBox(${box.id})" class="p-2 text-slate-300 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors"><i data-lucide="printer" class="w-4 h-4"></i></button>
+                        <div class="flex items-center gap-1 bg-slate-50 dark:bg-slate-900/50 p-1 rounded-xl border border-slate-100 dark:border-slate-700">
+                            <button onclick="printBox(${box.id})" class="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-colors shadow-sm" title="Imprimir Manifesto"><i data-lucide="printer" class="w-4 h-4"></i></button>
                             
                             <!-- Menu Modificado -->
                             <div class="relative">
-                                <button onclick="toggleMenu(event, ${box.id})" class="p-2 text-slate-300 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors"><i data-lucide="more-horizontal" class="w-4 h-4"></i></button>
-                                <div id="menu-${box.id}" class="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 p-1 hidden z-50 animate-fade-in">
-                                    <button onclick="openModal('editBox', ${box.id})" class="w-full text-left px-3 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg flex items-center gap-2"><i data-lucide="pencil" class="w-3 h-3"></i> Editar</button>
-                                    <button onclick="openModal('deleteBox', ${box.id})" class="w-full text-left px-3 py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg flex items-center gap-2"><i data-lucide="trash" class="w-3 h-3"></i> Excluir</button>
+                                <button onclick="toggleMenu(event, ${box.id})" class="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-colors shadow-sm"><i data-lucide="more-horizontal" class="w-4 h-4"></i></button>
+                                <div id="menu-${box.id}" class="absolute right-0 top-full mt-2 w-36 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 p-1.5 hidden z-50 animate-fade-in origin-top-right">
+                                    <button onclick="openModal('editBox', ${box.id})" class="w-full text-left px-3 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-lg flex items-center gap-2.5"><i data-lucide="pencil" class="w-4 h-4 text-slate-400"></i> Editar Nome</button>
+                                    <div class="h-px bg-slate-100 dark:bg-slate-700 my-1"></div>
+                                    <button onclick="openModal('deleteBox', ${box.id})" class="w-full text-left px-3 py-2.5 text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg flex items-center gap-2.5"><i data-lucide="trash-2" class="w-4 h-4 text-red-400"></i> Excluir</button>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Content -->
-                    <div class="px-5 pb-4 flex-grow flex flex-col">
+                    <div class="px-6 pb-4 flex-grow flex flex-col">
                         ${destInfo}
                         
-                        <div class="flex-grow min-h-[100px]">
+                        <div class="flex-grow min-h-[120px] relative">
                             ${box.items.length ? 
-                                `<div class="max-h-64 overflow-y-auto pr-1 scrollbar-thin space-y-1">
-                                    ${renderList(internalItems, "Conteúdo", false)}
-                                    ${renderList(externalItems, "Externo", true)}
+                                `<div class="absolute inset-0 overflow-y-auto pr-2 scrollbar-thin">
+                                    ${renderList(internalItems, "Conteúdo da Caixa", false)}
+                                    ${renderList(externalItems, "Itens Externos", true)}
                                  </div>` 
                                 : 
-                                `<div class="h-full flex flex-col items-center justify-center text-slate-300 dark:text-slate-600 border-2 border-dashed border-slate-100 dark:border-slate-700 rounded-xl min-h-[120px]">
-                                    <i data-lucide="box" class="w-8 h-8 mb-2 opacity-50"></i>
-                                    <span class="text-xs font-medium">Vazia</span>
+                                `<div class="h-full flex flex-col items-center justify-center text-slate-300 dark:text-slate-600 border-2 border-dashed border-slate-100 dark:border-slate-700 rounded-2xl min-h-[140px] bg-slate-50/30 dark:bg-slate-900/10">
+                                    <div class="p-3 bg-white dark:bg-slate-800 rounded-full mb-3 shadow-sm border border-slate-100 dark:border-slate-700">
+                                        <i data-lucide="package-open" class="w-6 h-6 opacity-40"></i>
+                                    </div>
+                                    <span class="text-sm font-bold text-slate-400 dark:text-slate-500">Caixa Vazia</span>
                                  </div>`
                             }
                         </div>
                     </div>
 
-                    <!-- Actions Footer -->
-                    <div class="p-4 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700 rounded-b-xl mt-auto grid grid-cols-[1fr_auto_auto] gap-2">
+                    <!-- Actions Footer Moderna -->
+                    <div class="p-5 bg-slate-50/80 dark:bg-slate-900/80 border-t border-slate-100 dark:border-slate-700/50 mt-auto flex gap-3 items-center">
                         ${mainBtn}
-                        <button onclick="openModal('add',${box.id})" class="px-3.5 py-2.5 bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 rounded-xl font-bold transition-colors border border-slate-100 dark:border-slate-600" title="Adicionar Item">
-                            <i data-lucide="plus" class="w-5 h-5"></i>
-                        </button>
-                        <button onclick="openModal('missing',${box.id})" class="px-3.5 py-2.5 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/40 rounded-xl font-bold transition-colors border border-rose-50 dark:border-rose-900/30" title="Reportar Problema">
-                            <i data-lucide="alert-triangle" class="w-5 h-5"></i>
-                        </button>
+                        <div class="flex gap-2 shrink-0">
+                            <button onclick="openModal('add',${box.id})" class="w-12 h-12 flex items-center justify-center bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-slate-700 dark:hover:text-indigo-400 rounded-xl shadow-sm border border-slate-200 dark:border-slate-600 transition-all active:scale-95" title="Adicionar Item">
+                                <i data-lucide="plus" class="w-5 h-5"></i>
+                            </button>
+                            <button onclick="openModal('missing',${box.id})" class="w-12 h-12 flex items-center justify-center bg-white dark:bg-slate-800 text-rose-500 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-slate-700 dark:text-rose-400 dark:hover:text-rose-300 rounded-xl shadow-sm border border-slate-200 dark:border-slate-600 transition-all active:scale-95" title="Reportar Problema">
+                                <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>`;
             });
@@ -1324,7 +1448,7 @@ const firebaseConfig = {
             
             const todayPT = getLocalDateString(new Date().toISOString());
             
-            // Renderizador individual de cada item da Timeline
+            // Renderizador individual de cada item da Timeline com visual moderno
             const renderTimelineItem = (l) => {
                 let icon='circle', color='bg-slate-100 text-slate-500 border-slate-200', ring='ring-slate-50 dark:ring-slate-800', accent='bg-slate-300';
                 
@@ -1365,9 +1489,12 @@ const firebaseConfig = {
                         <div class="p-4 sm:p-5 pl-5 sm:pl-6">
                             <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start">
                                 <div>
-                                    <!-- AQUI: Removemos o nome da caixa pois agora está no título do Grupo -->
                                     <div class="flex flex-wrap items-center gap-2 mb-1">
                                         <span class="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${color}">${escapeHtml(l.action)}</span>
+                                        <span class="text-sm font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+                                            <i data-lucide="chevron-right" class="w-3 h-3 text-slate-400"></i>
+                                            <span class="text-slate-800 dark:text-white font-bold">${escapeHtml(l.boxName)}</span>
+                                        </span>
                                     </div>
                                     <div class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2 font-medium mt-2">
                                         <span class="flex items-center gap-1 bg-slate-50 dark:bg-slate-900 px-2 py-1 rounded-md border border-slate-100 dark:border-slate-700">
@@ -1389,48 +1516,14 @@ const firebaseConfig = {
                 </div>`;
             };
 
-            // Função que agrupa os logs pela caixa antes de desenhar na tela
-            const renderGroupedByBox = (logs) => {
-                const boxes = {};
-                logs.forEach(l => {
-                    const key = l.boxName || 'Sistema / Outros';
-                    if(!boxes[key]) boxes[key] = [];
-                    boxes[key].push(l);
-                });
-                
-                return Object.keys(boxes).sort((a, b) => {
-                    return a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'});
-                }).map(boxName => {
-                    return `
-                    <div class="mb-8 last:mb-0 bg-slate-50/30 dark:bg-slate-900/20 p-4 sm:p-6 rounded-3xl border border-slate-100 dark:border-slate-700/50 shadow-sm relative overflow-hidden">
-                        <!-- Título do Grupo (Nome da Caixa) -->
-                        <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200 dark:border-slate-700/50">
-                            <div class="w-10 h-10 bg-indigo-600 dark:bg-indigo-500 text-white rounded-xl flex items-center justify-center shadow-md shadow-indigo-200 dark:shadow-none shrink-0">
-                                <i data-lucide="package" class="w-5 h-5"></i>
-                            </div>
-                            <div>
-                                <h3 class="text-lg font-bold text-slate-800 dark:text-white truncate leading-tight">${escapeHtml(boxName)}</h3>
-                                <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">Histórico da Caixa</p>
-                            </div>
-                            <span class="ml-auto bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold px-3 py-1.5 rounded-lg shrink-0 border border-slate-200 dark:border-slate-700 shadow-sm">${boxes[boxName].length} atividades</span>
-                        </div>
-                        
-                        <!-- Timeline daquela caixa específica -->
-                        <div class="w-full relative">
-                            ${boxes[boxName].map(renderTimelineItem).join('')}
-                        </div>
-                    </div>`;
-                }).join('');
-            };
-
             let contentHtml = '';
             
             if (state.historyView === 'today') {
                 const todaysLogs = filtered.filter(l => getLocalDateString(l.timestamp) === todayPT);
                 contentHtml = `
-                    <div class="bg-white dark:bg-slate-800/80 rounded-3xl p-4 sm:p-8 shadow-sm border border-slate-200 dark:border-slate-700">
+                    <div class="bg-white dark:bg-slate-800/80 rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 dark:border-slate-700">
                         ${todaysLogs.length 
-                            ? `<div class="w-full">${renderGroupedByBox(todaysLogs)}</div>` 
+                            ? `<div class="max-w-4xl mx-auto space-y-0 relative">${todaysLogs.map(renderTimelineItem).join('')}</div>` 
                             : `
                             <div class="flex flex-col items-center justify-center h-64 text-slate-400 animate-fade-in">
                                 <div class="bg-slate-50 dark:bg-slate-900/50 p-5 rounded-full mb-4 border border-slate-100 dark:border-slate-800">
@@ -1462,8 +1555,8 @@ const firebaseConfig = {
                     if (isExpanded) {
                         expandedContent = `
                         <div class="border-t border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 p-4 sm:p-8 relative">
-                            <div class="w-full">
-                                ${renderGroupedByBox(grouped[date])}
+                            <div class="max-w-4xl mx-auto">
+                                ${grouped[date].map(renderTimelineItem).join('')}
                             </div>
                         </div>`;
                     }
@@ -1848,11 +1941,25 @@ const firebaseConfig = {
 
         function renderApp() {
             try {
-                // Remove loading screen
+                // Remove loading screen ONLY se os dados já estiverem carregados da nuvem
                 const loader = document.getElementById('loading-screen');
-                if(loader) loader.classList.add('hidden');
+                
+                if (!state.isLoggedIn) { 
+                    if(loader) loader.classList.add('hidden');
+                    renderLogin(); 
+                    return; 
+                }
 
-                if (!state.isLoggedIn) { renderLogin(); return; }
+                // Aguardar dados da nuvem antes de renderizar a interface
+                if (!isDataLoaded) {
+                    if(loader) loader.classList.remove('hidden');
+                    document.getElementById('app-layout').classList.add('hidden');
+                    document.getElementById('login-container').classList.add('hidden');
+                    return;
+                }
+
+                if(loader) loader.classList.add('hidden');
+                
                 document.getElementById('login-container').classList.add('hidden');
                 const appLayout = document.getElementById('app-layout');
                 appLayout.classList.remove('hidden');
@@ -1923,6 +2030,9 @@ const firebaseConfig = {
         
         // Robust Loader
         window.addEventListener('load', () => { 
+            // Inicia a ligação ao Firebase
+            initFirebase();
+
             if(typeof lucide !== 'undefined') {
                 renderApp(); 
             } else { 
