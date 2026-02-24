@@ -1315,26 +1315,124 @@
             });
             
             const todayPT = getLocalDateString(new Date().toISOString());
+            
+            // Renderizador individual de cada item da Timeline
             const renderTimelineItem = (l) => {
-                let icon='circle', color='bg-slate-100 text-slate-500 border-slate-200';
-                if(l.action === 'Saída') { icon='truck'; color='bg-amber-50 text-amber-600 border-amber-100'; }
-                else if(l.action === 'Entrega') { icon='check'; color='bg-slate-100 text-slate-600 border-slate-200'; } // Changed to slate for delivery
-                else if(l.action === 'Falta') { icon='alert-triangle'; color='bg-rose-50 text-rose-600 border-rose-100'; }
-                else if(l.action === 'Adição') { icon='plus'; color='bg-blue-50 text-blue-600 border-blue-100'; }
-                else if(l.action === 'Exclusão') { icon='trash-2'; color='bg-rose-50 text-rose-600 border-rose-100'; }
-                else if(l.action === 'Alteração') { icon='pencil'; color='bg-indigo-50 text-indigo-600 border-indigo-100'; }
-                else if(l.action === 'Separação') { icon='package-check'; color='bg-violet-50 text-violet-600 border-violet-100'; }
+                let icon='circle', color='bg-slate-100 text-slate-500 border-slate-200', ring='ring-slate-50 dark:ring-slate-800', accent='bg-slate-300';
                 
-                let printBtn = l.action === 'Saída' ? `<button onclick="printHistoryManifest(${l.id})" class="ml-auto text-xs flex items-center gap-1 text-slate-400 hover:text-blue-600 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:border-blue-300 px-2 py-1 rounded-md transition-colors"><i data-lucide="printer" class="w-3 h-3"></i> Imprimir</button>` : '';
+                // Mapeamento de cores premium para cada ação
+                if(l.action === 'Saída') { icon='truck'; color='bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400'; ring='ring-amber-50 dark:ring-amber-900/20'; accent='bg-amber-400'; }
+                else if(l.action === 'Entrega') { icon='check-circle-2'; color='bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400'; ring='ring-emerald-50 dark:ring-emerald-900/20'; accent='bg-emerald-400'; }
+                else if(l.action === 'Falta') { icon='alert-triangle'; color='bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400'; ring='ring-rose-50 dark:ring-rose-900/20'; accent='bg-rose-400'; }
+                else if(l.action === 'Adição') { icon='plus-circle'; color='bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400'; ring='ring-blue-50 dark:ring-blue-900/20'; accent='bg-blue-400'; }
+                else if(l.action === 'Exclusão') { icon='trash-2'; color='bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'; ring='ring-red-50 dark:ring-red-900/20'; accent='bg-red-400'; }
+                else if(l.action === 'Alteração') { icon='pencil'; color='bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400'; ring='ring-indigo-50 dark:ring-indigo-900/20'; accent='bg-indigo-400'; }
+                else if(l.action === 'Separação') { icon='package-check'; color='bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-400'; ring='ring-violet-50 dark:ring-violet-900/20'; accent='bg-violet-400'; }
+                else if(l.action === 'Status' || l.action === 'Criação') { icon='box'; color='bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300'; ring='ring-slate-100 dark:ring-slate-800'; accent='bg-slate-400'; }
+                
+                let printBtn = l.action === 'Saída' ? `<button onclick="printHistoryManifest(${l.id})" class="text-xs flex items-center justify-center gap-1.5 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-indigo-200 dark:hover:border-indigo-800 px-3 py-1.5 rounded-lg transition-all shadow-sm active:scale-95 w-full sm:w-auto mt-3 sm:mt-0"><i data-lucide="printer" class="w-3.5 h-3.5"></i> Imprimir</button>` : '';
+                
                 const time = new Date(l.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+                const dateShort = new Date(l.timestamp).toLocaleDateString('pt-BR', {day: '2-digit', month: 'short'});
                 
-                return `<div class="timeline-item relative pl-14 py-2 group"><div class="timeline-line group-last:hidden"></div><div class="absolute left-0 top-2 w-12 h-12 flex items-center justify-center z-10"><div class="w-10 h-10 rounded-full border-2 ${color} dark:border-slate-600 flex items-center justify-center shadow-sm bg-white dark:bg-slate-800"><i data-lucide="${icon}" class="w-5 h-5"></i></div></div><div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl p-4 shadow-sm hover:shadow-md transition-all hover:border-slate-200 dark:hover:border-slate-600"><div class="flex justify-between items-start mb-1"><div class="flex flex-col"><span class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-0.5">${time} • ${escapeHtml(l.user)}</span><h4 class="text-base font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">${escapeHtml(l.action)} <span class="font-normal text-slate-500 dark:text-slate-400">em</span> <span class="text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded text-sm font-semibold">${escapeHtml(l.boxName)}</span></h4></div>${printBtn}</div><div class="text-sm text-slate-600 dark:text-slate-400 mt-2 p-3 bg-slate-50/50 dark:bg-slate-900/50 rounded-lg border border-slate-50 dark:border-slate-700 whitespace-pre-wrap leading-relaxed">${escapeHtml(l.details)}</div></div></div>`;
+                return `
+                <div class="relative pl-10 sm:pl-32 py-5 group">
+                    <!-- Linha Contínua -->
+                    <div class="absolute left-[1.15rem] sm:left-[7.4rem] top-0 bottom-0 w-[2px] bg-slate-200 dark:bg-slate-700 group-last:bg-gradient-to-b group-last:from-slate-200 group-last:to-transparent dark:group-last:from-slate-700"></div>
+                    
+                    <!-- Horário (Esquerda no Desktop, Oculto no Mobile) -->
+                    <div class="hidden sm:flex flex-col items-end absolute left-0 top-5 w-24 pr-5 text-right mt-1">
+                        <span class="text-sm font-bold text-slate-800 dark:text-slate-200 leading-none">${time}</span>
+                        <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">${dateShort}</span>
+                    </div>
+                    
+                    <!-- Ícone Redondo no Centro -->
+                    <div class="absolute left-0 sm:left-[calc(7.5rem-13px)] top-5 w-8 h-8 rounded-full ${color} ring-4 ${ring} flex items-center justify-center z-10 shadow-sm">
+                        <i data-lucide="${icon}" class="w-4 h-4"></i>
+                    </div>
+                    
+                    <!-- Cartão de Conteúdo -->
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-100 dark:border-slate-700 hover:shadow-md transition-all sm:ml-4 relative overflow-hidden group/card">
+                        <div class="absolute top-0 left-0 w-1.5 h-full ${accent} opacity-80"></div>
+                        <div class="p-4 sm:p-5 pl-5 sm:pl-6">
+                            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start">
+                                <div>
+                                    <!-- AQUI: Removemos o nome da caixa pois agora está no título do Grupo -->
+                                    <div class="flex flex-wrap items-center gap-2 mb-1">
+                                        <span class="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${color}">${escapeHtml(l.action)}</span>
+                                    </div>
+                                    <div class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2 font-medium mt-2">
+                                        <span class="flex items-center gap-1 bg-slate-50 dark:bg-slate-900 px-2 py-1 rounded-md border border-slate-100 dark:border-slate-700">
+                                            <i data-lucide="user" class="w-3 h-3"></i> ${escapeHtml(l.user)}
+                                        </span>
+                                        <span class="sm:hidden flex items-center gap-1 bg-slate-50 dark:bg-slate-900 px-2 py-1 rounded-md border border-slate-100 dark:border-slate-700">
+                                            <i data-lucide="clock" class="w-3 h-3"></i> ${time}
+                                        </span>
+                                    </div>
+                                </div>
+                                ${printBtn}
+                            </div>
+                            ${l.details ? `
+                            <div class="mt-4 p-3.5 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-700">
+                                <p class="text-[13px] text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">${escapeHtml(l.details)}</p>
+                            </div>` : ''}
+                        </div>
+                    </div>
+                </div>`;
+            };
+
+            // Função que agrupa os logs pela caixa antes de desenhar na tela
+            const renderGroupedByBox = (logs) => {
+                const boxes = {};
+                logs.forEach(l => {
+                    const key = l.boxName || 'Sistema / Outros';
+                    if(!boxes[key]) boxes[key] = [];
+                    boxes[key].push(l);
+                });
+                
+                return Object.keys(boxes).sort((a, b) => {
+                    return a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'});
+                }).map(boxName => {
+                    return `
+                    <div class="mb-8 last:mb-0 bg-slate-50/30 dark:bg-slate-900/20 p-4 sm:p-6 rounded-3xl border border-slate-100 dark:border-slate-700/50 shadow-sm relative overflow-hidden">
+                        <!-- Título do Grupo (Nome da Caixa) -->
+                        <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200 dark:border-slate-700/50">
+                            <div class="w-10 h-10 bg-indigo-600 dark:bg-indigo-500 text-white rounded-xl flex items-center justify-center shadow-md shadow-indigo-200 dark:shadow-none shrink-0">
+                                <i data-lucide="package" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-800 dark:text-white truncate leading-tight">${escapeHtml(boxName)}</h3>
+                                <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">Histórico da Caixa</p>
+                            </div>
+                            <span class="ml-auto bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold px-3 py-1.5 rounded-lg shrink-0 border border-slate-200 dark:border-slate-700 shadow-sm">${boxes[boxName].length} atividades</span>
+                        </div>
+                        
+                        <!-- Timeline daquela caixa específica -->
+                        <div class="w-full relative">
+                            ${boxes[boxName].map(renderTimelineItem).join('')}
+                        </div>
+                    </div>`;
+                }).join('');
             };
 
             let contentHtml = '';
+            
             if (state.historyView === 'today') {
                 const todaysLogs = filtered.filter(l => getLocalDateString(l.timestamp) === todayPT);
-                contentHtml = `<div class="flex-grow overflow-hidden flex flex-col bg-white dark:bg-slate-800 rounded-xl shadow-card border border-slate-200 dark:border-slate-700"><div class="p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex justify-between items-center"><span class="font-bold text-slate-800 dark:text-white flex items-center gap-2"><i data-lucide="calendar" class="w-4 h-4"></i> Hoje (${new Date().toLocaleDateString()})</span><span class="text-xs font-medium bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-2 py-1 rounded-full">${todaysLogs.length} Registos</span></div><div class="overflow-y-auto flex-grow p-6 bg-[#f8fafc] dark:bg-slate-950 scroll-smooth"><div class="max-w-3xl mx-auto space-y-1">${todaysLogs.length ? todaysLogs.map(renderTimelineItem).join('') : `<div class="flex flex-col items-center justify-center h-64 text-slate-400"><div class="bg-slate-100 dark:bg-slate-800 p-4 rounded-full mb-3"><i data-lucide="clock" class="w-8 h-8 opacity-50"></i></div><p>Nenhuma atividade registada hoje.</p></div>`}</div></div></div>`;
+                contentHtml = `
+                    <div class="bg-white dark:bg-slate-800/80 rounded-3xl p-4 sm:p-8 shadow-sm border border-slate-200 dark:border-slate-700">
+                        ${todaysLogs.length 
+                            ? `<div class="w-full">${renderGroupedByBox(todaysLogs)}</div>` 
+                            : `
+                            <div class="flex flex-col items-center justify-center h-64 text-slate-400 animate-fade-in">
+                                <div class="bg-slate-50 dark:bg-slate-900/50 p-5 rounded-full mb-4 border border-slate-100 dark:border-slate-800">
+                                    <i data-lucide="coffee" class="w-10 h-10 text-slate-300 dark:text-slate-600"></i>
+                                </div>
+                                <h3 class="text-base font-bold text-slate-600 dark:text-slate-300">Dia tranquilo!</h3>
+                                <p class="text-sm mt-1">Nenhuma atividade registada hoje ainda.</p>
+                            </div>`
+                        }
+                    </div>`;
             } else {
                 const archiveLogs = filtered.filter(l => getLocalDateString(l.timestamp) !== todayPT);
                 const grouped = {};
@@ -1351,40 +1449,108 @@
                 const listHtml = dates.map(date => {
                     const isExpanded = state.expandedDate === date;
                     const chevron = isExpanded ? 'chevron-up' : 'chevron-down';
+                    
                     let expandedContent = '';
                     if (isExpanded) {
-                        expandedContent = `<div class="border-t border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 p-6"><div class="max-w-3xl mx-auto">${grouped[date].map(renderTimelineItem).join('')}</div></div>`;
+                        expandedContent = `
+                        <div class="border-t border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 p-4 sm:p-8 relative">
+                            <div class="w-full">
+                                ${renderGroupedByBox(grouped[date])}
+                            </div>
+                        </div>`;
                     }
                           
-                    return `<div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm transition-all hover:shadow-md mb-3"><button onclick="toggleDateAccordion('${date}')" class="w-full px-5 py-4 flex justify-between items-center bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors group"><div class="flex items-center gap-3"><div class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 p-2 rounded-lg group-hover:bg-slate-800 dark:group-hover:bg-slate-600 group-hover:text-white transition-colors"><i data-lucide="calendar-days" class="w-5 h-5"></i></div><span class="font-bold text-slate-700 dark:text-slate-200 text-lg">${date}</span></div><div class="flex items-center gap-3"><span class="text-xs font-bold bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-2.5 py-1 rounded-full">${grouped[date].length} eventos</span><i data-lucide="${chevron}" class="w-5 h-5 text-slate-400"></i></div></button>${expandedContent}</div>`;
+                    return `
+                    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all mb-4">
+                        <button onclick="toggleDateAccordion('${date}')" class="w-full px-5 py-4 sm:p-5 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors group">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform">
+                                    <i data-lucide="calendar-days" class="w-6 h-6"></i>
+                                </div>
+                                <div class="text-left">
+                                    <h4 class="font-bold text-slate-800 dark:text-white text-lg">${date}</h4>
+                                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">${grouped[date].length} registos encontrados</p>
+                                </div>
+                            </div>
+                            <div class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/50 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                <i data-lucide="${chevron}" class="w-4 h-4"></i>
+                            </div>
+                        </button>
+                        ${expandedContent}
+                    </div>`;
                 }).join('');
 
-                const emptyState = !dates.length ? 
-                    `<div class="flex flex-col items-center justify-center h-64 text-slate-400">
-                        <i data-lucide="archive-restore" class="w-12 h-12 mb-3 opacity-20"></i>
-                        <p>Nenhum registo anterior encontrado.</p>
-                     </div>` : '';
+                const emptyState = !dates.length ? `
+                    <div class="flex flex-col items-center justify-center h-64 text-slate-400 animate-fade-in bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700">
+                        <div class="bg-slate-50 dark:bg-slate-900/50 p-5 rounded-full mb-4 border border-slate-100 dark:border-slate-800">
+                            <i data-lucide="archive-restore" class="w-10 h-10 text-slate-300 dark:text-slate-600"></i>
+                        </div>
+                        <h3 class="text-base font-bold text-slate-600 dark:text-slate-300">Arquivo Vazio</h3>
+                        <p class="text-sm mt-1">Não existem atividades de dias anteriores.</p>
+                    </div>` : '';
 
-                contentHtml = `
-                <div class="flex-grow overflow-hidden flex flex-col bg-white dark:bg-slate-800 rounded-xl shadow-card border border-slate-200 dark:border-slate-700">
-                    <div class="p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                        <i data-lucide="archive" class="w-4 h-4"></i> Arquivo Histórico
-                    </div>
-                    <div class="overflow-y-auto flex-grow p-4 space-y-4 bg-[#f8fafc] dark:bg-slate-950">
-                        ${listHtml}
-                        ${emptyState}
-                    </div>
-                </div>`;
+                contentHtml = listHtml + emptyState;
             }
+
+            // O Container e Estrutura Principal (Modernizado)
+            const mainLayoutHtml = `
+            <div class="max-w-5xl mx-auto pb-10 space-y-6 animate-fade-in">
+                <!-- Cabeçalho de Título -->
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800 dark:text-white tracking-tight">Histórico de Atividades</h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Acompanhe todas as movimentações e ações do sistema.</p>
+                    </div>
+                </div>
+
+                <!-- Barra de Controlos Flutuante (Filtros e Abas) -->
+                <div class="bg-white dark:bg-slate-800 p-2.5 rounded-2xl shadow-card border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row justify-between items-center gap-3 sticky top-0 z-20">
+                    
+                    <!-- Botões Hoje / Arquivo -->
+                    <div class="flex p-1 bg-slate-100 dark:bg-slate-900/80 rounded-xl w-full sm:w-auto">
+                        <button onclick="setHistoryView('today')" class="flex-1 sm:flex-none px-6 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${state.historyView==='today' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}">
+                            <i data-lucide="sun" class="w-4 h-4"></i> Hoje
+                        </button>
+                        <button onclick="setHistoryView('archive')" class="flex-1 sm:flex-none px-6 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${state.historyView==='archive' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}">
+                            <i data-lucide="archive" class="w-4 h-4"></i> Arquivo
+                        </button>
+                    </div>
+
+                    <!-- Inputs de Pesquisa e Data -->
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <!-- Busca -->
+                        <div class="relative flex-grow sm:w-64 group">
+                            <div class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors"><i data-lucide="search" class="w-4 h-4"></i></div>
+                            <input id="history-search-input" type="text" placeholder="Procurar evento ou utilizador..." value="${escapeHtml(state.historyFilter.search)}" oninput="handleHistoryFilter('search', this.value)" class="w-full pl-9 pr-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:border-indigo-400 dark:focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 focus:bg-white dark:focus:bg-slate-800 rounded-xl text-sm outline-none transition-all dark:text-white placeholder:text-slate-400">
+                        </div>
+                        
+                        <!-- Data Picker -->
+                        <div class="relative group hidden sm:block" title="Filtrar por data exata">
+                            <div class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors"><i data-lucide="calendar" class="w-4 h-4"></i></div>
+                            <input type="date" value="${state.historyFilter.date}" onchange="handleHistoryFilter('date', this.value)" class="pl-9 pr-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:border-indigo-400 dark:focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 focus:bg-white dark:focus:bg-slate-800 rounded-xl text-sm outline-none transition-all dark:text-white cursor-pointer text-slate-600 dark:text-slate-300">
+                        </div>
+                        
+                        <!-- Limpar Filtros -->
+                        ${(state.historyFilter.search || state.historyFilter.date) ? `<button onclick="clearHistoryFilters()" class="p-2.5 text-rose-500 bg-rose-50 dark:bg-rose-900/20 hover:bg-rose-100 dark:hover:bg-rose-900/40 border border-rose-200 dark:border-rose-800/50 rounded-xl transition-colors shrink-0 flex items-center justify-center gap-1 font-semibold text-sm px-4" title="Limpar Filtros"><i data-lucide="x" class="w-4 h-4"></i> <span class="hidden md:inline">Limpar</span></button>` : ''}
+                    </div>
+                </div>
+
+                <!-- Conteúdo Renderizado (Timeline ou Acordeão) -->
+                <div id="history-content-area">
+                    ${contentHtml}
+                </div>
+            </div>
+            `;
 
             const historyContainer = document.getElementById('history-content-area');
             const historyInput = document.getElementById('history-search-input');
             
+            // Otimização: Substitui apenas a lista caso o utilizador já esteja a usar o input de pesquisa
             if (historyContainer && historyInput) {
                 historyContainer.innerHTML = contentHtml;
                 if (typeof lucide !== 'undefined') lucide.createIcons();
             } else {
-                container.innerHTML = `<div class="flex flex-col h-full overflow-hidden pb-4"><div class="flex flex-col md:flex-row gap-4 mb-6 shrink-0 justify-between items-center"><div class="bg-slate-200 dark:bg-slate-800 p-1 rounded-xl flex gap-1 w-full md:w-auto"><button onclick="setHistoryView('today')" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${state.historyView==='today'?'bg-white dark:bg-slate-600 text-slate-800 dark:text-white shadow-sm':'text-slate-500 hover:text-slate-700 hover:bg-slate-300/50 dark:hover:bg-slate-700'}"><i data-lucide="sun" class="w-4 h-4"></i> Hoje</button><button onclick="setHistoryView('archive')" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${state.historyView==='archive'?'bg-white dark:bg-slate-600 text-slate-800 dark:text-white shadow-sm':'text-slate-500 hover:text-slate-700 hover:bg-slate-300/50 dark:hover:bg-slate-700'}"><i data-lucide="history" class="w-4 h-4"></i> Arquivo</button></div><div class="flex gap-2 w-full md:w-auto bg-white dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm"><div class="relative flex-grow md:w-64"><i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i><input id="history-search-input" type="text" placeholder="Filtrar eventos..." value="${escapeHtml(state.historyFilter.search)}" oninput="handleHistoryFilter('search', this.value)" class="w-full pl-9 pr-3 py-2 text-sm bg-transparent outline-none text-slate-700 dark:text-white placeholder:text-slate-400"></div><div class="w-px bg-slate-200 dark:bg-slate-700 my-1"></div><input type="date" value="${state.historyFilter.date}" onchange="handleHistoryFilter('date', this.value)" class="bg-transparent text-sm text-slate-600 dark:text-slate-300 px-2 outline-none font-medium cursor-pointer hover:text-blue-600">${(state.historyFilter.search || state.historyFilter.date) ? `<button onclick="clearHistoryFilters()" class="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-colors border border-transparent hover:border-red-100 flex items-center gap-1"><i data-lucide="x" class="w-3 h-3"></i></button>` : ''}</div></div><div id="history-content-area" class="flex-grow overflow-hidden flex flex-col">${contentHtml}</div></div>`;
+                container.innerHTML = mainLayoutHtml;
                 if (typeof lucide !== 'undefined') lucide.createIcons();
             }
         }
