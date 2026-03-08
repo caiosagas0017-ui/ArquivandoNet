@@ -1,480 +1,21 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { 
-  Bold, Italic, Underline, AlignLeft, AlignCenter, 
-  AlignRight, Image as ImageIcon, Smile, Palette, 
-  Plus, FileText, Trash2, Type, Heading1, Heading2,
-  BookOpen, Search, MoreHorizontal,
-  Strikethrough, Subscript, Superscript, Eraser, Highlighter,
-  List, ListOrdered, Indent as IndentIcon, Outdent as OutdentIcon, AlignJustify,
-  Sparkles, Feather
-} from 'lucide-react';
-
-export default function CadernoApp() {
-  // --- 1. ESTADO DA APLICAÇÃO (MEMÓRIA) ---
-  // Guardamos as anotações numa lista. Começamos com uma anotação de exemplo.
-  const [notes, setNotes] = useState([
-    { 
-      id: Date.now(), 
-      title: 'Minha Primeira Anotação', 
-      content: '<h2>Bem-vindo ao seu Caderno Moderno! 🚀</h2><p>Comece a digitar os seus estudos aqui. Tente selecionar este texto e mudar a cor, ou cole uma imagem!</p>',
-      lastEdited: new Date().toLocaleDateString()
-    }
-  ]);
-  // Indica qual anotação está aberta no momento
-  const [activeNoteId, setActiveNoteId] = useState(notes[0].id);
-  const editorRef = useRef(null);
-  
-  // NOVO: Um único estado para controlar qual menu flutuante está aberto (adesivos, cor do texto, marca-texto)
-  const [activeMenu, setActiveMenu] = useState(null);
-  
-  // NOVO: Referência para guardar a seleção do texto como uma "fotografia"
-  const savedRangeRef = useRef(null);
-
-  // Encontra a anotação ativa para mostrarmos no ecrã
-  const activeNote = notes.find(n => n.id === activeNoteId) || notes[0];
-
-  // NOVO: "Congelamos" o HTML inicial. Assim, o React não tenta re-desenhar o texto enquanto digitamos!
-  // Isso impede que o React apague a nossa seleção azul acidentalmente.
-  const initialHTML = useMemo(() => {
-    return activeNote.content;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeNoteId]); // Só atualiza quando mudamos de página (nota) na barra lateral
-
-  // NOVO: Escuta sempre que a seleção de texto muda no ecrã e guarda a posição
-  useEffect(() => {
-    const handleSelectionChange = () => {
-      // Se o editor estiver focado, guardamos qual frase/palavra está selecionada
-      if (editorRef.current && document.activeElement === editorRef.current) {
-        const selection = window.getSelection();
-        if (selection.rangeCount > 0) {
-          savedRangeRef.current = selection.getRangeAt(0).cloneRange(); // Usamos cloneRange para ser mais seguro
-        }
-      }
-    };
-    document.addEventListener('selectionchange', handleSelectionChange);
-    return () => document.removeEventListener('selectionchange', handleSelectionChange);
-  }, []);
-
-  // NOVO: Função que restaura a seleção guardada antes de aplicar o efeito
-  const restoreSelection = () => {
-    if (savedRangeRef.current) {
-      const selection = window.getSelection();
-      selection.removeAllRanges(); // Limpa seleções acidentais fora do texto
-      selection.addRange(savedRangeRef.current); // Aplica a nossa "fotografia"
-    }
-  };
-
-  // --- 2. FUNÇÕES DO EDITOR (A MÁGICA DO "WORD") ---
-  // Função que aplica formatações ao texto selecionado (AGORA SUPORTA AÇÕES CONTÍNUAS)
-  const applyFormat = (command, value = null, isContinuous = false) => {
-    restoreSelection(); // 1º Passo: Garantir que a palavra não perdeu a seleção
-    document.execCommand(command, false, value); // 2º Passo: Aplica o efeito
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Caderno</title>
     
-    // 3º Passo: Atualiza a nossa "fotografia" IMEDIATAMENTE após aplicar a cor.
-    const selection = window.getSelection();
-    if (selection.rangeCount > 0) {
-      savedRangeRef.current = selection.getRangeAt(0).cloneRange();
-    }
+    <!-- Tailwind CSS para os estilos -->
+    <script src="https://cdn.tailwindcss.com"></script>
     
-    // Se a ação for contínua (como arrastar a cor na paleta), NÃO salvamos nem focamos
-    // para não interromper a fluidez do utilizador.
-    if (!isContinuous) {
-      if (editorRef.current) editorRef.current.focus();
-      saveContent(); // Salva definitivamente
-    }
-  };
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Fontes do Google -->
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&family=Dancing+Script:wght@400..700&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Quicksand:wght@300..700&display=swap" rel="stylesheet">
 
-  // Função para lidar com a colagem de imagens diretamente no texto
-  const handlePaste = (e) => {
-    const items = e.clipboardData.items;
-    for (let i = 0; i < items.length; i++) {
-      // Se o que foi colado for uma imagem
-      if (items[i].type.indexOf('image') !== -1) {
-        e.preventDefault(); // Impede o comportamento padrão
-        const blob = items[i].getAsFile();
-        const reader = new FileReader();
-        // Quando a imagem for lida, inserimos no texto
-        reader.onload = (event) => {
-          applyFormat('insertImage', event.target.result);
-        };
-        reader.readAsDataURL(blob); // Converte a imagem para um formato legível (Base64)
-      }
-    }
-  };
-
-  // Salva o conteúdo digitado no estado da aplicação
-  const saveContent = () => {
-    if (!editorRef.current) return;
-    const newContent = editorRef.current.innerHTML;
-    // Usamos 'prevNotes' para garantir que não perdemos letras se digitarmos muito rápido
-    setNotes(prevNotes => prevNotes.map(note => 
-      note.id === activeNoteId ? { ...note, content: newContent, lastEdited: new Date().toLocaleDateString() } : note
-    ));
-  };
-
-  // Salva o novo título da anotação
-  const updateTitle = (e) => {
-    const newTitle = e.target.value;
-    setNotes(notes.map(note => 
-      note.id === activeNoteId ? { ...note, title: newTitle } : note
-    ));
-  };
-
-  // --- 3. GESTÃO DE ANOTAÇÕES ---
-  const createNewNote = () => {
-    const newNote = {
-      id: Date.now(),
-      title: 'Nova Anotação',
-      content: '<p>Comece a escrever...</p>',
-      lastEdited: new Date().toLocaleDateString()
-    };
-    setNotes([newNote, ...notes]);
-    setActiveNoteId(newNote.id);
-  };
-
-  const deleteNote = (idToDelete, e) => {
-    e.stopPropagation(); // Evita que clicar em apagar também abra a nota
-    if (notes.length === 1) return; // Não apaga se for a última
-    const updatedNotes = notes.filter(n => n.id !== idToDelete);
-    setNotes(updatedNotes);
-    if (activeNoteId === idToDelete) {
-      setActiveNoteId(updatedNotes[0].id);
-    }
-  };
-
-  // NOVO Catálogo de Emojis/Adesivos Organizado por Categorias
-  const emojisCatalog = {
-    "📚 Estudos & Foco": ['📌', '📍', '💡', '🎯', '📚', '📖', '📝', '✏️', '🧠', '⭐️', '🔥', '✅', '❌', '⏰', '⏳', '💻', '☕️', '🚀', '📊', '📈'],
-    "✨ Fofos & Delicados": ['💖', '✨', '🌸', '🦋', '🧸', '🎀', '🪄', '☁️', '🌙', '🌷', '🐾', '🍯', '🌿', '🍄'],
-    "😊 Emoções & Reações": ['😀', '🥰', '😎', '🤔', '😴', '😭', '🤯', '🥳', '👻', '🫶', '🙌', '👏', '👀', '💡']
-  };
-
-  // NOVO: Paletas de Cores Modernas e Delicadas (Substitui o seletor lento do PC)
-  const textColors = [
-    { name: 'Padrão', value: '#5A5451' }, { name: 'Preto', value: '#111827' },
-    { name: 'Vinho', value: '#881337' }, { name: 'Vermelho', value: '#E11D48' },
-    { name: 'Laranja', value: '#EA580C' }, { name: 'Amarelo', value: '#D97706' },
-    { name: 'Verde', value: '#059669' }, { name: 'Azul', value: '#2563EB' },
-    { name: 'Roxo', value: '#7C3AED' }, { name: 'Rosa', value: '#DB2777' },
-  ];
-
-  const highlightColors = [
-    { name: 'Nenhum', value: 'transparent' },
-    { name: 'Amarelo Suave', value: '#FEF08A' }, { name: 'Verde Menta', value: '#BBF7D0' },
-    { name: 'Azul Céu', value: '#BFDBFE' }, { name: 'Lilás', value: '#E9D5FF' },
-    { name: 'Rosa Bebê', value: '#FECDD3' }, { name: 'Pêssego', value: '#FED7AA' },
-  ];
-
-  // Função para inserir emoji e fechar o catálogo automaticamente
-  const handleInsertEmoji = (emoji) => {
-    applyFormat('insertText', emoji);
-    setActiveMenu(null);
-  };
-
-  // NOVO: Truque Profissional! Impede que a seleção de texto desapareça ao clicar na barra
-  const handleFormatClick = (e, command, value = null) => {
-    e.preventDefault(); // Impede o botão de "roubar o foco" do editor de texto!
-    applyFormat(command, value);
-  };
-
-  // --- 4. INTERFACE DO UTILIZADOR (UI) MODERNA E DELICADA ---
-  return (
-    <div className="flex h-screen bg-[#FDFCFB] font-sans text-gray-800 overflow-hidden selection:bg-rose-200 selection:text-rose-900">
-      
-      {/* BARRA LATERAL (SIDEBAR) - Estilo Delicado */}
-      <div className="w-[280px] bg-[#FAF8F5] border-r border-[#F0EBE1] flex flex-col transition-all z-10 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
-        <div className="p-5 flex items-center gap-3 text-gray-800 font-bold border-b border-[#F0EBE1]">
-          <div className="bg-gradient-to-tr from-rose-200 to-rose-100 p-2 rounded-xl shadow-sm border border-white">
-            <Feather size={20} className="text-rose-600" />
-          </div>
-          <span className="text-lg tracking-tight text-[#4A4543]">Meu Caderno</span>
-        </div>
-        
-        <div className="px-4 pt-5 pb-2 flex justify-between items-center text-xs font-bold text-gray-400 uppercase tracking-widest">
-          <span>Anotações</span>
-          <button 
-            onClick={createNewNote}
-            className="p-1.5 bg-white border border-[#F0EBE1] hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 rounded-lg transition-all shadow-sm text-gray-500"
-            title="Nova Anotação"
-          >
-            <Plus size={16} strokeWidth={2.5} />
-          </button>
-        </div>
-        
-        <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1.5 custom-scrollbar">
-          {notes.map(note => (
-            <div 
-              key={note.id}
-              onClick={() => setActiveNoteId(note.id)}
-              className={`group flex justify-between items-center p-3 rounded-2xl cursor-pointer transition-all duration-300 ${
-                activeNoteId === note.id 
-                  ? 'bg-white shadow-[0_2px_12px_rgba(225,29,72,0.04)] border border-rose-100 text-rose-800 font-semibold translate-x-1' 
-                  : 'text-gray-500 hover:bg-[#F2EFEA] border border-transparent'
-              }`}
-            >
-              <div className="flex items-center gap-3 overflow-hidden">
-                <FileText size={16} className={activeNoteId === note.id ? 'text-rose-400' : 'text-gray-400'} strokeWidth={activeNoteId === note.id ? 2.5 : 2} />
-                <span className="truncate text-sm">{note.title}</span>
-              </div>
-              <button 
-                onClick={(e) => deleteNote(note.id, e)} 
-                className={`text-gray-300 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-50 transition-colors ${activeNoteId === note.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
-                title="Apagar"
-              >
-                <Trash2 size={14} />
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ÁREA PRINCIPAL: EDITOR */}
-      <div className="flex-1 flex flex-col bg-[#FDFCFB] relative overflow-hidden">
-        
-        {/* Barra de Ferramentas Superior (Toolbar Delicada) */}
-        <div className="border-b border-[#F0EBE1] bg-white/80 backdrop-blur-xl flex flex-col px-6 py-3 sticky top-0 z-20 gap-3 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
-          
-          <div className="flex items-center gap-4 flex-wrap">
-            
-            {/* GRUPO FONTE */}
-            <div className="flex items-center gap-1.5 border-r border-[#F0EBE1] pr-4">
-              <select 
-                onChange={(e) => applyFormat('fontName', e.target.value)}
-                className="p-1.5 bg-[#FAF8F5] border border-[#F0EBE1] rounded-xl text-sm font-medium text-gray-600 focus:outline-none focus:border-rose-300 focus:ring-2 focus:ring-rose-100 cursor-pointer w-32 hover:bg-white transition-all shadow-sm"
-                title="Mudar Fonte"
-              >
-                <optgroup label="Sem Serifa (Modernas)">
-                  <option value="Arial">Arial</option>
-                  <option value="Helvetica">Helvetica</option>
-                  <option value="Verdana">Verdana</option>
-                  <option value="Trebuchet MS">Trebuchet MS</option>
-                </optgroup>
-                <optgroup label="Delicadas & Escritas (Novas!)">
-                  <option value="'Quicksand', sans-serif">Quicksand (Arredondada)</option>
-                  <option value="'Dancing Script', cursive">Dancing Script (Cursiva)</option>
-                  <option value="'Caveat', cursive">Caveat (Anotação manual)</option>
-                  <option value="'Playfair Display', serif">Playfair (Elegante)</option>
-                </optgroup>
-                <optgroup label="Com Serifa (Clássicas)">
-                  <option value="Times New Roman">Times New Roman</option>
-                  <option value="Georgia">Georgia</option>
-                  <option value="Palatino">Palatino</option>
-                </optgroup>
-              </select>
-
-              <select 
-                onChange={(e) => applyFormat('fontSize', e.target.value)}
-                className="p-1.5 bg-[#FAF8F5] border border-[#F0EBE1] rounded-xl text-sm font-medium text-gray-600 focus:outline-none focus:border-rose-300 focus:ring-2 focus:ring-rose-100 cursor-pointer w-16 hover:bg-white transition-all shadow-sm"
-                title="Tamanho da Fonte"
-                defaultValue="3"
-              >
-                <option value="1">10</option>
-                <option value="2">13</option>
-                <option value="3">16</option>
-                <option value="4">18</option>
-                <option value="5">24</option>
-                <option value="6">32</option>
-                <option value="7">48</option>
-              </select>
-
-              <button onMouseDown={(e) => handleFormatClick(e, 'removeFormat')} className="p-2 ml-1 text-gray-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all" title="Limpar Toda a Formatação">
-                <Eraser size={16} />
-              </button>
-            </div>
-
-            {/* GRUPO ESTILOS DE FONTE */}
-            <div className="flex items-center gap-1 border-r border-[#F0EBE1] pr-4">
-              <button onMouseDown={(e) => handleFormatClick(e, 'bold')} className="p-2 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all font-bold" title="Negrito"><Bold size={16} strokeWidth={2.5} /></button>
-              <button onMouseDown={(e) => handleFormatClick(e, 'italic')} className="p-2 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all italic" title="Itálico"><Italic size={16} /></button>
-              <button onMouseDown={(e) => handleFormatClick(e, 'underline')} className="p-2 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all underline" title="Sublinhado"><Underline size={16} /></button>
-              <button onMouseDown={(e) => handleFormatClick(e, 'strikeThrough')} className="p-2 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all line-through" title="Rasurado"><Strikethrough size={16} /></button>
-              <button onMouseDown={(e) => handleFormatClick(e, 'subscript')} className="p-2 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all" title="Subscrito"><Subscript size={16} /></button>
-              <button onMouseDown={(e) => handleFormatClick(e, 'superscript')} className="p-2 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all" title="Sobrescrito"><Superscript size={16} /></button>
-              
-              <div className="w-px h-6 bg-[#F0EBE1] mx-2"></div>
-
-              {/* Cor de Realce (Marca-texto) Customizada */}
-              <div className="relative">
-                <button 
-                  onMouseDown={(e) => { e.preventDefault(); setActiveMenu(activeMenu === 'highlight' ? null : 'highlight'); }}
-                  className={`relative flex items-center justify-center p-2 rounded-xl transition-all ${activeMenu === 'highlight' ? 'bg-rose-100' : 'hover:bg-rose-50'}`}
-                  title="Cor de Realce"
-                >
-                  <Highlighter size={16} className={activeMenu === 'highlight' ? 'text-rose-700' : 'text-gray-500'} />
-                  <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-3.5 h-1 bg-yellow-300 rounded-full opacity-80"></div>
-                </button>
-
-                {activeMenu === 'highlight' && (
-                  <div className="absolute top-full left-0 mt-3 w-56 bg-white border border-[#F0EBE1] shadow-[0_10px_40px_rgba(225,29,72,0.08)] rounded-2xl p-4 z-50">
-                    <div className="text-[10px] font-extrabold text-gray-400 mb-3 uppercase tracking-widest">Marca-Texto</div>
-                    <div className="grid grid-cols-5 gap-2 mb-3">
-                      {highlightColors.map((color, idx) => (
-                        <button
-                          key={idx}
-                          onMouseDown={(e) => {
-                            handleFormatClick(e, 'backColor', color.value);
-                            setActiveMenu(null); // Fecha a paleta ao escolher
-                          }}
-                          className="w-6 h-6 rounded-full border border-[#F0EBE1] shadow-sm hover:scale-125 transition-transform flex items-center justify-center"
-                          style={{ backgroundColor: color.value === 'transparent' ? '#fff' : color.value }}
-                          title={color.name}
-                        >
-                          {color.value === 'transparent' && <span className="text-[10px] text-red-300 font-bold">/</span>}
-                        </button>
-                      ))}
-                    </div>
-                    {/* NOVO: Botão para a Paleta Completa do Sistema */}
-                    <div className="border-t border-gray-100 pt-3">
-                      <label className="relative flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded-lg transition-colors group overflow-hidden" title="Escolher cor personalizada">
-                        <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-rose-400 via-fuchsia-400 to-indigo-400 shadow-sm group-hover:scale-110 transition-transform"></div>
-                        <span className="text-xs font-semibold text-gray-600">Paleta Completa</span>
-                        {/* O input nativo fica invisível por cima do botão para não quebrar a estética! */}
-                        <input 
-                          type="color" 
-                          onInput={(e) => applyFormat('backColor', e.target.value, true)}
-                          onChange={(e) => { applyFormat('backColor', e.target.value, false); setActiveMenu(null); }}
-                          className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
-                        />
-                      </label>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Cor do Texto Customizada */}
-              <div className="relative">
-                <button 
-                  onMouseDown={(e) => { e.preventDefault(); setActiveMenu(activeMenu === 'textColor' ? null : 'textColor'); }}
-                  className={`relative flex items-center justify-center p-2 rounded-xl transition-all ${activeMenu === 'textColor' ? 'bg-rose-100' : 'hover:bg-rose-50'}`}
-                  title="Cor da Fonte"
-                >
-                  <div className={`text-sm font-bold flex flex-col items-center leading-none transition-colors ${activeMenu === 'textColor' ? 'text-rose-700' : 'text-gray-500'}`}>
-                    A
-                    <div className="w-3.5 h-1 bg-rose-400 rounded-full mt-0.5 opacity-80"></div>
-                  </div>
-                </button>
-
-                {activeMenu === 'textColor' && (
-                  <div className="absolute top-full left-0 mt-3 w-56 bg-white border border-[#F0EBE1] shadow-[0_10px_40px_rgba(225,29,72,0.08)] rounded-2xl p-4 z-50">
-                    <div className="text-[10px] font-extrabold text-gray-400 mb-3 uppercase tracking-widest">Cores de Fonte</div>
-                    <div className="grid grid-cols-5 gap-2 mb-3">
-                      {textColors.map((color, idx) => (
-                        <button
-                          key={idx}
-                          onMouseDown={(e) => {
-                            handleFormatClick(e, 'foreColor', color.value);
-                            setActiveMenu(null); // Fecha a paleta ao escolher
-                          }}
-                          className="w-6 h-6 rounded-full shadow-sm hover:scale-125 transition-transform border border-gray-100"
-                          style={{ backgroundColor: color.value }}
-                          title={color.name}
-                        />
-                      ))}
-                    </div>
-                    {/* NOVO: Botão para a Paleta Completa do Sistema */}
-                    <div className="border-t border-gray-100 pt-3">
-                      <label className="relative flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded-lg transition-colors group overflow-hidden" title="Escolher cor personalizada">
-                        <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-rose-400 via-fuchsia-400 to-indigo-400 shadow-sm group-hover:scale-110 transition-transform"></div>
-                        <span className="text-xs font-semibold text-gray-600">Paleta Completa</span>
-                        <input 
-                          type="color" 
-                          onInput={(e) => applyFormat('foreColor', e.target.value, true)}
-                          onChange={(e) => { applyFormat('foreColor', e.target.value, false); setActiveMenu(null); }}
-                          className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
-                        />
-                      </label>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* GRUPO PARÁGRAFO */}
-            <div className="flex items-center gap-1 border-r border-[#F0EBE1] pr-4">
-              <button onMouseDown={(e) => handleFormatClick(e, 'insertUnorderedList')} className="p-2 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all" title="Marcadores"><List size={16} /></button>
-              <button onMouseDown={(e) => handleFormatClick(e, 'insertOrderedList')} className="p-2 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all" title="Numeração"><ListOrdered size={16} /></button>
-              <button onMouseDown={(e) => handleFormatClick(e, 'outdent')} className="p-2 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all" title="Diminuir Avanço"><OutdentIcon size={16} /></button>
-              <button onMouseDown={(e) => handleFormatClick(e, 'indent')} className="p-2 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all" title="Aumentar Avanço"><IndentIcon size={16} /></button>
-              
-              <div className="w-px h-6 bg-[#F0EBE1] mx-2"></div>
-
-              <button onMouseDown={(e) => handleFormatClick(e, 'justifyLeft')} className="p-2 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all" title="Alinhar à Esquerda"><AlignLeft size={16} /></button>
-              <button onMouseDown={(e) => handleFormatClick(e, 'justifyCenter')} className="p-2 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all" title="Centralizar"><AlignCenter size={16} /></button>
-              <button onMouseDown={(e) => handleFormatClick(e, 'justifyRight')} className="p-2 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all" title="Alinhar à Direita"><AlignRight size={16} /></button>
-              <button onMouseDown={(e) => handleFormatClick(e, 'justifyFull')} className="p-2 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all" title="Justificar"><AlignJustify size={16} /></button>
-            </div>
-
-            {/* GRUPO INSERIR */}
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <button 
-                  onMouseDown={(e) => { e.preventDefault(); setActiveMenu(activeMenu === 'stickers' ? null : 'stickers'); }}
-                  className={`px-4 py-2 bg-gradient-to-r from-rose-50 to-pink-50 border hover:border-rose-200 hover:shadow-sm text-rose-600 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${activeMenu === 'stickers' ? 'border-rose-300' : 'border-rose-100'}`}
-                >
-                  <Sparkles size={16} className="text-rose-500" /> Adesivos
-                </button>
-
-                {/* Este é o "Popup" do Catálogo */}
-                {activeMenu === 'stickers' && (
-                  <div className="absolute top-full right-0 mt-3 w-80 bg-white border border-[#F0EBE1] shadow-[0_10px_40px_rgba(225,29,72,0.08)] rounded-2xl p-5 z-50 max-h-96 overflow-y-auto custom-scrollbar">
-                    {Object.entries(emojisCatalog).map(([category, emojis]) => (
-                      <div key={category} className="mb-5 last:mb-0">
-                        <div className="text-[11px] font-extrabold text-gray-400 mb-3 uppercase tracking-widest sticky top-0 bg-white/95 backdrop-blur-md py-1.5 z-10">{category}</div>
-                        <div className="grid grid-cols-6 gap-2">
-                          {emojis.map((emoji, index) => (
-                            <button
-                              key={index}
-                              onMouseDown={(e) => {
-                                e.preventDefault(); // Impede perda de foco também ao clicar no adesivo
-                                handleInsertEmoji(emoji);
-                              }}
-                              className="w-10 h-10 flex items-center justify-center text-2xl hover:bg-rose-50 hover:scale-110 rounded-xl transition-all"
-                              title="Inserir"
-                            >
-                              {emoji}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        {/* ÁREA DE ESCRITA (Página Estilo Documento Real) */}
-        <div className="flex-1 overflow-y-auto bg-transparent flex justify-center custom-scrollbar">
-          <div className="w-full max-w-[850px] bg-white min-h-[1050px] my-10 shadow-[0_8px_30px_rgba(0,0,0,0.03)] border border-[#F0EBE1] rounded-[2rem] p-20 flex flex-col relative">
-            
-            <input
-              type="text"
-              value={activeNote.title}
-              onChange={updateTitle}
-              className="text-5xl font-extrabold w-full focus:outline-none text-[#3A3533] placeholder-gray-200 border-b-2 border-transparent hover:border-rose-50 focus:border-rose-200 pb-4 mb-10 transition-colors tracking-tight"
-              placeholder="Título da sua anotação..."
-            />
-
-            <div
-              ref={editorRef}
-              className="prose max-w-none flex-1 outline-none text-[#5A5451]"
-              contentEditable={true} 
-              spellCheck={true}      
-              onInput={saveContent}  
-              onPaste={handlePaste}  
-              dangerouslySetInnerHTML={{ __html: initialHTML }} 
-              key={activeNoteId}    
-            />
-          </div>
-        </div>
-      </div>
-      
-      {/* Estilos Profissionais e Delicados Injetados para o Texto e Scroll */}
-      <style dangerouslySetInnerHTML={{__html: `
-        @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&family=Dancing+Script:wght@400..700&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Quicksand:wght@300..700&display=swap');
-
+    <!-- Estilos Personalizados do teu projeto React -->
+    <style>
         .prose img { max-width: 100%; height: auto; border-radius: 16px; margin: 2rem 0; border: 1px solid #F0EBE1; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
         .prose h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 1.25rem; margin-top: 2rem; color: #3A3533; line-height: 1.2; letter-spacing: -0.02em; }
         .prose h2 { font-size: 1.75rem; font-weight: 700; margin-bottom: 1rem; margin-top: 1.75rem; color: #4A4543; line-height: 1.3; border-bottom: 2px solid #FAF8F5; padding-bottom: 0.5rem; }
@@ -483,12 +24,426 @@ export default function CadernoApp() {
         .prose u { text-decoration-thickness: 2px; text-decoration-color: #E6DCD1; text-underline-offset: 4px; }
         .prose li { margin-bottom: 0.5rem; }
         
-        /* Scrollbar Delicada (Estilo macOS flutuante) */
+        /* Scrollbar Delicada */
         .custom-scrollbar::-webkit-scrollbar { width: 14px; height: 14px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #EAE4DB; border-radius: 20px; border: 4px solid transparent; background-clip: padding-box; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #D8CEC1; }
-      `}} />
+
+        /* Utilitário para ocultar elementos */
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body class="flex h-screen bg-[#FDFCFB] font-sans text-gray-800 overflow-hidden selection:bg-rose-200 selection:text-rose-900">
+
+    <!-- BARRA LATERAL (SIDEBAR) -->
+    <div class="w-[280px] bg-[#FAF8F5] border-r border-[#F0EBE1] flex flex-col transition-all z-10 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
+        <div class="p-5 flex items-center gap-3 text-gray-800 font-bold border-b border-[#F0EBE1]">
+            <div class="bg-gradient-to-tr from-rose-200 to-rose-100 p-2 rounded-xl shadow-sm border border-white">
+                <i data-lucide="feather" class="w-5 h-5 text-rose-600"></i>
+            </div>
+            <span class="text-lg tracking-tight text-[#4A4543]">Meu Caderno</span>
+        </div>
+        
+        <div class="px-4 pt-5 pb-2 flex justify-between items-center text-xs font-bold text-gray-400 uppercase tracking-widest">
+            <span>Anotações</span>
+            <button onclick="createNewNote()" class="p-1.5 bg-white border border-[#F0EBE1] hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 rounded-lg transition-all shadow-sm text-gray-500" title="Nova Anotação">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+            </button>
+        </div>
+        
+        <!-- Lista de Anotações renderizada via JS -->
+        <div id="notes-list" class="flex-1 overflow-y-auto px-3 py-2 space-y-1.5 custom-scrollbar">
+            <!-- As notas entram aqui -->
+        </div>
     </div>
-  );
-}
+
+    <!-- ÁREA PRINCIPAL: EDITOR -->
+    <div class="flex-1 flex flex-col bg-[#FDFCFB] relative overflow-hidden">
+        
+        <!-- Barra de Ferramentas Superior -->
+        <div class="border-b border-[#F0EBE1] bg-white/80 backdrop-blur-xl flex flex-col px-6 py-3 sticky top-0 z-20 gap-3 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
+            <div class="flex items-center gap-4 flex-wrap">
+                
+                <!-- GRUPO FONTE -->
+                <div class="flex items-center gap-1.5 border-r border-[#F0EBE1] pr-4">
+                    <select onchange="applyFormat('fontName', this.value)" class="p-1.5 bg-[#FAF8F5] border border-[#F0EBE1] rounded-xl text-sm font-medium text-gray-600 focus:outline-none focus:border-rose-300 focus:ring-2 focus:ring-rose-100 cursor-pointer w-32 hover:bg-white transition-all shadow-sm" title="Mudar Fonte">
+                        <optgroup label="Sem Serifa (Modernas)">
+                            <option value="Arial">Arial</option>
+                            <option value="Helvetica">Helvetica</option>
+                            <option value="Verdana">Verdana</option>
+                        </optgroup>
+                        <optgroup label="Delicadas & Escritas (Novas!)">
+                            <option value="'Quicksand', sans-serif">Quicksand (Arredondada)</option>
+                            <option value="'Dancing Script', cursive">Dancing Script</option>
+                            <option value="'Caveat', cursive">Caveat</option>
+                            <option value="'Playfair Display', serif">Playfair (Elegante)</option>
+                        </optgroup>
+                    </select>
+
+                    <select onchange="applyFormat('fontSize', this.value)" class="p-1.5 bg-[#FAF8F5] border border-[#F0EBE1] rounded-xl text-sm font-medium text-gray-600 focus:outline-none focus:border-rose-300 focus:ring-2 focus:ring-rose-100 cursor-pointer w-16 hover:bg-white transition-all shadow-sm" title="Tamanho da Fonte">
+                        <option value="1">10</option><option value="2">13</option><option value="3" selected>16</option>
+                        <option value="4">18</option><option value="5">24</option><option value="6">32</option>
+                    </select>
+
+                    <button onmousedown="handleFormatClick(event, 'removeFormat')" class="p-2 ml-1 text-gray-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all" title="Limpar Toda a Formatação">
+                        <i data-lucide="eraser" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <!-- GRUPO ESTILOS DE FONTE -->
+                <div class="flex items-center gap-1 border-r border-[#F0EBE1] pr-4">
+                    <button onmousedown="handleFormatClick(event, 'bold')" class="p-2 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all font-bold" title="Negrito"><i data-lucide="bold" class="w-4 h-4"></i></button>
+                    <button onmousedown="handleFormatClick(event, 'italic')" class="p-2 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all italic" title="Itálico"><i data-lucide="italic" class="w-4 h-4"></i></button>
+                    <button onmousedown="handleFormatClick(event, 'underline')" class="p-2 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all underline" title="Sublinhado"><i data-lucide="underline" class="w-4 h-4"></i></button>
+                    <button onmousedown="handleFormatClick(event, 'strikeThrough')" class="p-2 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all line-through" title="Rasurado"><i data-lucide="strikethrough" class="w-4 h-4"></i></button>
+                    <button onmousedown="handleFormatClick(event, 'subscript')" class="p-2 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all" title="Subscrito"><i data-lucide="subscript" class="w-4 h-4"></i></button>
+                    <button onmousedown="handleFormatClick(event, 'superscript')" class="p-2 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all" title="Sobrescrito"><i data-lucide="superscript" class="w-4 h-4"></i></button>
+                    
+                    <div class="w-px h-6 bg-[#F0EBE1] mx-2"></div>
+
+                    <!-- Cor de Realce (Dropdown) -->
+                    <div class="relative">
+                        <button onmousedown="toggleMenu(event, 'highlight-menu')" class="menu-btn relative flex items-center justify-center p-2 rounded-xl transition-all hover:bg-rose-50" title="Cor de Realce">
+                            <i data-lucide="highlighter" class="w-4 h-4 text-gray-500 pointer-events-none"></i>
+                            <div class="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-3.5 h-1 bg-yellow-300 rounded-full opacity-80 pointer-events-none"></div>
+                        </button>
+                        <div id="highlight-menu" class="hidden absolute top-full left-0 mt-3 w-56 bg-white border border-[#F0EBE1] shadow-[0_10px_40px_rgba(225,29,72,0.08)] rounded-2xl p-4 z-50">
+                            <div class="text-[10px] font-extrabold text-gray-400 mb-3 uppercase tracking-widest">Marca-Texto</div>
+                            <div id="highlight-grid" class="grid grid-cols-5 gap-2 mb-3"></div>
+                        </div>
+                    </div>
+
+                    <!-- Cor do Texto (Dropdown) -->
+                    <div class="relative">
+                        <button onmousedown="toggleMenu(event, 'text-color-menu')" class="menu-btn relative flex items-center justify-center p-2 rounded-xl transition-all hover:bg-rose-50" title="Cor da Fonte">
+                            <div class="text-sm font-bold flex flex-col items-center leading-none transition-colors text-gray-500 pointer-events-none">A
+                                <div class="w-3.5 h-1 bg-rose-400 rounded-full mt-0.5 opacity-80"></div>
+                            </div>
+                        </button>
+                        <div id="text-color-menu" class="hidden absolute top-full left-0 mt-3 w-56 bg-white border border-[#F0EBE1] shadow-[0_10px_40px_rgba(225,29,72,0.08)] rounded-2xl p-4 z-50">
+                            <div class="text-[10px] font-extrabold text-gray-400 mb-3 uppercase tracking-widest">Cores de Fonte</div>
+                            <div id="text-color-grid" class="grid grid-cols-5 gap-2 mb-3"></div>
+                            <div class="border-t border-gray-100 pt-3 relative">
+                                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded-lg transition-colors group">
+                                    <div class="w-5 h-5 rounded-full bg-gradient-to-tr from-rose-400 via-fuchsia-400 to-indigo-400 shadow-sm group-hover:scale-110 transition-transform"></div>
+                                    <span class="text-xs font-semibold text-gray-600">Paleta Completa</span>
+                                    <input type="color" oninput="applyFormat('foreColor', this.value, true)" onchange="applyFormat('foreColor', this.value, false); closeAllMenus();" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer">
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GRUPO PARÁGRAFO -->
+                <div class="flex items-center gap-1 border-r border-[#F0EBE1] pr-4">
+                    <button onmousedown="handleFormatClick(event, 'insertUnorderedList')" class="p-2 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"><i data-lucide="list" class="w-4 h-4"></i></button>
+                    <button onmousedown="handleFormatClick(event, 'insertOrderedList')" class="p-2 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"><i data-lucide="list-ordered" class="w-4 h-4"></i></button>
+                    <button onmousedown="handleFormatClick(event, 'outdent')" class="p-2 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"><i data-lucide="outdent" class="w-4 h-4"></i></button>
+                    <button onmousedown="handleFormatClick(event, 'indent')" class="p-2 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"><i data-lucide="indent" class="w-4 h-4"></i></button>
+                    <div class="w-px h-6 bg-[#F0EBE1] mx-2"></div>
+                    <button onmousedown="handleFormatClick(event, 'justifyLeft')" class="p-2 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"><i data-lucide="align-left" class="w-4 h-4"></i></button>
+                    <button onmousedown="handleFormatClick(event, 'justifyCenter')" class="p-2 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"><i data-lucide="align-center" class="w-4 h-4"></i></button>
+                    <button onmousedown="handleFormatClick(event, 'justifyRight')" class="p-2 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"><i data-lucide="align-right" class="w-4 h-4"></i></button>
+                </div>
+
+                <!-- GRUPO INSERIR (Adesivos) -->
+                <div class="flex items-center gap-2">
+                    <div class="relative">
+                        <button onmousedown="toggleMenu(event, 'stickers-menu')" class="menu-btn px-4 py-2 bg-gradient-to-r from-rose-50 to-pink-50 border border-rose-100 hover:border-rose-200 hover:shadow-sm text-rose-600 rounded-xl text-sm font-bold transition-all flex items-center gap-2">
+                            <i data-lucide="sparkles" class="w-4 h-4 text-rose-500 pointer-events-none"></i> Adesivos
+                        </button>
+                        <div id="stickers-menu" class="hidden absolute top-full right-0 mt-3 w-80 bg-white border border-[#F0EBE1] shadow-[0_10px_40px_rgba(225,29,72,0.08)] rounded-2xl p-5 z-50 max-h-96 overflow-y-auto custom-scrollbar">
+                            <!-- Adesivos gerados via JS -->
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ÁREA DE ESCRITA -->
+        <div class="flex-1 overflow-y-auto bg-transparent flex justify-center custom-scrollbar">
+            <div class="w-full max-w-[850px] bg-white min-h-[1050px] my-10 shadow-[0_8px_30px_rgba(0,0,0,0.03)] border border-[#F0EBE1] rounded-[2rem] p-20 flex flex-col relative">
+                
+                <input type="text" id="note-title" class="text-5xl font-extrabold w-full focus:outline-none text-[#3A3533] placeholder-gray-200 border-b-2 border-transparent hover:border-rose-50 focus:border-rose-200 pb-4 mb-10 transition-colors tracking-tight" placeholder="Título da sua anotação...">
+
+                <div id="note-editor" class="prose max-w-none flex-1 outline-none text-[#5A5451]" contenteditable="true" spellcheck="true">
+                    <!-- Conteúdo editável -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lógica JavaScript (Antigo React Component) -->
+    <script>
+        // --- 1. DADOS E ESTADO DA APLICAÇÃO ---
+        let notes = [
+            { 
+                id: Date.now(), 
+                title: 'Minha Primeira Anotação', 
+                content: '<h2>Bem-vindo ao seu Caderno Moderno! 🚀</h2><p>Comece a digitar os seus estudos aqui. Tente selecionar este texto e mudar a cor, ou cole uma imagem!</p>',
+                lastEdited: new Date().toLocaleDateString()
+            }
+        ];
+        let activeNoteId = notes[0].id;
+        let savedRange = null; // Fotografia da seleção de texto
+
+        const emojisCatalog = {
+            "📚 Estudos & Foco": ['📌', '📍', '💡', '🎯', '📚', '📖', '📝', '✏️', '🧠', '⭐️', '🔥', '✅', '❌', '⏰', '⏳', '💻', '☕️', '🚀', '📊', '📈'],
+            "✨ Fofos & Delicados": ['💖', '✨', '🌸', '🦋', '🧸', '🎀', '🪄', '☁️', '🌙', '🌷', '🐾', '🍯', '🌿', '🍄'],
+            "😊 Emoções & Reações": ['😀', '🥰', '😎', '🤔', '😴', '😭', '🤯', '🥳', '👻', '🫶', '🙌', '👏', '👀', '💡']
+        };
+
+        const textColors = [
+            { name: 'Padrão', value: '#5A5451' }, { name: 'Preto', value: '#111827' },
+            { name: 'Vinho', value: '#881337' }, { name: 'Vermelho', value: '#E11D48' },
+            { name: 'Laranja', value: '#EA580C' }, { name: 'Amarelo', value: '#D97706' },
+            { name: 'Verde', value: '#059669' }, { name: 'Azul', value: '#2563EB' },
+            { name: 'Roxo', value: '#7C3AED' }, { name: 'Rosa', value: '#DB2777' },
+        ];
+
+        const highlightColors = [
+            { name: 'Nenhum', value: 'transparent' },
+            { name: 'Amarelo Suave', value: '#FEF08A' }, { name: 'Verde Menta', value: '#BBF7D0' },
+            { name: 'Azul Céu', value: '#BFDBFE' }, { name: 'Lilás', value: '#E9D5FF' },
+            { name: 'Rosa Bebê', value: '#FECDD3' }, { name: 'Pêssego', value: '#FED7AA' },
+        ];
+
+        // Referências do DOM
+        const editorDOM = document.getElementById('note-editor');
+        const titleDOM = document.getElementById('note-title');
+        const notesListDOM = document.getElementById('notes-list');
+
+        // --- 2. INICIALIZAÇÃO DA INTERFACE ---
+        function initApp() {
+            lucide.createIcons(); // Renderiza os ícones
+            buildDropdowns();     // Constrói cores e adesivos
+            renderNotesList();    // Renderiza a barra lateral
+            loadActiveNote();     // Carrega o texto da anotação atual
+            setupEventListeners(); // Escuta o teclado e rato
+        }
+
+        // Constrói as paletas e adesivos via JS para manter o HTML limpo
+        function buildDropdowns() {
+            // Cores de Texto
+            const textGrid = document.getElementById('text-color-grid');
+            textColors.forEach(color => {
+                const btn = document.createElement('button');
+                btn.className = "w-6 h-6 rounded-full shadow-sm hover:scale-125 transition-transform border border-gray-100";
+                btn.style.backgroundColor = color.value;
+                btn.title = color.name;
+                btn.onmousedown = (e) => { handleFormatClick(e, 'foreColor', color.value); closeAllMenus(); };
+                textGrid.appendChild(btn);
+            });
+
+            // Cores de Realce
+            const highlightGrid = document.getElementById('highlight-grid');
+            highlightColors.forEach(color => {
+                const btn = document.createElement('button');
+                btn.className = "w-6 h-6 rounded-full border border-[#F0EBE1] shadow-sm hover:scale-125 transition-transform flex items-center justify-center";
+                btn.style.backgroundColor = color.value === 'transparent' ? '#fff' : color.value;
+                btn.title = color.name;
+                if(color.value === 'transparent') btn.innerHTML = '<span class="text-[10px] text-red-300 font-bold">/</span>';
+                btn.onmousedown = (e) => { handleFormatClick(e, 'backColor', color.value); closeAllMenus(); };
+                highlightGrid.appendChild(btn);
+            });
+
+            // Adesivos (Emojis)
+            const stickersMenu = document.getElementById('stickers-menu');
+            Object.entries(emojisCatalog).forEach(([category, emojis]) => {
+                const catDiv = document.createElement('div');
+                catDiv.className = "mb-5 last:mb-0";
+                
+                const title = document.createElement('div');
+                title.className = "text-[11px] font-extrabold text-gray-400 mb-3 uppercase tracking-widest sticky top-0 bg-white/95 backdrop-blur-md py-1.5 z-10";
+                title.innerText = category;
+                catDiv.appendChild(title);
+
+                const gridDiv = document.createElement('div');
+                gridDiv.className = "grid grid-cols-6 gap-2";
+                
+                emojis.forEach(emoji => {
+                    const btn = document.createElement('button');
+                    btn.className = "w-10 h-10 flex items-center justify-center text-2xl hover:bg-rose-50 hover:scale-110 rounded-xl transition-all";
+                    btn.innerText = emoji;
+                    btn.onmousedown = (e) => { 
+                        e.preventDefault(); 
+                        applyFormat('insertText', emoji); 
+                        closeAllMenus(); 
+                    };
+                    gridDiv.appendChild(btn);
+                });
+
+                catDiv.appendChild(gridDiv);
+                stickersMenu.appendChild(catDiv);
+            });
+        }
+
+        // --- 3. GESTÃO DE ANOTAÇÕES (Lógica que era do React State) ---
+        function renderNotesList() {
+            notesListDOM.innerHTML = ''; // Limpa a lista atual
+            notes.forEach(note => {
+                const isActive = note.id === activeNoteId;
+                
+                const noteDiv = document.createElement('div');
+                noteDiv.className = `group flex justify-between items-center p-3 rounded-2xl cursor-pointer transition-all duration-300 ${
+                    isActive ? 'bg-white shadow-[0_2px_12px_rgba(225,29,72,0.04)] border border-rose-100 text-rose-800 font-semibold translate-x-1' 
+                             : 'text-gray-500 hover:bg-[#F2EFEA] border border-transparent'
+                }`;
+                noteDiv.onclick = () => switchNote(note.id);
+
+                const infoDiv = document.createElement('div');
+                infoDiv.className = "flex items-center gap-3 overflow-hidden";
+                infoDiv.innerHTML = `<i data-lucide="file-text" class="w-4 h-4 ${isActive ? 'text-rose-400' : 'text-gray-400'}"></i> <span class="truncate text-sm">${note.title}</span>`;
+                
+                const delBtn = document.createElement('button');
+                delBtn.className = `text-gray-300 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-50 transition-colors ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`;
+                delBtn.title = "Apagar";
+                delBtn.innerHTML = `<i data-lucide="trash-2" class="w-3.5 h-3.5"></i>`;
+                delBtn.onclick = (e) => { e.stopPropagation(); deleteNote(note.id); };
+
+                noteDiv.appendChild(infoDiv);
+                noteDiv.appendChild(delBtn);
+                notesListDOM.appendChild(noteDiv);
+            });
+            lucide.createIcons(); // Recarrega os ícones criados
+        }
+
+        function loadActiveNote() {
+            const activeNote = notes.find(n => n.id === activeNoteId);
+            if (activeNote) {
+                titleDOM.value = activeNote.title;
+                editorDOM.innerHTML = activeNote.content;
+            }
+        }
+
+        function switchNote(id) {
+            activeNoteId = id;
+            renderNotesList();
+            loadActiveNote();
+        }
+
+        function createNewNote() {
+            const newNote = {
+                id: Date.now(),
+                title: 'Nova Anotação',
+                content: '<p><br></p>',
+                lastEdited: new Date().toLocaleDateString()
+            };
+            notes.unshift(newNote); // Adiciona no início
+            activeNoteId = newNote.id;
+            renderNotesList();
+            loadActiveNote();
+        }
+
+        function deleteNote(id) {
+            if (notes.length === 1) return; // Protege a última nota
+            notes = notes.filter(n => n.id !== id);
+            if (activeNoteId === id) activeNoteId = notes[0].id;
+            renderNotesList();
+            loadActiveNote();
+        }
+
+        function saveContent() {
+            const activeNote = notes.find(n => n.id === activeNoteId);
+            if (activeNote) {
+                activeNote.content = editorDOM.innerHTML;
+                activeNote.title = titleDOM.value;
+            }
+        }
+
+        // --- 4. O MOTOR DO EDITOR DE TEXTO ---
+        
+        // Guarda a posição do cursor/seleção
+        function captureSelection() {
+            if (document.activeElement === editorDOM) {
+                const selection = window.getSelection();
+                if (selection.rangeCount > 0) {
+                    savedRange = selection.getRangeAt(0).cloneRange();
+                }
+            }
+        }
+
+        // Restaura a posição antes de aplicar um efeito
+        function restoreSelection() {
+            if (savedRange) {
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(savedRange);
+            }
+        }
+
+        // Função Principal de Formatação
+        function applyFormat(command, value = null, isContinuous = false) {
+            restoreSelection(); 
+            document.execCommand(command, false, value); 
+            
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) savedRange = selection.getRangeAt(0).cloneRange();
+            
+            if (!isContinuous) {
+                editorDOM.focus();
+                saveContent();
+            }
+        }
+
+        function handleFormatClick(e, command, value = null) {
+            e.preventDefault(); // Impede o botão de roubar o foco!
+            applyFormat(command, value);
+        }
+
+        // Tratamento especial para colar imagens (converte para Base64)
+        function handlePaste(e) {
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    e.preventDefault();
+                    const blob = items[i].getAsFile();
+                    const reader = new FileReader();
+                    reader.onload = (event) => applyFormat('insertImage', event.target.result);
+                    reader.readAsDataURL(blob);
+                }
+            }
+        }
+
+        // --- 5. MENUS SUSPENSOS E EVENTOS GLOBAIS ---
+        function toggleMenu(e, menuId) {
+            e.preventDefault();
+            const menu = document.getElementById(menuId);
+            const isHidden = menu.classList.contains('hidden');
+            closeAllMenus(); // Fecha outros menus primeiro
+            if (isHidden) menu.classList.remove('hidden');
+        }
+
+        function closeAllMenus() {
+            document.getElementById('highlight-menu').classList.add('hidden');
+            document.getElementById('text-color-menu').classList.add('hidden');
+            document.getElementById('stickers-menu').classList.add('hidden');
+        }
+
+        function setupEventListeners() {
+            // Escuta as alterações no texto para guardar a nota
+            editorDOM.addEventListener('input', saveContent);
+            titleDOM.addEventListener('input', () => {
+                saveContent();
+                renderNotesList(); // Atualiza o título na barra lateral em tempo real
+            });
+            editorDOM.addEventListener('paste', handlePaste);
+            
+            // Escuta a seleção de texto para o truque de formatação não perder o foco
+            document.addEventListener('selectionchange', captureSelection);
+
+            // Fecha menus ao clicar fora
+            document.addEventListener('mousedown', (e) => {
+                if (!e.target.closest('.menu-btn') && !e.target.closest('[id$="-menu"]')) {
+                    closeAllMenus();
+                }
+            });
+        }
+
+        // Arranque!
+        window.onload = initApp;
+    </script>
+</body>
+</html>
